@@ -1,21 +1,18 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:fahamni/widgets/widgets.dart';
 
-void main() {
-  runApp(MaterialApp(
-    debugShowCheckedModeBanner: false,
-    home: MyWidget(),
-  ));
-}
 
-class MyWidget extends StatelessWidget {
-  const MyWidget({super.key});
+
+class IpersonalInfo extends StatelessWidget {
+  const IpersonalInfo({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xfff9f9f9),
       appBar: AppBar(
+        backgroundColor: const Color(0xfff9f9f9),
         leading: Container(
           child: IconButton(
             onPressed: () {
@@ -39,10 +36,6 @@ class MyWidget extends StatelessWidget {
       ),
 
 
-
-
-
-
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(8,0,0,8),
@@ -51,7 +44,7 @@ class MyWidget extends StatelessWidget {
 
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Bare(),
+              const Bare(1,0),
               Container(
                 margin: const EdgeInsets.only(left: 20),
                 child: const Text(
@@ -197,6 +190,7 @@ class MyWidget extends StatelessWidget {
                 decoration: InputDecoration(
                   hintText: 'name@example.com',
                   hintStyle: const TextStyle(
+                    fontWeight: FontWeight.w600,
                     color: Color(0xFF94A3B8),
                     fontSize: 17,
                     fontFamily: 'Lexend',
@@ -316,84 +310,6 @@ class MyWidget extends StatelessWidget {
   }
 }
 
-class Bare extends StatelessWidget {
-  const Bare({super.key});
-
-  final int currentStep = 1; // if we go to the next step we inc the two current steps
-  final int currentStep1 = 0;
-  final int totalSteps = 2;
-  double get progress1 => (currentStep1 ) / totalSteps;
-  double get progress => (currentStep -0.9) / totalSteps;
-  int get percent => (progress1 * 100).round();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(
-        left: 20,
-        right: 20,
-        top: 2,
-        bottom: 0,
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Step 1 of 2',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 17,
-                  color: Color(0xff1f2937),
-                  fontFamily: 'Nunito',
-                  height: 24 / 16,
-                ),
-              ),
-              Text(
-                '$percent% complete',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                  color: Color(0xFF000080),
-                  fontFamily: 'Nunito',
-                  height: 20 / 14,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              value: progress.clamp(0.0, 1.0),
-              minHeight: 8,
-              backgroundColor: Colors.grey[300],
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF000080)),
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              Text(
-                'Academic Details & Preferences',
-                style: TextStyle(
-                  fontWeight: FontWeight.w400,
-                  fontSize: 15,
-                  color: Color(0xff64748b),
-                  fontFamily: 'Nunito',
-                  height: 20 / 14,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class ROW1 extends StatefulWidget {
   const ROW1({super.key});
