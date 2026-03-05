@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "235961023298",
+    "project_id": "fahamni-dev",
+    "storage_bucket": "fahamni-dev.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:235961023298:android:d17b88c2ffb15750d566db",
+        "android_client_info": {
+          "package_name": "com.T32.Fahamni"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAy-fb1VTMKL5ikeATWTxH5tTfiFX9uQN0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
