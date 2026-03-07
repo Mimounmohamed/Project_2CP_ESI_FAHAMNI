@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 //import 'iPersonal_info.dart';
-import 'LoginScreen.dart';
+//import 'LoginScreen.dart';
 import 'RegistraionCompleteScreen.dart';
 
 void main() {
