@@ -3,54 +3,70 @@ import 'package:flutter/material.dart';
 import 'package:fahamni/widgets/widgets.dart';
 import 'package:fahamni/User_status/User_info.dart';
 
-
-
-class IpersonalInfo extends StatelessWidget {
+class IpersonalInfo extends StatefulWidget {
   const IpersonalInfo({super.key});
+
+  @override
+  State<IpersonalInfo> createState() => _IpersonalInfoState();
+}
+
+class _IpersonalInfoState extends State<IpersonalInfo> {
+  final _formKey = GlobalKey<FormState>();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xfff9f9f9),
       bottomNavigationBar: Padding(
-    padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-    child: ElevatedButton(
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const studentinfo()),
-        );
-      },
-      style: ElevatedButton.styleFrom(
-        shadowColor: const Color(0xFF000080),
-        elevation: 6,
-        backgroundColor: const Color(0xFF000080),
-        minimumSize: const Size(double.infinity, 50),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+        child: ElevatedButton(
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const studentinfo()),
+              );
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            shadowColor: const Color(0xFF000080),
+            elevation: 6,
+            backgroundColor: const Color(0xFF000080),
+            minimumSize: const Size(double.infinity, 50),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: const Text(
+            'NEXT',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Inter',
+            ),
+          ),
         ),
       ),
-      child: const Text(
-        'NEXT',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 17,
-          fontWeight: FontWeight.w700,
-          fontFamily: 'Inter',
-        ),
-      ),
-    ),
-  ) ,
       appBar: AppBar(
         backgroundColor: const Color(0xfff9f9f9),
-        leading: Container(
-          child: IconButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            iconSize: 24,
-            icon: const Icon(Icons.arrow_back_ios_new_outlined),
-          ),
+        leading: IconButton(
+          onPressed: () => Navigator.pop(context),
+          iconSize: 24,
+          icon: const Icon(Icons.arrow_back_ios_new_outlined),
         ),
         title: const Text(
           "User Registration",
@@ -64,247 +80,318 @@ class IpersonalInfo extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-
-
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(8,0,0,8),
-          child: Column(
-
-
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Bare(1,0),
-              Container(
-                margin: const EdgeInsets.only(left: 20),
-                child: const Text(
-                "Personal Information",
-                style: TextStyle(
-                  letterSpacing: -0.25,
-                  fontFamily: "Inter",
-                  fontSize: 30,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xff1f2937),
-                  height: 30 / 18,
+          padding: const EdgeInsets.fromLTRB(8, 0, 0, 8),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Bare(1, 0),
+                Container(
+                  margin: const EdgeInsets.only(left: 20),
+                  child: const Text(
+                    "Personal Information",
+                    style: TextStyle(
+                      letterSpacing: -0.25,
+                      fontFamily: "Inter",
+                      fontSize: 30,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xff1f2937),
+                      height: 30 / 18,
+                    ),
+                  ),
                 ),
-              ),),
 
-
-              Container(
-                margin: const EdgeInsets.only(left: 34),
-                child:
-              const Text(
-                "First Name",
-                style: TextStyle(
-                  fontFamily: "Inter",
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xff1f2937),
-                  height: 14 / 18,
+                // First Name
+                Container(
+                  margin: const EdgeInsets.only(left: 34),
+                  child: const Text(
+                    "First Name",
+                    style: TextStyle(
+                      fontFamily: "Inter",
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xff1f2937),
+                      height: 14 / 18,
+                    ),
+                  ),
                 ),
-              ),),
-
-
-              const SizedBox(height: 8),
-
-              Container(
-                margin: const EdgeInsets.only(left: 24, right: 24),
-                child: 
-              TextFormField(
-                decoration: InputDecoration(
-                  hintText: 'Mahieddine',
-                  hintStyle: const TextStyle(
-                    color: Color(0xFF94A3B8),
-                    fontSize: 17,
-                    fontFamily: 'Lexend',
-                  ),
-                  prefixIcon: const Icon(
-                    Icons.person_outline,
-                    size: 22,
-                    color: Color(0xFF94A3B8),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 2),
-                  ),
-                  filled: true,
-                  fillColor: const Color(0xFFFFFFFF),
-                ),
-              ),),
-
-
-              const SizedBox(height: 8),
-
-              Container(
-                margin: const EdgeInsets.only(left: 29, right: 24),
-                child:
-              const Text(
-                "Last Name",
-                style: TextStyle(
-                  fontFamily: "Inter",
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xff1f2937),
-                  height: 14 / 18,
-                ),
-              ),),
-
-              const SizedBox(height: 8),
-
-              Container(
-                margin: const EdgeInsets.only(left: 24, right: 24),
-                child:
-              TextFormField(
-                decoration: InputDecoration(
-                  hintText: 'Mimoun',
-                  hintStyle: const TextStyle(
-                    color: Color(0xFF94A3B8),
-                    fontSize: 17,
-                    fontFamily: 'Lexend',
-                  ),
-                  prefixIcon: const Icon(
-                    Icons.person_outline,
-                    size: 22,
-                    color: Color(0xFF94A3B8),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 2),
-                  ),
-                  filled: true,
-                  fillColor: const Color(0xFFFFFFFF),
-                ),
-              ),),
-
-              
-
-              
-
-
-              const SizedBox(height: 8),
-             
-              Container(
-                margin: const EdgeInsets.only(left: 24, right: 24),
-                child: const ROW1(), ),
-                const SizedBox(height: 8),
-              Container(
-                margin: const EdgeInsets.only(left: 24, right: 24),
-                child: const ROW2(), ),
                 const SizedBox(height: 8),
                 Container(
-                margin: const EdgeInsets.only(left: 34),
-                child:
-              const Text(
-                "Email Address",
-                style: TextStyle(
-                  fontFamily: "Inter",
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xff1f2937),
-                  height: 14 / 18,
+                  margin: const EdgeInsets.only(left: 24, right: 24),
+                  child: TextFormField(
+                    controller: _firstNameController,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'First name is required';
+                      }
+                      return null;
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Mahieddine',
+                      hintStyle: const TextStyle(
+                        color: Color(0xFF94A3B8),
+                        fontSize: 17,
+                        fontFamily: 'Lexend',
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.person_outline,
+                        size: 22,
+                        color: Color(0xFF94A3B8),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 2),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                      ),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                      ),
+                      filled: true,
+                      fillColor: const Color(0xFFFFFFFF),
+                    ),
+                  ),
                 ),
-              ),),
+
+                const SizedBox(height: 8),
+
+                // Last Name
+                Container(
+                  margin: const EdgeInsets.only(left: 29, right: 24),
+                  child: const Text(
+                    "Last Name",
+                    style: TextStyle(
+                      fontFamily: "Inter",
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xff1f2937),
+                      height: 14 / 18,
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Container(
-                margin: const EdgeInsets.only(left: 24, right: 24),
-                child: 
-              TextFormField(
-                decoration: InputDecoration(
-                  hintText: 'name@example.com',
-                  hintStyle: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF94A3B8),
-                    fontSize: 17,
-                    fontFamily: 'Lexend',
+                  margin: const EdgeInsets.only(left: 24, right: 24),
+                  child: TextFormField(
+                    controller: _lastNameController,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Last name is required';
+                      }
+                      return null;
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Mimoun',
+                      hintStyle: const TextStyle(
+                        color: Color(0xFF94A3B8),
+                        fontSize: 17,
+                        fontFamily: 'Lexend',
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.person_outline,
+                        size: 22,
+                        color: Color(0xFF94A3B8),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 2),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                      ),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                      ),
+                      filled: true,
+                      fillColor: const Color(0xFFFFFFFF),
+                    ),
                   ),
-                  prefixIcon: const Icon(
-                    Icons.email_outlined,
-                    size: 22,
-                    color: Color(0xFF94A3B8),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 2),
-                  ),
-                  filled: true,
-                  fillColor: const Color(0xFFFFFFFF),
                 ),
-              ),),
+
                 const SizedBox(height: 8),
                 Container(
-                margin: const EdgeInsets.only(left: 34),
-                child:
-              const Text(
-                "Phone Number",
-                style: TextStyle(
-                  fontFamily: "Inter",
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xff1f2937),
-                  height: 14 / 18,
+                  margin: const EdgeInsets.only(left: 24, right: 24),
+                  child: ROW1(formKey: _formKey),
                 ),
-              ),),
                 const SizedBox(height: 8),
                 Container(
-                margin: const EdgeInsets.only(left: 24, right: 24),
-                child: 
-              TextFormField(
-                decoration: InputDecoration(
-                  hintText: 'Ex:0555555555',
-                  hintStyle: const TextStyle(
-                    color: Color(0xFF94A3B8),
-                    fontSize: 17,
-                    fontFamily: 'Lexend',
-                  ),
-                  prefixIcon: const Icon(
-                    Icons.phone_outlined,
-                    size: 22,
-                    color: Color(0xFF94A3B8),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 2),
-                  ),
-                  filled: true,
-                  fillColor: const Color(0xFFFFFFFF),
+                  margin: const EdgeInsets.only(left: 24, right: 24),
+                  child: const ROW2(),
                 ),
-              ),),
+
+                const SizedBox(height: 8),
+
+                // Email
+                Container(
+                  margin: const EdgeInsets.only(left: 34),
+                  child: const Text(
+                    "Email Address",
+                    style: TextStyle(
+                      fontFamily: "Inter",
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xff1f2937),
+                      height: 14 / 18,
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Container(
-                margin: const EdgeInsets.only(left: 34),
-                child:
-              const Text(
-                "Password",
-                style: TextStyle(
-                  fontFamily: "Inter",
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xff1f2937),
-                  height: 14 / 18,
+                  margin: const EdgeInsets.only(left: 24, right: 24),
+                  child: TextFormField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Email is required';
+                      }
+                      if (!value.contains('@')) {
+                        return 'Enter a valid email';
+                      }
+                      return null;
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'name@example.com',
+                      hintStyle: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF94A3B8),
+                        fontSize: 17,
+                        fontFamily: 'Lexend',
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.email_outlined,
+                        size: 22,
+                        color: Color(0xFF94A3B8),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 2),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                      ),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                      ),
+                      filled: true,
+                      fillColor: const Color(0xFFFFFFFF),
+                    ),
+                  ),
                 ),
-              ),),
+
                 const SizedBox(height: 8),
-                 Passwrd(),
-                 const SizedBox(height: 24),
-  
-                 
-            ],
+
+                // Phone
+                Container(
+                  margin: const EdgeInsets.only(left: 34),
+                  child: const Text(
+                    "Phone Number",
+                    style: TextStyle(
+                      fontFamily: "Inter",
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xff1f2937),
+                      height: 14 / 18,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  margin: const EdgeInsets.only(left: 24, right: 24),
+                  child: TextFormField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    validator: (value) {
+  if (value == null || value.isEmpty) {
+    return 'Phone number is required';
+  }
+  if (value.length != 10) {
+    return 'Phone number must be 10 digits';
+  }
+  if (!value.startsWith('05') &&
+      !value.startsWith('06') &&
+      !value.startsWith('07')) {
+    return 'Number must start with 05, 06, or 07';
+  }
+  return null;
+},
+                    decoration: InputDecoration(
+                      hintText: 'Ex:0555555555',
+                      hintStyle: const TextStyle(
+                        color: Color(0xFF94A3B8),
+                        fontSize: 17,
+                        fontFamily: 'Lexend',
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.phone_outlined,
+                        size: 22,
+                        color: Color(0xFF94A3B8),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 2),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                      ),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                      ),
+                      filled: true,
+                      fillColor: const Color(0xFFFFFFFF),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // Password
+                Container(
+                  margin: const EdgeInsets.only(left: 34),
+                  child: const Text(
+                    "Password",
+                    style: TextStyle(
+                      fontFamily: "Inter",
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xff1f2937),
+                      height: 14 / 18,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Passwrd(),
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ),
       ),
@@ -312,9 +399,9 @@ class IpersonalInfo extends StatelessWidget {
   }
 }
 
-
 class ROW1 extends StatefulWidget {
-  const ROW1({super.key});
+  final GlobalKey<FormState>? formKey;
+  const ROW1({super.key, this.formKey});
 
   @override
   State<ROW1> createState() => _ROW1State();
@@ -322,71 +409,61 @@ class ROW1 extends StatefulWidget {
 
 class _ROW1State extends State<ROW1> {
   String? selectedGender;
-   DateTime _selectedDate = DateTime(2000, 1, 1);
-final TextEditingController _dobController = TextEditingController();
+  DateTime _selectedDate = DateTime(2000, 1, 1);
+  final TextEditingController _dobController = TextEditingController();
+  //bool _dobTouched = false;
+
   @override
   Widget build(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Gender Dropdown (left side)
+        // Gender Dropdown
         Expanded(
           flex: 1,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.fromLTRB(5,0,0,0),
-                child:
-              const Text(
-                'Gender',
-                style: TextStyle(
-                  fontFamily: "Nunito",
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xff1f2937),
-                  height: 14 / 18,
-                ),
+                padding: const EdgeInsets.fromLTRB(5, 0, 0, 0),
+                child: const Text(
+                  'Gender',
+                  style: TextStyle(
+                    fontFamily: "Nunito",
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xff1f2937),
+                    height: 14 / 18,
+                  ),
                 ),
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 value: selectedGender,
-               
-        borderRadius: BorderRadius.circular(16), 
-        dropdownColor: Colors.white,           
-        elevation: 8,                          
-        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF94A3B8)), // Use 'value' instead of 'initialValue'
+                borderRadius: BorderRadius.circular(16),
+                dropdownColor: Colors.white,
+                elevation: 8,
+                icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF94A3B8)),
                 hint: const Text(
                   'Select Gender',
                   style: TextStyle(color: Color(0xFF94A3B8), fontSize: 14, fontFamily: 'Lexend'),
                 ),
+                validator: (value) {
+                  if (value == null) return 'Required';
+                  return null;
+                },
                 items: const [
                   DropdownMenuItem(
                     value: 'Male',
-                    child: Text('Male',
-                    style: TextStyle(
-                      color: Color(0xFF1f2937),
-                    fontSize: 17,
-                    fontFamily: 'Lexend',
-                    ),
-                    ),
+                    child: Text('Male', style: TextStyle(color: Color(0xFF1f2937), fontSize: 17, fontFamily: 'Lexend')),
                   ),
                   DropdownMenuItem(
                     value: 'Female',
-                    child: Text('Female',
-                    style: TextStyle(
-                     color: Color(0xFF1f2937),
-                    fontSize: 17,
-                    fontFamily: 'Lexend',
-                    ),
-                    ),
+                    child: Text('Female', style: TextStyle(color: Color(0xFF1f2937), fontSize: 17, fontFamily: 'Lexend')),
                   ),
                 ],
                 onChanged: (value) {
-                  setState(() {
-                    selectedGender = value;
-                  });
+                  setState(() => selectedGender = value);
                 },
                 decoration: InputDecoration(
                   enabledBorder: OutlineInputBorder(
@@ -396,6 +473,14 @@ final TextEditingController _dobController = TextEditingController();
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 2),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.red, width: 1.5),
                   ),
                   filled: true,
                   fillColor: Colors.white,
@@ -405,122 +490,132 @@ final TextEditingController _dobController = TextEditingController();
             ],
           ),
         ),
-        const SizedBox(width: 16), // Space between columns
+
+        const SizedBox(width: 16),
+
+        // Date of Birth
         Expanded(
-  flex: 1,
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Container(
-        padding: const EdgeInsets.fromLTRB(5, 0, 0, 0),
-        child: const Text(
-          'Date of Birth',
-          style: TextStyle(
-            fontFamily: "Nunito",
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            color: Color(0xff1f2937),
-            height: 14 / 18,
+          flex: 1,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.fromLTRB(5, 0, 0, 0),
+                child: const Text(
+                  'Date of Birth',
+                  style: TextStyle(
+                    fontFamily: "Nunito",
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xff1f2937),
+                    height: 14 / 18,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _dobController,
+                readOnly: true,
+                onTap: () => _showCupertinoDatePicker(context),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Required';
+                  return null;
+                },
+                decoration: InputDecoration(
+                  hintText: 'Select date',
+                  suffixIcon: const Icon(Icons.calendar_today, size: 18, color: Color(0xFF94A3B8)),
+                  hintStyle: const TextStyle(
+                    color: Color(0xFF94A3B8),
+                    fontSize: 14,
+                    fontFamily: 'Lexend',
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 2),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFFFFFFFF),
+                ),
+              ),
+            ],
           ),
         ),
-      ),
-      const SizedBox(height: 8),
-      TextFormField(
-        controller: _dobController,
-        readOnly: true, // prevents keyboard from showing
-        onTap: () => _showCupertinoDatePicker(context),
-        decoration: InputDecoration(
-          hintText: 'Select date',
-          suffixIcon: const Icon(Icons.calendar_today, size: 18, color: Color(0xFF94A3B8)),
-          hintStyle: const TextStyle(
-            color: Color(0xFF94A3B8),
-            fontSize: 14,
-            fontFamily: 'Lexend',
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 2),
-          ),
-          filled: true,
-          fillColor: const Color(0xFFFFFFFF),
-        ),
-      ),
-    ],
-  ),
-),
-
-
       ],
     );
   }
 
-
-void _showCupertinoDatePicker(BuildContext context) {
-  DateTime tempDate = _selectedDate;
-
-  showModalBottomSheet(
-    context: context,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (_) {
-      return SizedBox(
-        height: 320,
-        child: Column(
-          children: [
-            // Header row
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-                  ),
-                  const Text(
-                    'Date of Birth',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontFamily: 'Nunito'),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        _selectedDate = tempDate;
-                        _dobController.text =
-                            '${tempDate.day.toString().padLeft(2, '0')}/'
-                            '${tempDate.month.toString().padLeft(2, '0')}/'
-                            '${tempDate.year}';
-                      });
-                      Navigator.pop(context);
-                    },
-                    child: const Text('Done', style: TextStyle(color: Color(0xFF000080))),
-                  ),
-                ],
+  void _showCupertinoDatePicker(BuildContext context) {
+    DateTime tempDate = _selectedDate;
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return SizedBox(
+          height: 320,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+                    ),
+                    const Text(
+                      'Date of Birth',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontFamily: 'Nunito'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _selectedDate = tempDate;
+                          _dobController.text =
+                              '${tempDate.day.toString().padLeft(2, '0')}/'
+                              '${tempDate.month.toString().padLeft(2, '0')}/'
+                              '${tempDate.year}';
+                        });
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Done', style: TextStyle(color: Color(0xFF000080))),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const Divider(height: 1),
-            // The spinner
-            Expanded(
-              child: CupertinoDatePicker(
-                mode: CupertinoDatePickerMode.date,
-                initialDateTime: _selectedDate,
-                minimumDate: DateTime(1900),
-                maximumDate: DateTime.now(),
-                onDateTimeChanged: (date) {
-                  tempDate = date;
-                },
+              const Divider(height: 1),
+              Expanded(
+                child: CupertinoDatePicker(
+                  mode: CupertinoDatePickerMode.date,
+                  initialDateTime: _selectedDate,
+                  minimumDate: DateTime(1900),
+                  maximumDate: DateTime.now(),
+                  onDateTimeChanged: (date) {
+                    tempDate = date;
+                  },
+                ),
               ),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}}
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
 
 class ROW2 extends StatefulWidget {
   const ROW2({super.key});
@@ -531,6 +626,8 @@ class ROW2 extends StatefulWidget {
 
 class _ROW2State extends State<ROW2> {
   String? selectedCity;
+  final _postalController = TextEditingController();
+
   final List<String> algerianCities = [
     'Adrar', 'Aïn Defla', 'Aïn Témouchent', 'Algiers', 'Annaba',
     'Batna', 'Béchar', 'Béjaïa', 'Béni Abbès', 'Biskra',
@@ -540,14 +637,10 @@ class _ROW2State extends State<ROW2> {
     'El Bayadh', 'El Meniaa', 'El Oued', 'El Tarf',
     'Ghardaïa', 'Guelma',
     'Illizi', 'In Guezzam', 'In Salah',
-    'Jijel',
-    'Khenchela',
-    'Laghouat',
+    'Jijel', 'Khenchela', 'Laghouat',
     'Mascara', 'Médéa', 'M\'Ghair', 'Mila', 'Mostaganem', 'M\'Sila',
-    'Naâma',
-    'Oran', 'Ouargla', 'Ouled Djellal', 'Oum El Bouaghi',
-    'Relizane',
-    'Saïda', 'Sétif', 'Sidi Bel Abbès', 'Skikda', 'Souk Ahras',
+    'Naâma', 'Oran', 'Ouargla', 'Ouled Djellal', 'Oum El Bouaghi',
+    'Relizane', 'Saïda', 'Sétif', 'Sidi Bel Abbès', 'Skikda', 'Souk Ahras',
     'Tamanrasset', 'Tébessa', 'Tiaret', 'Timimoun', 'Tindouf',
     'Tipaza', 'Tissemsilt', 'Tizi Ouzou', 'Tlemcen', 'Touggourt',
   ];
@@ -557,7 +650,7 @@ class _ROW2State extends State<ROW2> {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // City Dropdown (left side)
+        // City Dropdown
         Expanded(
           flex: 1,
           child: Column(
@@ -579,7 +672,7 @@ class _ROW2State extends State<ROW2> {
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 value: selectedCity,
-                isExpanded: true, 
+                isExpanded: true,
                 borderRadius: BorderRadius.circular(16),
                 dropdownColor: Colors.white,
                 elevation: 8,
@@ -588,6 +681,10 @@ class _ROW2State extends State<ROW2> {
                   'Select City',
                   style: TextStyle(color: Color(0xFF94A3B8), fontSize: 14, fontFamily: 'Lexend'),
                 ),
+                validator: (value) {
+                  if (value == null) return 'Required';
+                  return null;
+                },
                 items: algerianCities
                     .map((city) => DropdownMenuItem(
                           value: city,
@@ -602,9 +699,7 @@ class _ROW2State extends State<ROW2> {
                         ))
                     .toList(),
                 onChanged: (value) {
-                  setState(() {
-                    selectedCity = value;
-                  });
+                  setState(() => selectedCity = value);
                 },
                 decoration: InputDecoration(
                   enabledBorder: OutlineInputBorder(
@@ -615,6 +710,14 @@ class _ROW2State extends State<ROW2> {
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 2),
                   ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                  ),
                   filled: true,
                   fillColor: Colors.white,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -624,9 +727,9 @@ class _ROW2State extends State<ROW2> {
           ),
         ),
 
-        const SizedBox(width: 16), // same as ROW1
+        const SizedBox(width: 16),
 
-        // Postal Code (right side)
+        // Postal Code
         Expanded(
           flex: 1,
           child: Column(
@@ -647,7 +750,13 @@ class _ROW2State extends State<ROW2> {
               ),
               const SizedBox(height: 8),
               TextFormField(
+                controller: _postalController,
                 keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Required';
+                  if (value.length < 4) return 'Invalid code';
+                  return null;
+                },
                 decoration: InputDecoration(
                   hintText: 'Ex: 1600',
                   hintStyle: const TextStyle(
@@ -662,6 +771,14 @@ class _ROW2State extends State<ROW2> {
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: Color(0xFFE0E0E0), width: 2),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.red, width: 1.5),
                   ),
                   filled: true,
                   fillColor: const Color(0xFFFFFFFF),
