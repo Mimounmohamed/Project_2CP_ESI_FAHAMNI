@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'Subject_picker.dart';
 
@@ -252,7 +251,7 @@ class Student_widgetState extends State<Student_widget> {
           Container(
             margin: const EdgeInsets.only(left: 24, right: 24),
             child: DropdownButtonFormField<String>(
-              value: selectedGrade,
+              initialValue: selectedGrade,
               isExpanded: true,
               borderRadius: BorderRadius.circular(16),
               dropdownColor: Colors.white,
@@ -310,7 +309,7 @@ class Student_widgetState extends State<Student_widget> {
             Container(
               margin: const EdgeInsets.only(left: 24, right: 24),
               child: DropdownButtonFormField<String>(
-                value: selectedSpeciality,
+                initialValue: selectedSpeciality,
                 isExpanded: true,
                 borderRadius: BorderRadius.circular(16),
                 dropdownColor: Colors.white,
@@ -361,7 +360,7 @@ class Student_widgetState extends State<Student_widget> {
             Container(
               margin: const EdgeInsets.only(left: 24, right: 24),
               child: DropdownButtonFormField<String>(
-                value: selectedSpeciality,
+                initialValue: selectedSpeciality,
                 isExpanded: true,
                 borderRadius: BorderRadius.circular(16),
                 dropdownColor: Colors.white,
