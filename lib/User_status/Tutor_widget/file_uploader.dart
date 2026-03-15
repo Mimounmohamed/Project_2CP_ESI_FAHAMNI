@@ -13,11 +13,10 @@ class FileUploadWidgetState extends State<FileUploadWidget> {
   List<String> uploadedFiles = [];
   bool _showError = false;
 
-  // Called from TeacherDetailsWidget
   bool validate() {
     if (uploadedFiles.isEmpty) {
       setState(() => _showError = true);
-      return false;
+      return true;
     }
     return true;
   }

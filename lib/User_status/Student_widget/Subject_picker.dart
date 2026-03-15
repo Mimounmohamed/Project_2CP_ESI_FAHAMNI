@@ -5,10 +5,10 @@ class SubjectPickerWidget extends StatefulWidget {
   const SubjectPickerWidget(this.i,{super.key});
 
   @override
-  State<SubjectPickerWidget> createState() => _SubjectPickerWidgetState();
+  State<SubjectPickerWidget> createState() => SubjectPickerWidgetState();
 }
 
-class _SubjectPickerWidgetState extends State<SubjectPickerWidget> {
+class SubjectPickerWidgetState extends State<SubjectPickerWidget> {
   final List<List<String>> subjectLists = [
   // 1st Year Primary School
   [

@@ -4,9 +4,11 @@ import 'Student_widget/Student_widg.dart';
 import 'Parent_widget/Parent_widg.dart';
 import 'Tutor_widget/Tutor_widg.dart';
 import 'package:fahamni/otp_verification_Screen/phoneverif.dart';
+import 'package:fahamni/models/user_model.dart';
 
 class studentinfo extends StatefulWidget {
-  const studentinfo({super.key});
+  final Map<String, dynamic> data;
+  const studentinfo({super.key, required this.data });
 
   @override
   State<studentinfo> createState() => _studentinfoState();
@@ -44,13 +46,38 @@ class _studentinfoState extends State<studentinfo> {
               isValid = _tutorKey.currentState?.validate() ?? false;
             }
 
-            if (isValid) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const PhoneVerificationPage()),
-              );
+            if (!isValid) return;
+            final data = widget.data;
+            if (selectedIndex == 0){
+              final s = _studentKey.currentState!;
+              data['role'] = UserRole.student;
+              data['schoolLevel'] = s.levels[s.selectedIndex];
+              data['learningObjectives'] = s.schoolController.text.trim();
+              data['preferredSubjects'] = s.selectedSubjectsList;
             }
+            else if (selectedIndex == 1){
+              data['role'] = UserRole.parent;
+              data['childrensUids'] = <String>[];
+            }
+            else if (selectedIndex == 2){
+              final t = _tutorKey.currentState!;
+              data['role'] = UserRole.tutor;
+              data['academicDescription']    = '${t.degreeController.text.trim()} — ${t.universityController.text.trim()}';
+              data['yearsOfExperience']      = int.tryParse(t.expController.text.trim()) ?? 0;
+              data['pedagogicalDescription'] = t.bioController.text.trim();
+              data['certified']              = (t.fileKey.currentState?.uploadedFiles.isNotEmpty) ?? false;
+              data['expertiseDomain']        = '';
+              data['levelsTaught']           = <String>[];
+              data['teachingMode']           = '';
+              data['isAvailable']            = false;
+              data['averageRating']          = 0.0;
+            }
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PhoneVerificationPage(data: data), 
+              ),
+            );
           },
           style: ElevatedButton.styleFrom(
             shadowColor: const Color(0xFF000080),

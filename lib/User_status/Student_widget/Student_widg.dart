@@ -10,16 +10,18 @@ class Student_widget extends StatefulWidget {
 
 class Student_widgetState extends State<Student_widget> {
   final _formKey = GlobalKey<FormState>();
-  final _schoolController = TextEditingController();
+  final schoolController = TextEditingController();
 
   String? selectedGrade;
   int selectedIndex = 0;
   String? selectedSpeciality;
   int selectedLevelIndex = -1;
-
-  // Error flags for non-form fields
-  bool _gradeError = false;
+   bool _gradeError      = false;
   bool _specialityError = false;
+ 
+   final subjectPickerKey = GlobalKey<SubjectPickerWidgetState>();
+   List<String> get selectedSubjectsList =>
+      subjectPickerKey.currentState?.selectedSubjects ?? [];
 
   final List<String> levels = ['Primary', 'Middle', 'High', 'University'];
   final List<List<String>> gradeLists = [
@@ -54,7 +56,7 @@ class Student_widgetState extends State<Student_widget> {
     return offset + gradePosition;
   }
 
-  // Called from studentinfo via GlobalKey
+
   bool validate() {
     bool valid = _formKey.currentState!.validate();
 
@@ -73,11 +75,10 @@ class Student_widgetState extends State<Student_widget> {
 
   @override
   void dispose() {
-    _schoolController.dispose();
+    schoolController.dispose();
     super.dispose();
   }
 
-  // Reusable border
   OutlineInputBorder _border([Color color = const Color(0xFFE0E0E0), double width = 1]) =>
       OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -406,7 +407,7 @@ class Student_widgetState extends State<Student_widget> {
           Container(
             margin: const EdgeInsets.only(left: 24, right: 24),
             child: TextFormField(
-              controller: _schoolController,
+              controller: schoolController,
               validator: (value) {
                 if (value == null || value.isEmpty) return 'School name is required';
                 return null;
@@ -428,7 +429,7 @@ class Student_widgetState extends State<Student_widget> {
 
           if (selectedLevelIndex != -1)
             SubjectPickerWidget(
-              key: ValueKey(selectedLevelIndex),
+              key: subjectPickerKey,
               selectedLevelIndex,
             ),
         ],

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import '../Home_Screens/Student_HS/Student_homepage.dart';
 
 
 
@@ -21,7 +21,12 @@ class RegistrationComplete extends StatelessWidget {
             Icons.close,
             color: Color(0xFF0F172A),
           ),
-          onPressed: () {},
+          onPressed: () {
+            Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const Studentpage()),
+                              );
+          },
         ),
         title: const Text(
           "Registration Complete",
@@ -90,7 +95,12 @@ class RegistrationComplete extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const Studentpage()),
+                              );
+                },
                 child: const Text(
                   'Go to Dashboard',
                   style: TextStyle(
@@ -119,7 +129,9 @@ class RegistrationComplete extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                onPressed: () {},
+                onPressed: () {
+
+                },
                 child: const Text(
                   'Complete Profile',
                   style: TextStyle(

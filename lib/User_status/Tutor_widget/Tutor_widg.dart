@@ -10,27 +10,27 @@ class TeacherDetailsWidget extends StatefulWidget {
 
 class TeacherDetailsWidgetState extends State<TeacherDetailsWidget> {
   final _formKey = GlobalKey<FormState>();
-  final _degreeController = TextEditingController();
-  final _universityController = TextEditingController();
-  final _expController = TextEditingController();
-  final _bioController = TextEditingController();
+  final degreeController     = TextEditingController();
+  final universityController = TextEditingController();
+  final expController        = TextEditingController();
+  final bioController        = TextEditingController();
 
-  // ← ADD THIS
-  final _fileKey = GlobalKey<FileUploadWidgetState>();
+ 
+  final fileKey = GlobalKey<FileUploadWidgetState>();
 
-  // ← UPDATE THIS to include file validation
+  
   bool validate() {
     final formValid = _formKey.currentState!.validate();
-    final fileValid = _fileKey.currentState?.validate() ?? false;
+    final fileValid = fileKey.currentState?.validate() ?? false;
     return formValid && fileValid;
   }
 
   @override
   void dispose() {
-    _degreeController.dispose();
-    _universityController.dispose();
-    _expController.dispose();
-    _bioController.dispose();
+    degreeController.dispose();
+    universityController.dispose();
+    expController.dispose();
+    bioController.dispose();
     super.dispose();
   }
 
@@ -72,7 +72,7 @@ class TeacherDetailsWidgetState extends State<TeacherDetailsWidget> {
           Container(
             margin: const EdgeInsets.only(left: 24, right: 24),
             child: TextFormField(
-              controller: _degreeController,
+              controller: degreeController,
               validator: (value) {
                 if (value == null || value.isEmpty) return 'Degree is required';
                 return null;
@@ -102,7 +102,7 @@ class TeacherDetailsWidgetState extends State<TeacherDetailsWidget> {
           Container(
             margin: const EdgeInsets.only(left: 24, right: 24),
             child: TextFormField(
-              controller: _universityController,
+              controller: universityController,
               validator: (value) {
                 if (value == null || value.isEmpty) return 'University name is required';
                 return null;
@@ -132,7 +132,7 @@ class TeacherDetailsWidgetState extends State<TeacherDetailsWidget> {
           Container(
             margin: const EdgeInsets.only(left: 24, right: 24),
             child: TextFormField(
-              controller: _expController,
+              controller: expController,
               keyboardType: TextInputType.number,
               validator: (value) {
                 if (value == null || value.isEmpty) return 'Experience is required';
@@ -165,7 +165,7 @@ class TeacherDetailsWidgetState extends State<TeacherDetailsWidget> {
           Container(
             margin: const EdgeInsets.only(left: 24, right: 24),
             child: TextFormField(
-              controller: _bioController,
+              controller: bioController,
               maxLines: 4,
               validator: (value) {
                 if (value == null || value.isEmpty) return 'Please describe your specialization';
@@ -194,8 +194,7 @@ class TeacherDetailsWidgetState extends State<TeacherDetailsWidget> {
           ),
           const SizedBox(height: 8),
 
-          // ← ADD key HERE
-          FileUploadWidget(key: _fileKey),
+          FileUploadWidget(key: fileKey),
           const SizedBox(height: 30),
         ],
       ),

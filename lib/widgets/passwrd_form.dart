@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 class Passwrd extends StatefulWidget {
-  const Passwrd({super.key});
-
+   final TextEditingController controller;
+  const Passwrd({super.key, required this.controller});
   @override
   State<Passwrd> createState() => _PasswrdState();
 }
@@ -15,6 +15,7 @@ class _PasswrdState extends State<Passwrd> {
     return Container(
       margin: const EdgeInsets.only(left: 24, right: 24),
       child: TextFormField(
+        controller: widget.controller,
         obscureText: _obscurePassword,
         validator: (value) {
           if (value == null || value.isEmpty) {

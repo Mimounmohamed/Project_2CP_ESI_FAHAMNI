@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'OTPbox.dart';
 import 'package:fahamni/Registration_Completed_Screen/RegistraionCompleteScreen.dart';
+import 'package:fahamni/models/user_model.dart';
+import 'package:fahamni/models/student_model.dart';
+import 'package:fahamni/models/tutor_model.dart';
+import 'package:fahamni/models/parent_model.dart';
+import 'package:fahamni/Services/auth_.service.dart';
 
 class PhoneVerificationPage extends StatefulWidget {
-  const PhoneVerificationPage({super.key});
+  final Map<String, dynamic> data;
+
+  const PhoneVerificationPage({super.key, required this.data});
 
   @override
   State<PhoneVerificationPage> createState() => _PhoneVerificationPageState();
@@ -16,6 +23,7 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
   final List<FocusNode> _focusNodes =
       List.generate(6, (_) => FocusNode());
       String? _errorMessage;
+      bool    _isLoading = false;
 
   @override
   void dispose() {
@@ -30,6 +38,83 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
 
   String get _otpCode =>
       _controllers.map((c) => c.text).join();
+
+      Future<void> _completeRegistration() async {
+    final data        = widget.data;
+    final authService = AuthService();
+    try {
+      setState(() => _isLoading = true);
+
+      UserModel model;
+      final role = data['role'] as UserRole;
+
+      if (role == UserRole.student) {
+        model = StudentModel(
+          uid:                '',  
+          firstName:          data['firstName'],
+          lastName:           data['lastName'],
+          email:              data['email'],
+          phone:              data['phone'],
+          location:           data['location'],
+          gender:             data['gender'],
+          birthday:           data['birthday'],
+          accountStatus:      AccountStatus.validated,
+          schoolLevel:        data['schoolLevel']        ?? '',
+          learningObjectives: data['learningObjectives'] ?? '',
+          preferredSubjects:  List<String>.from(data['preferredSubjects'] ?? []),
+        );
+
+      } else if (role == UserRole.tutor) {
+        model = TutorModel(
+          uid:                    '',
+          firstName:              data['firstName'],
+          lastName:               data['lastName'],
+          email:                  data['email'],
+          phone:                  data['phone'],
+          location:               data['location'],
+          gender:                 data['gender'],
+          birthday:               data['birthday'],
+          accountStatus:          AccountStatus.pending,
+          expertiseDomain:        data['expertiseDomain']        ?? '',
+          levelsTaught:           List<String>.from(data['levelsTaught'] ?? []),
+          teachingMode:           data['teachingMode']           ?? '',
+          isAvailable:            data['isAvailable']            ?? false,
+          Certified:              data['certified']              ?? false,
+          pedagogicalDescription: data['pedagogicalDescription'] ?? '',
+          averageRating:          data['averageRating']          ?? 0.0,
+          yearsOfExperience:      data['yearsOfExperience']      ?? 0,
+          academicDescription:    data['academicDescription']    ?? '',
+        );
+
+      } else {
+        model = ParentModel(
+          uid:          '',
+          firstName:    data['firstName'],
+          lastName:     data['lastName'],
+          email:        data['email'],
+          phone:        data['phone'],
+          location:     data['location'],
+          gender:       data['gender'],
+          birthday:     data['birthday'],
+          accountStatus: AccountStatus.validated,
+          childrenUids: List<String>.from(data['childrenUids'] ?? []),
+        );
+      }
+
+      await authService.signUp(data['email'], data['password'], model);
+
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const RegistrationComplete()),
+        (route) => false,
+      );
+    } catch (e) {
+      setState(() => _errorMessage = e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +137,6 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
 
-              /// LOGO
               Container(
                 alignment: Alignment.center,
                 child: Image.asset(
@@ -63,7 +147,6 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
 
               const SizedBox(height: 10),
 
-              /// FAHAMNI TITLE
               const Text(
                 "Fahamni",
                 style: TextStyle(
@@ -75,7 +158,7 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
                 ),
               ),
 
-              /// TAGLINE
+
               const Text(
                 "A peaceful place for growth",
                 style: TextStyle(
@@ -88,7 +171,6 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
 
               const SizedBox(height: 40),
 
-              /// OTP TITLE
               const Text(
                 "Phone Verification",
                 style: TextStyle(
@@ -101,7 +183,6 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
 
               const SizedBox(height: 6),
 
-              /// DESCRIPTION
               const Text(
                 "Enter the code that we have sent you",
                 style: TextStyle(
@@ -114,7 +195,6 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
 
               const SizedBox(height: 30),
 
-              /// OTP BOXES
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
@@ -173,24 +253,14 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
                         color: Colors.transparent,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(24),
-                          onTap: () {
-
-                             if (_otpCode.length == 6) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const RegistrationComplete(),
-                      ),
-                    );
-
-                    
-                    
-                  } else {
-  setState(() => _errorMessage = "Please enter the full 6-digit code");
-  
-}
-
-                          },
+                         onTap: _isLoading ? null : () async {
+                        if (_otpCode.length < 6) {
+                          setState(() => _errorMessage = 'Please enter the full 6-digit code');
+                          return;
+                        }
+                        // OTP is complete — save to Firebase
+                        await _completeRegistration();
+                      },
                           child: const Center(
                             child: Text(
                               "Send Code",

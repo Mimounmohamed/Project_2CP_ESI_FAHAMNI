@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fahamni/widgets/widgets.dart';
 import 'package:fahamni/User_status/User_info.dart';
+import 'package:fahamni/models/user_model.dart';
 
 class IpersonalInfo extends StatefulWidget {
   const IpersonalInfo({super.key});
@@ -16,13 +17,23 @@ class _IpersonalInfoState extends State<IpersonalInfo> {
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _passwordController  = TextEditingController();
+  
+  Gender?   _selectedGender;
+  DateTime? _selectedBirthday;
+  String?   _selectedCity;
 
+  bool _genderError   = false;
+  bool _birthdayError = false;
+  bool _cityError     = false;
+  
   @override
   void dispose() {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -34,12 +45,29 @@ class _IpersonalInfoState extends State<IpersonalInfo> {
         padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
         child: ElevatedButton(
           onPressed: () {
-            if (_formKey.currentState!.validate()) {
+             final formValid = _formKey.currentState!.validate();
+             setState(() {
+              _genderError   = _selectedGender   == null;
+              _birthdayError = _selectedBirthday == null;
+              _cityError     = _selectedCity     == null;
+            });
+            if (!formValid || _genderError || _birthdayError || _cityError) return;
+            final Map<String, dynamic> data = {
+              'firstName' : _firstNameController.text.trim(),
+              'lastName'  : _lastNameController.text.trim(),
+              'email'     : _emailController.text.trim(),
+              'phone'     : _phoneController.text.trim(),
+              'password'  : _passwordController.text.trim(),
+              'gender'    : _selectedGender,   // Gender enum value
+              'birthday'  : _selectedBirthday, // DateTime value
+              'location'  : _selectedCity,
+            };
+            
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const studentinfo()),
+                MaterialPageRoute(builder: (context) => studentinfo(data: data)),
               );
-            }
+            
           },
           style: ElevatedButton.styleFrom(
             shadowColor: const Color(0xFF000080),
@@ -227,12 +255,25 @@ class _IpersonalInfoState extends State<IpersonalInfo> {
                 const SizedBox(height: 8),
                 Container(
                   margin: const EdgeInsets.only(left: 24, right: 24),
-                  child: ROW1(formKey: _formKey),
+                  child: ROW1(formKey: _formKey,onGenderChanged: (gender) => setState(() {
+                    _selectedGender = gender;
+                    _genderError = false;
+                  }),
+                  onDateChanged: (date) => setState(() {
+                    _selectedBirthday = date;
+                    _birthdayError = false;
+                  }),
+                  showGenderError: _genderError,
+                  showBirthdayError: _birthdayError,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Container(
                   margin: const EdgeInsets.only(left: 24, right: 24),
-                  child: const ROW2(),
+                  child: ROW2(onCityChanged: (city) => setState(() {
+                    _selectedCity = city;
+                    _cityError = false;
+                  }), showCityError: _cityError,),
                 ),
 
                 const SizedBox(height: 8),
@@ -388,7 +429,7 @@ class _IpersonalInfoState extends State<IpersonalInfo> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Passwrd(),
+                 Passwrd(controller: _passwordController),
                 const SizedBox(height: 24),
               ],
             ),
@@ -401,7 +442,11 @@ class _IpersonalInfoState extends State<IpersonalInfo> {
 
 class ROW1 extends StatefulWidget {
   final GlobalKey<FormState>? formKey;
-  const ROW1({super.key, this.formKey});
+  final Function(Gender)   onGenderChanged;
+  final Function(DateTime) onDateChanged;
+  final bool showGenderError;
+  final bool showBirthdayError;
+  const ROW1({super.key, this.formKey, required this.onGenderChanged, required this.onDateChanged, this.showGenderError = false, this.showBirthdayError = false});
 
   @override
   State<ROW1> createState() => _ROW1State();
@@ -454,21 +499,24 @@ class _ROW1State extends State<ROW1> {
                 },
                 items: const [
                   DropdownMenuItem(
-                    value: 'Male',
+                    value: 'male',
                     child: Text('Male', style: TextStyle(color: Color(0xFF1f2937), fontSize: 17, fontFamily: 'Lexend')),
                   ),
                   DropdownMenuItem(
-                    value: 'Female',
+                    value: 'female',
                     child: Text('Female', style: TextStyle(color: Color(0xFF1f2937), fontSize: 17, fontFamily: 'Lexend')),
                   ),
                 ],
                 onChanged: (value) {
                   setState(() => selectedGender = value);
+                  if (value != null) 
+                    widget.onGenderChanged(Gender.values.byName(value)  ); 
                 },
+
                 decoration: InputDecoration(
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                    borderSide: BorderSide(color: widget.showGenderError ? Colors.red : const Color(0xFFE0E0E0)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -531,7 +579,7 @@ class _ROW1State extends State<ROW1> {
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                   borderSide: BorderSide(color: widget.showBirthdayError ? Colors.red : const Color(0xFFE0E0E0)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -590,6 +638,7 @@ class _ROW1State extends State<ROW1> {
                               '${tempDate.month.toString().padLeft(2, '0')}/'
                               '${tempDate.year}';
                         });
+                        widget.onDateChanged(tempDate);
                         Navigator.pop(context);
                       },
                       child: const Text('Done', style: TextStyle(color: Color(0xFF000080))),
@@ -618,7 +667,9 @@ class _ROW1State extends State<ROW1> {
 }
 
 class ROW2 extends StatefulWidget {
-  const ROW2({super.key});
+  final Function(String) onCityChanged;
+  final bool showCityError;
+  const ROW2({super.key, required this.onCityChanged, this.showCityError = false});
 
   @override
   State<ROW2> createState() => _ROW2State();
@@ -700,11 +751,12 @@ class _ROW2State extends State<ROW2> {
                     .toList(),
                 onChanged: (value) {
                   setState(() => selectedCity = value);
+                  if (value != null) widget.onCityChanged(value);
                 },
                 decoration: InputDecoration(
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                    borderSide: BorderSide(color: widget.showCityError ? Colors.red : const Color(0xFFE0E0E0)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),

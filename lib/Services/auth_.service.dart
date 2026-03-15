@@ -31,6 +31,9 @@ class AuthService {
    on FirebaseAuthException catch(e){
       throw _handleAuthError(e);
     }
+    catch (e) {
+    throw 'Registration failed: ${e.toString()}';
+  }
   }
 
 
