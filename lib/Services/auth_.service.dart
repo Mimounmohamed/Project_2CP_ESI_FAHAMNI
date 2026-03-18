@@ -1,3 +1,4 @@
+import 'package:fahamni/User_infos/iPersonal_info.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
@@ -38,8 +39,17 @@ class AuthService {
 
 
 
-Future<UserModel?> login(String email, String password) async {
+Future<UserModel?> login(String emailOrPhone, String password) async {
   try {
+    String email = emailOrPhone;
+    if(!emailOrPhone.contains('@')){
+      final phone = emailOrPhone.startsWith('+') ? emailOrPhone : toE164(emailOrPhone, '213');
+    
+    email = await _getEmailFromPhone(phone);
+  }
+
+
+
     final credential = await _auth.signInWithEmailAndPassword(email: email, password: password);
     final uid = credential.user!.uid;
     final userDoc = await _db.collection('users').doc(uid).get();
@@ -54,6 +64,21 @@ Future<UserModel?> login(String email, String password) async {
     throw _handleAuthError(e);
   }
 }
+
+Future<String> _getEmailFromPhone(String phone) async {
+  for (final collection in ['students', 'tutors', 'parents']) {
+    final query = await _db
+        .collection(collection)
+        .where('phone', isEqualTo: phone)
+        .limit(1)
+        .get();
+    if (query.docs.isNotEmpty) {
+      return query.docs.first['email'] as String;
+    }
+  }
+  throw 'No account found with this phone number.';
+}
+
 
 Future<UserModel?> _fetchUserProfile(String uid,UserRole role) async {
   final collection = _collectionForRole(role);
@@ -84,23 +109,18 @@ String _collectionForRole(UserRole role) {
 }
 
 String _handleAuthError(FirebaseAuthException e) {
-  switch (e.code) {
-    case 'email-already-in-use':
-        return 'This email is already registered.';
-      case 'wrong-password':
-        return 'Incorrect password.';
-      case 'user-not-found':
-        return 'No account found with this email.';
-      case 'weak-password':
-        return 'Password must be at least 6 characters.';
-      case 'invalid-email':
-        return 'Invalid email format.';
-      case 'too-many-requests':
-        return 'Too many attempts. Please try again later.';
-    default:
-      return e.message ?? 'An unexpected error occurred. Please try again later.';
+    switch (e.code) {
+      case 'email-already-in-use':      return 'This email is already registered.';
+      case 'wrong-password':            return 'Incorrect password.';
+      case 'user-not-found':            return 'No account found with this email.';
+      case 'weak-password':             return 'Password must be at least 6 characters.';
+      case 'invalid-email':             return 'Invalid email format.';
+      case 'too-many-requests':         return 'Too many attempts. Please try again later.';
+      case 'invalid-verification-code': return 'Incorrect OTP code. Please try again.';
+      case 'session-expired':           return 'OTP expired. Please request a new code.';
+      default: return e.message ?? 'An unexpected error occurred.';
+    }
   }
-}
 Future<void> sendOtp({
   required String phoneNumber,      
   required void Function(String verificationId) onCodeSent,
@@ -159,6 +179,37 @@ Future<UserModel> verifyOtpAndRegister({
   return _buildModelWithUid(userModel, uid);
 }
 
+ Future<void> registerAndSendEmailVerification({
+    required String email,
+    required String password,
+    required UserModel userModel,
+  }) async {
+    try {
+      final credential = await _auth.createUserWithEmailAndPassword(
+        email: email, password: password,
+      );
+      final uid = credential.user!.uid;
+      await credential.user!.sendEmailVerification();
+      final data = userModel.toMap();
+      data['uid'] = uid;
+      final collection = _collectionForRole(userModel.role);
+      await _db.collection(collection).doc(uid).set(data);
+      await _db.collection('users').doc(uid).set({
+        'uid': uid, 'email': email, 'role': userModel.role.name,
+      });
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthError(e);
+    }
+  }
+
+  Future<bool> checkEmailVerified() async {
+    final user = _auth.currentUser;
+    if (user == null) return false;
+    await user.reload();
+    return _auth.currentUser?.emailVerified ?? false;
+  }
+
+
 UserModel _buildModelWithUid(UserModel model, String uid) {
   if (model is StudentModel) {
     return StudentModel(
@@ -200,6 +251,63 @@ UserModel _buildModelWithUid(UserModel model, String uid) {
     );
   }
 }
+Future<void> checkIfUserExists({
+  required String email,
+  required String phone,
+}) async {
+  final emailQuery = await _db
+      .collection('users')
+      .where('email', isEqualTo: email)
+      .limit(1)
+      .get();
+
+  if (emailQuery.docs.isNotEmpty) {
+    throw 'This email is already registered.';
+  }
+  for (final collection in ['students', 'tutors', 'parents']) {
+    final phoneQuery = await _db
+        .collection(collection)
+        .where('phone', isEqualTo: phone)
+        .limit(1)
+        .get();
+
+    if (phoneQuery.docs.isNotEmpty) {
+      throw 'This phone number is already registered.';
+    }
+  }
+}
+Future<void> sendPasswordResetEmail(String email) async {
+  try {
+    final emailQuery = await _db
+        .collection('users')
+        .where('email', isEqualTo: email)
+        .limit(1)
+        .get();
+    if (emailQuery.docs.isEmpty) {
+      throw 'No account found with this email.';
+    }
+    await _auth.sendPasswordResetEmail(email: email);
+  } on FirebaseAuthException catch (e) {
+    throw _handleAuthError(e);
+  }
+}
+
+Future<String> getEmailFromPhone(String phone) async {
+  return await _getEmailFromPhone(phone);
+}
+
+Future<void> updatePasswordWithOtp({
+  required String email,
+  required String newPassword,
+}) async {
+  try {
+    await _auth.sendPasswordResetEmail(email: email);
+    throw 'A password reset link has been sent to $email. Please use it to set your new password.';
+  } on FirebaseAuthException catch (e) {
+    throw _handleAuthError(e);
+  }
+}
+  
 
 }
 

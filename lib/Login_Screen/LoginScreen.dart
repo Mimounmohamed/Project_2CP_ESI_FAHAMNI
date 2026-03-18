@@ -190,7 +190,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         // Email label
                         const Text(
-                          ' EMAIL ADDRESS',
+                          ' EMAIL OR PHONE NUMBER',
                           style: TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 15,
@@ -205,14 +205,16 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
-                            if (value == null || value.isEmpty) return 'Email is required';
-                            if (!value.contains('@')) return 'Enter a valid email';
+                            if (value == null || value.isEmpty) return 'Email or Phone number is required';
+                            final isEmail = value.contains('@');
+                            final isPhone = RegExp(r'^(0[567]\d{8}|\+213\d{9})$').hasMatch(value);
+                            if (!isEmail && !isPhone) return 'Enter a valid email or phone number';
                             return null;
                           },
                           decoration: InputDecoration(
-                            hintText: 'name@example.com',
+                            hintText: 'name@example.com or 055XXXXXXX',
                             hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
-                            prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF94A3B8)),
+                            prefixIcon: const Icon(Icons.perm_identity, color: Color(0xFF94A3B8)),
                             filled: true,
                             fillColor: Colors.white,
                             enabledBorder: OutlineInputBorder(
@@ -393,7 +395,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                   ),
-                  // ── END FORM ──────────────────────────────
+    
 
                   const SizedBox(height: 24),
 
@@ -402,6 +404,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Expanded(
                         child: Container(
+                          margin: const EdgeInsets.all(30),
                           height: 50,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(30),
@@ -412,21 +415,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Container(
-                          height: 50,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(30),
-                            border: Border.all(color: Colors.grey.shade300),
-                          ),
-                          child: Center(
-                            child: Image.asset('assets/images/Vector.png', height: 22),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                ],),
 
                   Row(
                     children: [

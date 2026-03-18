@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:fahamni/widgets/widgets.dart';
 import 'package:fahamni/User_status/User_info.dart';
 import 'package:fahamni/models/user_model.dart';
-
+import 'package:fahamni/Services/auth_.service.dart';
 class IpersonalInfo extends StatefulWidget {
   const IpersonalInfo({super.key});
 
@@ -19,6 +19,11 @@ class _IpersonalInfoState extends State<IpersonalInfo> {
   final _phoneController = TextEditingController();
   final _passwordController  = TextEditingController();
   
+  bool    _isLoading    = false;
+  String? _errorMessage;
+  final _authService = AuthService();
+
+
   Gender?   _selectedGender;
   DateTime? _selectedBirthday;
   String?   _selectedCity;
@@ -41,54 +46,108 @@ class _IpersonalInfoState extends State<IpersonalInfo> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xfff9f9f9),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-        child: ElevatedButton(
-          onPressed: () {
-             final formValid = _formKey.currentState!.validate();
-             setState(() {
-              _genderError   = _selectedGender   == null;
-              _birthdayError = _selectedBirthday == null;
-              _cityError     = _selectedCity     == null;
-            });
-            if (!formValid || _genderError || _birthdayError || _cityError) return;
+      bottomNavigationBar: Column(
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    if (_errorMessage != null)
+      Padding(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFEF2F2),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.red.shade200),
+          ),
+          child: Text(
+            _errorMessage!,
+            style: const TextStyle(
+              color: Colors.red,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Inter',
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    Padding(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+      child: ElevatedButton(
+        onPressed: _isLoading ? null : () async {
+          final formValid = _formKey.currentState!.validate();
+          setState(() {
+            _genderError   = _selectedGender   == null;
+            _birthdayError = _selectedBirthday == null;
+            _cityError     = _selectedCity     == null;
+            _errorMessage  = null; // clear previous error
+          });
+          if (!formValid || _genderError || _birthdayError || _cityError) return;
+
+          setState(() => _isLoading = true);
+
+          try {
+            await AuthService().checkIfUserExists(
+              email: _emailController.text.trim(),
+              phone: toE164(_phoneController.text.trim(), '213'),
+            );
+            if (!mounted) return;
+
             final Map<String, dynamic> data = {
               'firstName' : _firstNameController.text.trim(),
               'lastName'  : _lastNameController.text.trim(),
               'email'     : _emailController.text.trim(),
               'phone'     : toE164(_phoneController.text.trim(), '213'),
               'password'  : _passwordController.text.trim(),
-              'gender'    : _selectedGender,   // Gender enum value
-              'birthday'  : _selectedBirthday, // DateTime value
+              'gender'    : _selectedGender,
+              'birthday'  : _selectedBirthday,
               'location'  : _selectedCity,
             };
-            
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => studentinfo(data: data)),
-              );
-            
-          },
-          style: ElevatedButton.styleFrom(
-            shadowColor: const Color(0xFF000080),
-            elevation: 6,
-            backgroundColor: const Color(0xFF000080),
-            minimumSize: const Size(double.infinity, 50),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          child: const Text(
-            'NEXT',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'Inter',
-            ),
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => studentinfo(data: data),
+              ),
+            );
+          } catch (e) {
+            setState(() => _errorMessage = e.toString());
+          } finally {
+            if (mounted) setState(() => _isLoading = false);
+          }
+        },
+        style: ElevatedButton.styleFrom(
+          shadowColor: const Color(0xFF000080),
+          elevation: 6,
+          backgroundColor: const Color(0xFF000080),
+          minimumSize: const Size(double.infinity, 50),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
+        child: _isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2.5,
+                ),
+              )
+            : const Text(
+                'NEXT',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Inter',
+                ),
+              ),
       ),
+    ),
+  ],
+),
       appBar: AppBar(
         backgroundColor: const Color(0xfff9f9f9),
         leading: IconButton(
@@ -298,6 +357,7 @@ class _IpersonalInfoState extends State<IpersonalInfo> {
                   child: TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
+                     onChanged: (_) => setState(() => _errorMessage = null),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Email is required';
@@ -364,6 +424,7 @@ class _IpersonalInfoState extends State<IpersonalInfo> {
                   child: TextFormField(
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
+                     onChanged: (_) => setState(() => _errorMessage = null),
                     validator: (value) {
   if (value == null || value.isEmpty) {
     return 'Phone number is required';

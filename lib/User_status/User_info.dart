@@ -3,7 +3,7 @@ import 'package:fahamni/widgets/widgets.dart';
 import 'Student_widget/Student_widg.dart';
 import 'Parent_widget/Parent_widg.dart';
 import 'Tutor_widget/Tutor_widg.dart';
-import 'package:fahamni/otp_verification_Screen/phoneverif.dart';
+import 'package:fahamni/otp_verification_Screen/verification_choice_page.dart';
 import 'package:fahamni/models/user_model.dart';
 
 class studentinfo extends StatefulWidget {
@@ -75,7 +75,7 @@ class _studentinfoState extends State<studentinfo> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => PhoneVerificationPage(data: data), 
+               builder: (_) => VerificationChoicePage(data: data) 
               ),
             );
           },

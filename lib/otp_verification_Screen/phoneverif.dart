@@ -6,7 +6,7 @@ import 'package:fahamni/models/student_model.dart';
 import 'package:fahamni/models/tutor_model.dart';
 import 'package:fahamni/models/parent_model.dart';
 import 'package:fahamni/Services/auth_.service.dart';
-import 'package:flutter/scheduler.dart';
+import 'package:fahamni/Services/email_otp_service.dart';
 
 class PhoneVerificationPage extends StatefulWidget {
   final Map<String, dynamic> data;
@@ -23,17 +23,24 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
   final List<FocusNode> _focusNodes =
  List.generate(6, (_) => FocusNode());
   final _authService = AuthService();
-
-  String? _verificationId;   // received from Firebase after SMS is sent
+  final _emailOtpService = EmailOtpService();
+  String? _verificationId;   
   String? _errorMessage;
-  bool _isSending  = true;   // true while we're waiting for SMS to be dispatched
+  bool _isSending  = true;
   bool _isVerifying = false; 
+
+  late bool _isPhoneFlow; // Default to phone verification
 
    @override
 void initState() {
   super.initState();
+  _isPhoneFlow = widget.data['verificationMethod'] == 'phone';
   WidgetsBinding.instance.addPostFrameCallback((_) {
-    _sendOtp();
+    if (_isPhoneFlow) {
+    _sendOtp();}
+    else{
+      _sendEmailOtp();
+    }
   });
 }
 
@@ -46,31 +53,21 @@ void initState() {
   }
 
   String get _otpCode => _controllers.map((c) => c.text).join();
-  Future<void> _sendOtp() async {
-    setState(() {
-      _isSending    = true;
-      _errorMessage = null;
-    });
-    final phone = widget.data['phone'] as String;
+   Future<void> _sendOtp() async {
+    setState(() { _isSending = true; _errorMessage = null; });
     await _authService.sendOtp(
-      phoneNumber: phone,     
+      phoneNumber: widget.data['phone'] as String,
       onCodeSent: (verificationId) {
         if (!mounted) return;
-        setState(() {
-          _verificationId = verificationId;
-          _isSending      = false;
-        });
+        setState(() { _verificationId = verificationId; _isSending = false; });
       },
       onError: (error) {
         if (!mounted) return;
-        setState(() {
-          _errorMessage = error;
-          _isSending    = false;
-        });
+        setState(() { _errorMessage = error; _isSending = false; });
       },
     );
   }
-  Future<void> _verifyAndRegister() async {
+  Future<void> _verifyOtp() async {
     if (_verificationId == null) {
       setState(() => _errorMessage = 'OTP not sent yet. Tap "Resend Code".');
       return;
@@ -79,66 +76,110 @@ void initState() {
       setState(() => _errorMessage = 'Please enter the full 6-digit code.');
       return;
     }
-    setState(() {
-      _isVerifying  = true;
-      _errorMessage = null;
-    });
+    setState(() { _isVerifying = true; _errorMessage = null; });
     try {
-      final data  = widget.data;
-      final role  = data['role'] as UserRole;
-      final UserModel userModel;
-      if (role == UserRole.student) {
-        userModel = StudentModel(
-          uid: '', firstName: data['firstName'], lastName: data['lastName'],
-          email: data['email'], phone: data['phone'],
-          location: data['location'], gender: data['gender'],
-          birthday: data['birthday'], accountStatus: AccountStatus.validated,
-          schoolLevel:        data['schoolLevel']        ?? '',
-          learningObjectives: data['learningObjectives'] ?? '',
-          preferredSubjects:  List<String>.from(data['preferredSubjects'] ?? []),
-        );
-      } else if (role == UserRole.tutor) {
-        userModel = TutorModel(
-          uid: '', firstName: data['firstName'], lastName: data['lastName'],
-          email: data['email'], phone: data['phone'],
-          location: data['location'], gender: data['gender'],
-          birthday: data['birthday'], accountStatus: AccountStatus.pending,
-          expertiseDomain:        data['expertiseDomain']        ?? '',
-          levelsTaught:           List<String>.from(data['levelsTaught'] ?? []),
-          teachingMode:           data['teachingMode']           ?? '',
-          isAvailable:            data['isAvailable']            ?? false,
-          Certified:              data['certified']              ?? false,
-          pedagogicalDescription: data['pedagogicalDescription'] ?? '',
-          averageRating:          data['averageRating']          ?? 0.0,
-          yearsOfExperience:      data['yearsOfExperience']      ?? 0,
-          academicDescription:    data['academicDescription']    ?? '',
-        );
-      } else {
-        userModel = ParentModel(
-          uid: '', firstName: data['firstName'], lastName: data['lastName'],
-          email: data['email'], phone: data['phone'],
-          location: data['location'], gender: data['gender'],
-          birthday: data['birthday'], accountStatus: AccountStatus.validated,
-          childrenUids: List<String>.from(data['childrenUids'] ?? []),
-        );
-      }
       await _authService.verifyOtpAndRegister(
         verificationId: _verificationId!,
         smsCode:        _otpCode,
-        email:          data['email'],
-        password:       data['password'],
-        userModel:      userModel,
+        email:          widget.data['email'],
+        password:       widget.data['password'],
+        userModel:      _buildUserModel(),
       );
-      if (!mounted) return;
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const RegistrationComplete()),
-        (route) => false,
-      );
+      _goToComplete();
     } catch (e) {
       setState(() => _errorMessage = e.toString());
     } finally {
       if (mounted) setState(() => _isVerifying = false);
+    }
+  }
+
+  Future<void> _sendEmailOtp() async {
+    setState(() { _isSending = true; _errorMessage = null; });
+    try {
+      await _emailOtpService.sendOtp(
+        email:     widget.data['email'],
+        firstName: widget.data['firstName'],
+      );
+      if (!mounted) return;
+      setState(() => _isSending = false);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _errorMessage = e.toString(); _isSending = false; });
+    }
+  }
+
+   Future<void> _verifyEmailOtp() async {
+    if (_otpCode.length < 6) {
+      setState(() => _errorMessage = 'Please enter the full 6-digit code.');
+      return;
+    }
+    setState(() { _isVerifying = true; _errorMessage = null; });
+    try {
+      // 1 — verify the code against Firestore
+      await _emailOtpService.verifyOtp(
+        email: widget.data['email'],
+        code:  _otpCode,
+      );
+      // 2 — code correct, now create the Firebase account
+      await _authService.signUp(
+        widget.data['email'],
+        widget.data['password'],
+        _buildUserModel(),
+      );
+      _goToComplete();
+    } catch (e) {
+      setState(() => _errorMessage = e.toString());
+    } finally {
+      if (mounted) setState(() => _isVerifying = false);
+    }
+  }
+
+  void _goToComplete() {
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const RegistrationComplete()),
+      (route) => false,
+    );
+  }
+
+  UserModel _buildUserModel() {
+    final data = widget.data;
+    final role = data['role'] as UserRole;
+    if (role == UserRole.student) {
+      return StudentModel(
+        uid: '', firstName: data['firstName'], lastName: data['lastName'],
+        email: data['email'], phone: data['phone'],
+        location: data['location'], gender: data['gender'],
+        birthday: data['birthday'], accountStatus: AccountStatus.validated,
+        schoolLevel:        data['schoolLevel']        ?? '',
+        learningObjectives: data['learningObjectives'] ?? '',
+        preferredSubjects:  List<String>.from(data['preferredSubjects'] ?? []),
+      );
+    } else if (role == UserRole.tutor) {
+      return TutorModel(
+        uid: '', firstName: data['firstName'], lastName: data['lastName'],
+        email: data['email'], phone: data['phone'],
+        location: data['location'], gender: data['gender'],
+        birthday: data['birthday'], accountStatus: AccountStatus.pending,
+        expertiseDomain:        data['expertiseDomain']        ?? '',
+        levelsTaught:           List<String>.from(data['levelsTaught'] ?? []),
+        teachingMode:           data['teachingMode']           ?? '',
+        isAvailable:            data['isAvailable']            ?? false,
+        Certified:              data['certified']              ?? false,
+        pedagogicalDescription: data['pedagogicalDescription'] ?? '',
+        averageRating:          data['averageRating']          ?? 0.0,
+        yearsOfExperience:      data['yearsOfExperience']      ?? 0,
+        academicDescription:    data['academicDescription']    ?? '',
+      );
+    } else {
+      return ParentModel(
+        uid: '', firstName: data['firstName'], lastName: data['lastName'],
+        email: data['email'], phone: data['phone'],
+        location: data['location'], gender: data['gender'],
+        birthday: data['birthday'], accountStatus: AccountStatus.validated,
+        childrenUids: List<String>.from(data['childrenUids'] ?? []),
+      );
     }
   }
 
@@ -198,22 +239,24 @@ void initState() {
 
               const SizedBox(height: 40),
 
-              const Text(
-                "Phone Verification",
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  color: Color(0xFF0F172A),
-                  fontWeight: FontWeight.w700,
-                  fontSize: 28,
+               Text(
+                _isPhoneFlow ? "Phone Verification" : "Email Verification",
+                style: const TextStyle(
+                  fontFamily: 'Inter', color: Color(0xFF0F172A),
+                  fontWeight: FontWeight.w700, fontSize: 28,
                 ),
               ),
 
               const SizedBox(height: 6),
 
               Text(
-                _isSending
-                    ? "Sending code to ${widget.data['phone']}…"
-                    : "Enter the code sent to ${widget.data['phone']}",
+                _isPhoneFlow
+                    ? (_isSending
+                        ? "Sending code to ${widget.data['phone']}…"
+                        : "Enter the code sent to ${widget.data['phone']}")
+                    : (_isSending
+                        ? "Sending code to ${widget.data['email']}…"
+                        : "Enter the code sent to\n${widget.data['email']}.\n, Check your inbox and spam folder."),
                 style: const TextStyle(
                   fontFamily: "Inter", fontSize: 16, color: Color(0xff64748B),
                 ),
@@ -222,23 +265,20 @@ void initState() {
 
               const SizedBox(height: 30),
 
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: List.generate(6, (index) {
-                    return OTPBox(
+            
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: List.generate(6, (index) => OTPBox(
                       controller: _controllers[index],
-                      focusNode: _focusNodes[index],
-                      // last box has no nextFocusNode
+                      focusNode:  _focusNodes[index],
                       nextFocusNode: index < 5 ? _focusNodes[index + 1] : null,
-                    );
-                  }),
+                    )),
+                  ),
                 ),
-              ),
 
               const SizedBox(height: 40),
-
               
     if (_errorMessage != null)
                 Padding(
@@ -277,22 +317,25 @@ void initState() {
                           ),
                         ],
                       ),
-                     child: Material(
+                    child: Material(
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(24),
-                      onTap: isLoading ? null : _verifyAndRegister,
+                      onTap: isLoading
+                          ? null
+                          : (_isPhoneFlow ? _verifyOtp : _verifyEmailOtp),
                       child: Center(
                         child: isLoading
                             ? const SizedBox(
                                 width: 22, height: 22,
                                 child: CircularProgressIndicator(
-                                  color: Colors.white, strokeWidth: 2.5,
-                                ),
+                                  color: Colors.white, strokeWidth: 2.5),
                               )
-                            : const Text(
-                                "Verify Code",
-                                style: TextStyle(
+                            : Text(
+                                _isPhoneFlow
+                                    ? "Verify Code"
+                                    : "I've Verified My Email",
+                                style: const TextStyle(
                                   color: Colors.white, fontSize: 16,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -305,9 +348,11 @@ void initState() {
               const SizedBox(height: 15),
 
               TextButton(
-                onPressed:  isLoading ? null : _sendOtp,
+                onPressed: isLoading
+                    ? null
+                    : (_isPhoneFlow ? _sendOtp : _sendEmailOtp),
                 child: Text(
-                  _isSending ? "Sending…" : "Resend Code",
+                   _isSending ? "Sending…" : "Resend Code",
                   style: const TextStyle(
                     fontFamily: "Inter", color: Color(0xBF000080),
                     fontSize: 16, fontWeight: FontWeight.w600,
