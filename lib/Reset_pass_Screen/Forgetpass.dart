@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'PasswrdInput.dart';
 import 'package:fahamni/Login_Screen/LoginScreen.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 class ResetPasswordPage extends StatefulWidget {
-  const ResetPasswordPage({super.key});
+  final String verifiedEmail;
+
+  const ResetPasswordPage({super.key, required this.verifiedEmail});
 
   @override
   State<ResetPasswordPage> createState() => _ResetPasswordPageState();
@@ -14,6 +17,8 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _showConfirmPassword = false;
+  bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -27,6 +32,30 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: color, width: width),
       );
+  
+  Future<void> _confirm() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() { _isLoading = true; _errorMessage = null; });
+    try {
+      await FirebaseFunctions.instance
+          .httpsCallable('resetPassword')
+          .call({
+            'email':       widget.verifiedEmail,
+            'newPassword': _newPasswordController.text,
+          });
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      setState(() => _errorMessage = e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -120,7 +149,25 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   ),
                 ],
               ),
-
+               if (_errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.red, size: 16),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 13,
+                              fontFamily: 'Inter'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 30),
 
               SizedBox(
@@ -140,25 +187,22 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(24),
-                      onTap: () {
-                        if (_formKey.currentState!.validate()) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const LoginScreenPage(),
-                            ),
-                          );
-                        }
-                      },
-                      child: const Center(
-                        child: Text(
-                          "Confirm",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                      onTap: _isLoading ? null : _confirm,
+                      child: Center(
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                    color: Colors.white, strokeWidth: 2.5))
+                            : const Text(
+                                "Confirm",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              )
                       ),
                     ),
                   ),

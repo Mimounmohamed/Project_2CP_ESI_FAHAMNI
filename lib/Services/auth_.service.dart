@@ -308,6 +308,14 @@ Future<void> updatePasswordWithOtp({
   }
 }
   
+  Future<void> checkEmailExists(String email) async {
+  final query = await _db
+      .collection('users')
+      .where('email', isEqualTo: email)
+      .limit(1)
+      .get();
+  if (query.docs.isEmpty) throw 'No account found with this email.';
+}
 
 }
 

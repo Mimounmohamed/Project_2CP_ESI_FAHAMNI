@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fahamni/otp_verification_Screen/otpverifPage.dart';
+import 'package:fahamni/Services/auth_.service.dart';
 
 class passRec extends StatefulWidget {
   const passRec({super.key});
@@ -184,7 +185,14 @@ class Email_widg extends StatefulWidget {
 
 class _Email_widgState extends State<Email_widg> {
   final _formKey = GlobalKey<FormState>();
-
+  final _emailController = TextEditingController();
+  String? _errorMessage;
+  bool _isLoading = false;
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
   OutlineInputBorder _border([Color color = const Color(0xFFE0E0E0), double width = 1]) =>
       OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: color, width: width));
 
@@ -207,6 +215,7 @@ class _Email_widgState extends State<Email_widg> {
           Container(
             margin: const EdgeInsets.only(left: 24, right: 24),
             child: TextFormField(
+              controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               validator: (value) {
                 if (value == null || value.isEmpty) return 'Email is required';
@@ -226,6 +235,27 @@ class _Email_widgState extends State<Email_widg> {
               ),
             ),
           ),
+
+           if (_errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8, left: 28),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 16),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      _errorMessage!,
+                      style: const TextStyle(
+                          color: Colors.red,
+                          fontSize: 13,
+                          fontFamily: 'Inter'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
           const SizedBox(height: 18),
           SizedBox(
             width: double.infinity,
@@ -244,17 +274,36 @@ class _Email_widgState extends State<Email_widg> {
                 color: Colors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(24),
-                  onTap: () {
-                    if (_formKey.currentState!.validate()) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const otpresetpassPage()),
-                      );
-                    }
-                  },
-                  child: const Center(
-                    child: Text("Send Code", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
-                  ),
+                  onTap: _isLoading ? null : () async {
+                  if (!_formKey.currentState!.validate()) return;
+                  setState(() { _isLoading = true; _errorMessage = null; });
+                  try {
+                    final email = _emailController.text.trim();
+                    // Check the account exists before sending OTP
+                    await AuthService().checkEmailExists(email); // reuse the existence-check logic
+                     if (!mounted) return;
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => otpresetpassPage(
+                                  contact: email,
+                                  isPhoneFlow: false,
+                                ),
+                              ),
+                            );
+                  } catch (e) {
+                    setState(() => _errorMessage = e.toString());
+                  } finally {
+                    if (mounted) setState(() => _isLoading = false);
+                  }
+                },
+                   child: Center(
+                  child: _isLoading
+                      ? const SizedBox(width: 22, height: 22,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
+                      : const Text("Send Code",
+                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
+                ),
                 ),
               ),
             ),
@@ -274,6 +323,14 @@ class Phone_widg extends StatefulWidget {
 
 class _Phone_widgState extends State<Phone_widg> {
   final _formKey = GlobalKey<FormState>();
+  final _phoneController = TextEditingController();
+  String? _errorMessage;
+  bool _isLoading = false;
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    super.dispose();
+  }
 
   OutlineInputBorder _border([Color color = const Color(0xFFE0E0E0), double width = 1]) =>
       OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: color, width: width));
@@ -297,6 +354,7 @@ class _Phone_widgState extends State<Phone_widg> {
           Container(
             margin: const EdgeInsets.only(left: 24, right: 24),
             child: TextFormField(
+              controller: _phoneController,
               keyboardType: TextInputType.phone,
               validator: (value) {
                 if (value == null || value.isEmpty) return 'Phone number is required';
@@ -319,6 +377,20 @@ class _Phone_widgState extends State<Phone_widg> {
               ),
             ),
           ),
+
+           if (_errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8, left: 28),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 16),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text(_errorMessage!,
+                      style: const TextStyle(color: Colors.red, fontSize: 13, fontFamily: 'Inter'))),
+                ],
+              ),
+            ),
+
           const SizedBox(height: 18),
           SizedBox(
             width: double.infinity,
@@ -337,14 +409,28 @@ class _Phone_widgState extends State<Phone_widg> {
                 color: Colors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(24),
-                  onTap: () {
-                    if (_formKey.currentState!.validate()) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const otpresetpassPage()),
-                      );
-                    }
-                  },
+                 onTap: _isLoading ? null : () async {
+                  if (!_formKey.currentState!.validate()) return;
+                  setState(() { _isLoading = true; _errorMessage = null; });
+                  try {
+                    final rawPhone = _phoneController.text.trim();
+                    final e164Phone = toE164(rawPhone, '213'); // your existing helper
+
+                    // Verify this phone is linked to an account
+                    await AuthService().getEmailFromPhone(e164Phone); // throws if not found
+
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => otpresetpassPage(
+                        contact: e164Phone,
+                        isPhoneFlow: true,
+                      ),
+                    ));
+                  } catch (e) {
+                    setState(() => _errorMessage = e.toString());
+                  } finally {
+                    if (mounted) setState(() => _isLoading = false);
+                  }
+                },
                   child: const Center(
                     child: Text("Send Code", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
                   ),
@@ -356,4 +442,8 @@ class _Phone_widgState extends State<Phone_widg> {
       ),
     );
   }
+}
+String toE164(String local, String countryCode) {
+  final digits = local.replaceAll(RegExp(r'\D'), '');
+  return '+$countryCode${digits.startsWith('0') ? digits.substring(1) : digits}';
 }
