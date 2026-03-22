@@ -28,21 +28,26 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
   String? _errorMessage;
   bool _isSending  = true;
   bool _isVerifying = false; 
+  int _otpCallCount = 0;
+  late bool _isPhoneFlow; 
 
-  late bool _isPhoneFlow; // Default to phone verification
 
-   @override
-void initState() {
-  super.initState();
-  _isPhoneFlow = widget.data['verificationMethod'] == 'phone';
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    if (_isPhoneFlow) {
-    _sendOtp();}
-    else{
-      _sendEmailOtp();
-    }
-  });
-}
+   
+@override
+  void initState() {
+    super.initState();
+    _isPhoneFlow = widget.data['verificationMethod'] == 'phone'; // ← was missing!
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (_isPhoneFlow) {
+        _otpCallCount = 0;
+        await _sendOtp();
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) await _sendOtp();
+      } else {
+        _sendEmailOtp();
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -56,11 +61,16 @@ void initState() {
    Future<void> _sendOtp() async {
     setState(() { _isSending = true; _errorMessage = null; });
     await _authService.sendOtp(
-      phoneNumber: widget.data['phone'] as String,
-      onCodeSent: (verificationId) {
-        if (!mounted) return;
-        setState(() { _verificationId = verificationId; _isSending = false; });
-      },
+    phoneNumber: widget.data['phone'] as String,
+    onCodeSent: (verificationId) {
+      if (!mounted) return;
+      _otpCallCount++;
+      if (_otpCallCount < 2) return; 
+      setState(() { 
+        _verificationId = verificationId; 
+        _isSending = false; 
+      });
+    },
       onError: (error) {
         if (!mounted) return;
         setState(() { _errorMessage = error; _isSending = false; });
@@ -115,12 +125,10 @@ void initState() {
     }
     setState(() { _isVerifying = true; _errorMessage = null; });
     try {
-      // 1 — verify the code against Firestore
       await _emailOtpService.verifyOtp(
         email: widget.data['email'],
         code:  _otpCode,
       );
-      // 2 — code correct, now create the Firebase account
       await _authService.signUp(
         widget.data['email'],
         widget.data['password'],
@@ -134,11 +142,22 @@ void initState() {
     }
   }
 
+  Future<void> _resend() async {
+  if (_isPhoneFlow) {
+    _otpCallCount = 0;
+    await _sendOtp();
+    await Future.delayed(const Duration(seconds: 2));
+    if (mounted) await _sendOtp();
+  } else {
+    await _sendEmailOtp();
+  }
+}
+
   void _goToComplete() {
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => const RegistrationComplete()),
+      MaterialPageRoute(builder: (_) => RegistrationComplete(email: widget.data['email'], firstName: widget.data['firstName'])),
       (route) => false,
     );
   }
@@ -332,9 +351,7 @@ void initState() {
                                   color: Colors.white, strokeWidth: 2.5),
                               )
                             : Text(
-                                _isPhoneFlow
-                                    ? "Verify Code"
-                                    : "I've Verified My Email",
+                                "Verify Code",
                                 style: const TextStyle(
                                   color: Colors.white, fontSize: 16,
                                   fontWeight: FontWeight.w700,
@@ -348,17 +365,15 @@ void initState() {
               const SizedBox(height: 15),
 
               TextButton(
-                onPressed: isLoading
-                    ? null
-                    : (_isPhoneFlow ? _sendOtp : _sendEmailOtp),
-                child: Text(
-                   _isSending ? "Sending…" : "Resend Code",
-                  style: const TextStyle(
-                    fontFamily: "Inter", color: Color(0xBF000080),
-                    fontSize: 16, fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+  onPressed: isLoading ? null : _resend,
+  child: Text(
+    _isSending ? "Sending…" : "Resend Code",
+    style: const TextStyle(
+      fontFamily: "Inter", color: Color(0xBF000080),
+      fontSize: 16, fontWeight: FontWeight.w600,
+    ),
+  ),
+),
             ],
           ),
         ),

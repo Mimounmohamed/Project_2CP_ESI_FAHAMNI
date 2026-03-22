@@ -1,11 +1,23 @@
 import 'package:flutter/material.dart';
 import '../Home_Screens/Student_HS/Student_homepage.dart';
+import '../Services/email_otp_service.dart';
 
 
+class RegistrationComplete extends StatefulWidget {
+  final String email;
+  final String firstName;
+  const RegistrationComplete({super.key , required this.email, required this.firstName});
 
-class RegistrationComplete extends StatelessWidget {
-  const RegistrationComplete({super.key});
+  @override
+  State<RegistrationComplete> createState() => _RegistrationCompleteState();
+}
 
+class _RegistrationCompleteState extends State<RegistrationComplete> {
+  @override
+  void initState() {
+    super.initState();
+    EmailOtpService().sendWelcomeEmail(email: widget.email, firstName: widget.firstName);
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(

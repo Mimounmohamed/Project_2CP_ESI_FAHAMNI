@@ -5,7 +5,7 @@ import 'package:fahamni/Services/auth_.service.dart';
 import 'package:fahamni/Services/email_otp_service.dart';
 import 'package:fahamni/Reset_pass_Screen/Forgetpass.dart';
 class otpresetpassPage extends StatefulWidget {
-  final String contact;     // trimmed email  OR  E.164 phone (+213...)
+  final String contact; 
   final bool isPhoneFlow;
 
   const otpresetpassPage({
@@ -30,18 +30,25 @@ class _otpresetpassPageState extends State<otpresetpassPage> {
   String? _errorMessage;
   bool _isSending   = true;
   bool _isVerifying = false;
+  int _otpCallCount = 0;
 
   String get _otpCode => _controllers.map((c) => c.text).join();
 
-  // ── Lifecycle ────────────────────────────────────────────────────────────
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      widget.isPhoneFlow ? _sendSmsOtp() : _sendEmailOtp();
-    });
-  }
+   @override
+void initState() {
+  super.initState();
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    if (widget.isPhoneFlow) {
+    _otpCallCount = 0;
+    await _sendSmsOtp();
+    await Future.delayed(const Duration(seconds: 2));
+     if (mounted) await _sendSmsOtp();
+    }
+    else{
+      _sendEmailOtp();
+    }
+  });
+}
 
   @override
   void dispose() {
@@ -49,8 +56,6 @@ class _otpresetpassPageState extends State<otpresetpassPage> {
     for (final f in _focusNodes)  f.dispose();
     super.dispose();
   }
-
-  // ── Email OTP ────────────────────────────────────────────────────────────
 
   Future<void> _sendEmailOtp() async {
     setState(() { _isSending = true; _errorMessage = null; });
@@ -79,22 +84,23 @@ class _otpresetpassPageState extends State<otpresetpassPage> {
     }
   }
 
-  // ── Phone / SMS OTP ──────────────────────────────────────────────────────
 
   Future<void> _sendSmsOtp() async {
-    setState(() { _isSending = true; _errorMessage = null; });
-    await _authService.sendOtp(
-      phoneNumber: widget.contact,
-      onCodeSent: (id) {
-        if (!mounted) return;
-        setState(() { _verificationId = id; _isSending = false; });
-      },
-      onError: (err) {
-        if (!mounted) return;
-        setState(() { _errorMessage = err; _isSending = false; });
-      },
-    );
-  }
+  setState(() { _isSending = true; _errorMessage = null; });
+  await _authService.sendOtp(
+    phoneNumber: widget.contact,
+    onCodeSent: (id) {
+      if (!mounted) return;
+      _otpCallCount++;
+      if (_otpCallCount < 2) return;
+      setState(() { _verificationId = id; _isSending = false; });
+    },
+    onError: (err) {
+      if (!mounted) return;
+      setState(() { _errorMessage = err; _isSending = false; });
+    },
+  );
+}
 
   Future<void> _verifySmsOtp() async {
     if (_verificationId == null) {
@@ -107,20 +113,13 @@ class _otpresetpassPageState extends State<otpresetpassPage> {
     }
     setState(() { _isVerifying = true; _errorMessage = null; });
     try {
-      // 1 — validate the SMS code (throws if wrong/expired)
       final credential = PhoneAuthProvider.credential(
         verificationId: _verificationId!,
         smsCode: _otpCode,
       );
       await FirebaseAuth.instance.signInWithCredential(credential);
-
-      // 2 — get the email linked to this phone number
       final linkedEmail = await _authService.getEmailFromPhone(widget.contact);
-
-      // 3 — sign out the temporary phone session immediately
       await FirebaseAuth.instance.signOut();
-
-      // 4 — navigate to reset password, carrying the linked email
       _goToReset(verifiedEmail: linkedEmail);
     } on FirebaseAuthException catch (e) {
       setState(() => _errorMessage = e.message ?? 'Verification failed.');
@@ -131,7 +130,16 @@ class _otpresetpassPageState extends State<otpresetpassPage> {
     }
   }
 
-  // ── Navigation ───────────────────────────────────────────────────────────
+ Future<void> _resend() async {
+  if (widget.isPhoneFlow) {
+    _otpCallCount = 0;
+    await _sendSmsOtp();
+    await Future.delayed(const Duration(seconds: 2));
+    if (mounted) await _sendSmsOtp();
+  } else {
+    await _sendEmailOtp();
+  }
+}
 
   void _goToReset({required String verifiedEmail}) {
     if (!mounted) return;
@@ -143,7 +151,6 @@ class _otpresetpassPageState extends State<otpresetpassPage> {
     );
   }
 
-  // ── UI ───────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -257,15 +264,15 @@ class _otpresetpassPageState extends State<otpresetpassPage> {
               const SizedBox(height: 15),
 
               TextButton(
-                onPressed: isLoading
-                    ? null
-                    : (widget.isPhoneFlow ? _sendSmsOtp : _sendEmailOtp),
-                child: Text(
-                  _isSending ? "Sending…" : "Resend Code",
-                  style: const TextStyle(fontFamily: "Inter", color: Color(0xBF000080),
-                      fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-              ),
+  onPressed: isLoading ? null : _resend,
+  child: Text(
+    _isSending ? "Sending…" : "Resend Code",
+    style: const TextStyle(
+      fontFamily: "Inter", color: Color(0xBF000080),
+      fontSize: 16, fontWeight: FontWeight.w600,
+    ),
+  ),
+),
             ],
           ),
         ),

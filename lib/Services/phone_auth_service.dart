@@ -28,13 +28,12 @@ class PhoneAuthService {
     // Step 1: get reCAPTCHA token
     try {
       _client ??= await Recaptcha.fetchClient(_siteKey);
-      await _client!.execute(RecaptchaAction.custom('SEND_OTP')); // ← called on client now
+      await _client!.execute(RecaptchaAction.custom('SEND_OTP'));
       debugPrint('reCAPTCHA token obtained');
     } catch (e) {
       debugPrint('reCAPTCHA failed, proceeding anyway: $e');
     }
 
-    // Step 2: Firebase uses token automatically via Android SDK
     await FirebaseAuth.instance.verifyPhoneNumber(
       phoneNumber: phoneNumber,
       timeout: const Duration(seconds: 60),
@@ -53,8 +52,6 @@ class PhoneAuthService {
       },
     );
   }
-
-  // Call this to verify the OTP code entered by user
   static Future<UserCredential?> verifyOtp({
     required String verificationId,
     required String smsCode,

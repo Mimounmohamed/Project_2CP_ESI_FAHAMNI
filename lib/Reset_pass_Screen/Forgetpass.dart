@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'PasswrdInput.dart';
 import 'package:fahamni/Login_Screen/LoginScreen.dart';
 import 'package:cloud_functions/cloud_functions.dart';
-
+import '../Services/email_otp_service.dart';
 class ResetPasswordPage extends StatefulWidget {
   final String verifiedEmail;
 
@@ -34,8 +34,6 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       );
   
   Future<void> _confirm() async {
-     print('email: ${widget.verifiedEmail}');
-  print('password: ${_newPasswordController.text}');
     if (!_formKey.currentState!.validate()) return;
     setState(() { _isLoading = true; _errorMessage = null; });
     try {
@@ -45,6 +43,9 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             'email':       widget.verifiedEmail,
             'newPassword': _newPasswordController.text,
           });
+       await EmailOtpService().sendPasswordChangedEmail(
+      email: widget.verifiedEmail,
+    );
       if (!mounted) return;
       Navigator.pushAndRemoveUntil(
         context,
