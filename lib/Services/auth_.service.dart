@@ -314,39 +314,32 @@ Future<void> updatePasswordWithOtp({
   if (query.docs.isEmpty) throw 'No account found with this email.';
 }
 
+
 final GoogleSignIn _googleSignIn = GoogleSignIn();
-Future<Map<String, dynamic>?> signInWithGoogle() async {
+
+Future<UserModel?> loginWithGoogle() async {
   try {
-    final googleUser = await _googleSignIn.signIn();
-    if (googleUser == null) return null; 
+    final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+    if (googleUser == null) return null;
 
     final googleAuth = await googleUser.authentication;
     final credential = GoogleAuthProvider.credential(
       accessToken: googleAuth.accessToken,
-      idToken:     googleAuth.idToken,
+      idToken: googleAuth.idToken,
     );
     final result = await _auth.signInWithCredential(credential);
-    final uid    = result.user!.uid;
-    final email  = result.user!.email ?? '';
-    final name   = result.user!.displayName ?? '';
-    final userDoc = await _db.collection('users').doc(uid).get();
+    final uid = result.user!.uid;
 
-    if (userDoc.exists) {
-      final role = UserRole.values.byName(userDoc['role']);
-      final profile = await _fetchUserProfile(uid, role);
-      return {
-        'isNewUser': false,
-        'userModel': profile,
-      };
-    } else {
-      return {
-        'isNewUser': true,
-        'uid':       uid,
-        'email':     email,
-        'firstName': name.contains(' ') ? name.split(' ').first : name,
-        'lastName':  name.contains(' ') ? name.split(' ').last  : '',
-      };
+    final userDoc = await _db.collection('users').doc(uid).get();
+    if (!userDoc.exists) {
+      await _auth.signOut();
+      await _googleSignIn.signOut();
+      return null;
     }
+
+    final role = UserRole.values.byName(userDoc['role']);
+    return await _fetchUserProfile(uid, role);
+
   } on FirebaseAuthException catch (e) {
     throw _handleAuthError(e);
   } catch (e) {
@@ -354,7 +347,8 @@ Future<Map<String, dynamic>?> signInWithGoogle() async {
   }
 }
 
-}
 
+  
+}
 
 

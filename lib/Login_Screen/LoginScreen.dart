@@ -85,6 +85,39 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _handleGoogleLogin() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final result = await _authService.loginWithGoogle();
+
+      if (result == null) {
+        setState(() => _errorMessage = 'No account found for this Google account.');
+        return;
+      }
+
+      if (!mounted) return;
+
+      switch (result.role) {
+        case UserRole.student:
+          Navigator.pushReplacement(context,
+              MaterialPageRoute(builder: (_) => const Studentpage()));
+          break;
+        case UserRole.tutor:
+          break;
+        case UserRole.parent:
+          break;
+      }
+    } catch (e) {
+      setState(() => _errorMessage = e.toString());
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -399,23 +432,27 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 24),
 
-                  // Social login buttons
+                 
                   Row(
                     children: [
                       Expanded(
-                        child: Container(
-                          margin: const EdgeInsets.all(30),
-                          height: 50,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(30),
-                            border: Border.all(color: Colors.grey.shade300),
-                          ),
-                          child: Center(
-                            child: Image.asset('assets/images/SVG.png', height: 22),
+                        child: GestureDetector(
+                          onTap: _isLoading ? null : _handleGoogleLogin,
+                          child: Container(
+                            margin: const EdgeInsets.all(30),
+                            height: 50,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(30),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: Center(
+                              child: Image.asset('assets/images/SVG.png', height: 22),
+                            ),
                           ),
                         ),
                       ),
-                ],),
+                    ],
+                  ),
 
                   Row(
                     children: [
@@ -466,7 +503,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 40),
-
                 ],
               ),
             ),

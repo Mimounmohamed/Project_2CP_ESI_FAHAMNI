@@ -14,7 +14,6 @@ class EmailOtpService {
     return (100000 + rng.nextInt(900000)).toString();
   }
 
-  // ── Send OTP (registration) ───────────────────────────────────────────────
 
   Future<void> sendOtp({
     required String email,
@@ -48,8 +47,6 @@ class EmailOtpService {
       throw 'Failed to send email: ${response.statusCode} — ${response.body}';
     }
   }
-
-  // ── Send OTP (password reset) ─────────────────────────────────────────────
 
   Future<void> sendPasswordResetOtp({required String email}) async {
     final code   = _generateCode();

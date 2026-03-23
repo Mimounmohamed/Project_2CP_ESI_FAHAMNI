@@ -23,13 +23,13 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.t32.fahamni"
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
-        multiDexEnabled = true
-    }
+    applicationId = "com.t32.fahamni"
+    minSdk = flutter.minSdkVersion
+    targetSdk = flutter.targetSdkVersion
+    versionCode = flutter.versionCode
+    versionName = flutter.versionName
+    multiDexEnabled = true
+}
 
     buildTypes {
         release {
