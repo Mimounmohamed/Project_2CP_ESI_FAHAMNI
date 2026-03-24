@@ -123,110 +123,131 @@ class Student_widgetState extends State<Student_widget> {
           const SizedBox(height: 20),
 
           // Level buttons
-          Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton(
-                    onPressed: () => setState(() {
-                      selectedIndex = 0;
-                      selectedGrade = null;
-                      selectedLevelIndex = -1;
-                      selectedSpeciality = null;
-                      _gradeError = false;
-                      _specialityError = false;
-                    }),
-                    style: ElevatedButton.styleFrom(
-                      elevation: 0,
-                      padding: const EdgeInsets.fromLTRB(60, 15, 60, 15),
-                      backgroundColor: selectedIndex == 0 ? const Color(0xFF000080) : const Color(0xfff9f9f9),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => setState(() {
+                          selectedIndex = 0;
+                          selectedGrade = null;
+                          selectedLevelIndex = -1;
+                          selectedSpeciality = null;
+                          _gradeError = false;
+                          _specialityError = false;
+                        }),
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          backgroundColor: selectedIndex == 0 ? const Color(0xFF000080) : const Color(0xfff9f9f9),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text("Primary",
+                              style: TextStyle(
+                                fontFamily: "Inter", fontSize: 20, fontWeight: FontWeight.w500,
+                                color: selectedIndex == 0 ? const Color(0xFFFAFAFA) : const Color(0xFF94A3B8),
+                                height: 24 / 16,
+                              )),
+                        ),
+                      ),
                     ),
-                    child: Text("Primary",
-                        style: TextStyle(
-                          fontFamily: "Inter", fontSize: 20, fontWeight: FontWeight.w500,
-                          color: selectedIndex == 0 ? const Color(0xFFFAFAFA) : const Color(0xFF94A3B8),
-                          height: 24 / 16,
-                        )),
-                  ),
-                  SizedBox.fromSize(size: const Size(20, 0)),
-                  ElevatedButton(
-                    onPressed: () => setState(() {
-                      selectedIndex = 1;
-                      selectedGrade = null;
-                      selectedLevelIndex = -1;
-                      selectedSpeciality = null;
-                      _gradeError = false;
-                      _specialityError = false;
-                    }),
-                    style: ElevatedButton.styleFrom(
-                      elevation: 0,
-                      padding: const EdgeInsets.fromLTRB(55, 15, 55, 15),
-                      backgroundColor: selectedIndex == 1 ? const Color(0xFF000080) : const Color(0xfff9f9f9),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => setState(() {
+                          selectedIndex = 1;
+                          selectedGrade = null;
+                          selectedLevelIndex = -1;
+                          selectedSpeciality = null;
+                          _gradeError = false;
+                          _specialityError = false;
+                        }),
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          backgroundColor: selectedIndex == 1 ? const Color(0xFF000080) : const Color(0xfff9f9f9),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text("Middle",
+                              style: TextStyle(
+                                fontFamily: "Inter", fontSize: 20, fontWeight: FontWeight.w500,
+                                color: selectedIndex == 1 ? const Color(0xFFFAFAFA) : const Color(0xFF94A3B8),
+                                height: 24 / 16,
+                              )),
+                        ),
+                      ),
                     ),
-                    child: Text("Middle",
-                        style: TextStyle(
-                          fontFamily: "Inter", fontSize: 20, fontWeight: FontWeight.w500,
-                          color: selectedIndex == 1 ? const Color(0xFFFAFAFA) : const Color(0xFF94A3B8),
-                          height: 24 / 16,
-                        )),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton(
-                    onPressed: () => setState(() {
-                      selectedIndex = 2;
-                      selectedGrade = null;
-                      selectedLevelIndex = -1;
-                      selectedSpeciality = null;
-                      _gradeError = false;
-                      _specialityError = false;
-                    }),
-                    style: ElevatedButton.styleFrom(
-                      elevation: 0,
-                      padding: const EdgeInsets.fromLTRB(40, 15, 40, 15),
-                      backgroundColor: selectedIndex == 2 ? const Color(0xFF000080) : const Color(0xfff9f9f9),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => setState(() {
+                          selectedIndex = 2;
+                          selectedGrade = null;
+                          selectedLevelIndex = -1;
+                          selectedSpeciality = null;
+                          _gradeError = false;
+                          _specialityError = false;
+                        }),
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          backgroundColor: selectedIndex == 2 ? const Color(0xFF000080) : const Color(0xfff9f9f9),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text("High School",
+                              style: TextStyle(
+                                fontFamily: "Inter", fontSize: 20, fontWeight: FontWeight.w500,
+                                color: selectedIndex == 2 ? const Color(0xFFFAFAFA) : const Color(0xFF94A3B8),
+                                height: 24 / 16,
+                              )),
+                        ),
+                      ),
                     ),
-                    child: Text("High School",
-                        style: TextStyle(
-                          fontFamily: "Inter", fontSize: 20, fontWeight: FontWeight.w500,
-                          color: selectedIndex == 2 ? const Color(0xFFFAFAFA) : const Color(0xFF94A3B8),
-                          height: 24 / 16,
-                        )),
-                  ),
-                  SizedBox.fromSize(size: const Size(20, 0)),
-                  ElevatedButton(
-                    onPressed: () => setState(() {
-                      selectedIndex = 3;
-                      selectedGrade = null;
-                      selectedLevelIndex = -1;
-                      selectedSpeciality = null;
-                      _gradeError = false;
-                      _specialityError = false;
-                    }),
-                    style: ElevatedButton.styleFrom(
-                      elevation: 0,
-                      padding: const EdgeInsets.fromLTRB(40, 15, 40, 15),
-                      backgroundColor: selectedIndex == 3 ? const Color(0xFF000080) : const Color(0xfff9f9f9),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => setState(() {
+                          selectedIndex = 3;
+                          selectedGrade = null;
+                          selectedLevelIndex = -1;
+                          selectedSpeciality = null;
+                          _gradeError = false;
+                          _specialityError = false;
+                        }),
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          backgroundColor: selectedIndex == 3 ? const Color(0xFF000080) : const Color(0xfff9f9f9),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text("University",
+                              style: TextStyle(
+                                fontFamily: "Inter", fontSize: 20, fontWeight: FontWeight.w500,
+                                color: selectedIndex == 3 ? const Color(0xFFFAFAFA) : const Color(0xFF94A3B8),
+                                height: 24 / 16,
+                              )),
+                        ),
+                      ),
                     ),
-                    child: Text("University",
-                        style: TextStyle(
-                          fontFamily: "Inter", fontSize: 20, fontWeight: FontWeight.w500,
-                          color: selectedIndex == 3 ? const Color(0xFFFAFAFA) : const Color(0xFF94A3B8),
-                          height: 24 / 16,
-                        )),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 20),
 

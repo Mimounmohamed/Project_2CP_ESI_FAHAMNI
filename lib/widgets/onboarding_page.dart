@@ -101,11 +101,21 @@ class _OnboardingPageState extends State<OnboardingPage>
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        children: [
-          const SizedBox(height: 40),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxHeight = constraints.maxHeight;
+        final maxWidth = constraints.maxWidth;
+        final isCompact = maxHeight < 560 || maxWidth < 360;
+        final imageHeight = (maxHeight * (isCompact ? 0.42 : 0.48)).clamp(170.0, 300.0);
+        final titleFontSize = isCompact ? 24.0 : 30.0;
+        final descFontSize = isCompact ? 15.0 : 18.0;
+        final descPadding = isCompact ? 6.0 : 16.0;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            children: [
+              SizedBox(height: isCompact ? 12 : 24),
 
           // Image: slide + scale + fade
           SlideTransition(
@@ -116,14 +126,14 @@ class _OnboardingPageState extends State<OnboardingPage>
                 opacity: _imageFade,
                 child: Image.asset(
                   widget.image,
-                  height: 300,
+                  height: imageHeight,
                   fit: BoxFit.contain,
                 ),
               ),
             ),
           ),
 
-          const SizedBox(height: 24),
+              SizedBox(height: isCompact ? 10 : 24),
 
           // Title: slide from right + fade
           SlideTransition(
@@ -133,9 +143,9 @@ class _OnboardingPageState extends State<OnboardingPage>
               child: Text(
                 widget.title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: "Inter",
-                  fontSize: 30,
+                  fontSize: titleFontSize,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF1E1E1E),
                 ),
@@ -143,7 +153,7 @@ class _OnboardingPageState extends State<OnboardingPage>
             ),
           ),
 
-          const SizedBox(height: 12),
+              SizedBox(height: isCompact ? 6 : 12),
 
           // Description: slide from left + fade
           SlideTransition(
@@ -151,13 +161,13 @@ class _OnboardingPageState extends State<OnboardingPage>
             child: FadeTransition(
               opacity: _descFade,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: descPadding),
                 child: Text(
                   widget.description,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: "Nunito",
-                    fontSize: 18,
+                    fontSize: descFontSize,
                     fontWeight: FontWeight.w400,
                     color: Color(0xCC1F2937),
                     height: 1.6,
@@ -167,9 +177,11 @@ class _OnboardingPageState extends State<OnboardingPage>
             ),
           ),
 
-          const Spacer(),
-        ],
-      ),
+              SizedBox(height: isCompact ? 4 : 12),
+            ],
+          ),
+        );
+      },
     );
   }
 }

@@ -95,15 +95,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
       body: SafeArea(
         child: Column(
           children: [
-            SizedBox(
-              height: screenHeight * 0.65,
+            Expanded(
               child: PageView.builder(
                 controller: _controller,
                 itemCount: pages.length,

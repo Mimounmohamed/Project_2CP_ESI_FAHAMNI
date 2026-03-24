@@ -254,8 +254,11 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
       appBar: AppBar(
+        elevation: 0,
         scrolledUnderElevation: 0,
         backgroundColor: const Color(0xFFFAFAFA),
+        surfaceTintColor: const Color(0xFFFAFAFA),
+        shadowColor: Colors.transparent,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back_ios_new_outlined),

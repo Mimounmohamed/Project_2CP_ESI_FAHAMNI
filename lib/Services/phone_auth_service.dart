@@ -38,7 +38,6 @@ class PhoneAuthService {
       phoneNumber: phoneNumber,
       timeout: const Duration(seconds: 60),
       verificationCompleted: (PhoneAuthCredential credential) async {
-        await FirebaseAuth.instance.signInWithCredential(credential);
         onAutoVerified();
       },
       verificationFailed: (FirebaseAuthException e) {

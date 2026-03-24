@@ -18,8 +18,11 @@ class _passRecState extends State<passRec> {
     return Scaffold(
       backgroundColor: const Color(0xfff9f9f9),
       appBar: AppBar(
+        elevation: 0,
         scrolledUnderElevation: 0,
         backgroundColor: const Color(0xfff9f9f9),
+        surfaceTintColor: const Color(0xfff9f9f9),
+        shadowColor: Colors.transparent,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           iconSize: 24,
@@ -28,7 +31,7 @@ class _passRecState extends State<passRec> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(8, 0, 0, 8),
+          padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -136,39 +139,48 @@ class Buttons extends StatelessWidget {
         borderRadius: BorderRadius.circular(30),
         color: const Color(0xFFFAFAFA),
       ),
-      padding: const EdgeInsets.fromLTRB(10, 5, 10, 5),
-      margin: const EdgeInsets.fromLTRB(80, 0, 88, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          ElevatedButton(
-            onPressed: () => onSelectionChanged(selectedIndex == 0 ? -1 : 0),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.fromLTRB(25, 10, 25, 10),
-              backgroundColor: selectedIndex == 0 ? const Color(0xFF000080) : const Color(0xFFFAFAFA),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () => onSelectionChanged(selectedIndex == 0 ? -1 : 0),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                backgroundColor: selectedIndex == 0 ? const Color(0xFF000080) : const Color(0xFFFAFAFA),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              ),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text("Email",
+                    style: TextStyle(
+                      fontFamily: "Inter", fontSize: 20, fontWeight: FontWeight.w500,
+                      color: selectedIndex == 0 ? const Color(0xFFFAFAFA) : const Color(0xFF000080),
+                      height: 24 / 16,
+                    )),
+              ),
             ),
-            child: Text("Email",
-                style: TextStyle(
-                  fontFamily: "Inter", fontSize: 20, fontWeight: FontWeight.w500,
-                  color: selectedIndex == 0 ? const Color(0xFFFAFAFA) : const Color(0xFF000080),
-                  height: 24 / 16,
-                )),
           ),
-          SizedBox.fromSize(size: const Size(5, 0)),
-          ElevatedButton(
-            onPressed: () => onSelectionChanged(selectedIndex == 1 ? -1 : 1),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.fromLTRB(25, 10, 25, 10),
-              backgroundColor: selectedIndex == 1 ? const Color(0xFF000080) : const Color(0xFFFAFAFA),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () => onSelectionChanged(selectedIndex == 1 ? -1 : 1),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                backgroundColor: selectedIndex == 1 ? const Color(0xFF000080) : const Color(0xFFFAFAFA),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              ),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text("Phone",
+                    style: TextStyle(
+                      fontFamily: "Inter", fontSize: 20, fontWeight: FontWeight.w500,
+                      color: selectedIndex == 1 ? const Color(0xFFFAFAFA) : const Color(0xFF000080),
+                      height: 24 / 16,
+                    )),
+              ),
             ),
-            child: Text("Phone",
-                style: TextStyle(
-                  fontFamily: "Inter", fontSize: 20, fontWeight: FontWeight.w500,
-                  color: selectedIndex == 1 ? const Color(0xFFFAFAFA) : const Color(0xFF000080),
-                  height: 24 / 16,
-                )),
           ),
         ],
       ),

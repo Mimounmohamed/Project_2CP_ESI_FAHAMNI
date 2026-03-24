@@ -55,7 +55,10 @@ class _RegistrationCompleteState extends State<RegistrationComplete> {
 
       
       appBar: AppBar(
+        scrolledUnderElevation: 0,
         backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        shadowColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         leading: IconButton(

@@ -149,7 +149,11 @@ class _IpersonalInfoState extends State<IpersonalInfo> {
   ],
 ),
       appBar: AppBar(
+        elevation: 0,
+        scrolledUnderElevation: 0,
         backgroundColor: const Color(0xfff9f9f9),
+        surfaceTintColor: const Color(0xfff9f9f9),
+        shadowColor: Colors.transparent,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           iconSize: 24,
@@ -169,7 +173,7 @@ class _IpersonalInfoState extends State<IpersonalInfo> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(8, 0, 0, 8),
+          padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
           child: Form(
             key: _formKey,
             child: Column(

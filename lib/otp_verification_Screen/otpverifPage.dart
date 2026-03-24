@@ -4,6 +4,7 @@ import 'OTPbox.dart';
 import 'package:fahamni/Services/auth_.service.dart';
 import 'package:fahamni/Services/email_otp_service.dart';
 import 'package:fahamni/Reset_pass_Screen/Forgetpass.dart';
+import 'dart:async';
 class otpresetpassPage extends StatefulWidget {
   final String contact; 
   final bool isPhoneFlow;
@@ -30,21 +31,16 @@ class _otpresetpassPageState extends State<otpresetpassPage> {
   String? _errorMessage;
   bool _isSending   = true;
   bool _isVerifying = false;
-  int _otpCallCount = 0;
 
   String get _otpCode => _controllers.map((c) => c.text).join();
 
-   @override
+ @override
 void initState() {
   super.initState();
   WidgetsBinding.instance.addPostFrameCallback((_) async {
     if (widget.isPhoneFlow) {
-    _otpCallCount = 0;
-    await _sendSmsOtp();
-    await Future.delayed(const Duration(seconds: 2));
-     if (mounted) await _sendSmsOtp();
-    }
-    else{
+      await _sendSmsOtp();  // only once
+    } else {
       _sendEmailOtp();
     }
   });
@@ -84,23 +80,52 @@ void initState() {
     }
   }
 
-
-  Future<void> _sendSmsOtp() async {
+ Future<void> _sendSmsOtp() async {
   setState(() { _isSending = true; _errorMessage = null; });
-  await _authService.sendOtp(
-    phoneNumber: widget.contact,
-    onCodeSent: (id) {
-      if (!mounted) return;
-      _otpCallCount++;
-      if (_otpCallCount < 2) return;
-      setState(() { _verificationId = id; _isSending = false; });
-    },
-    onError: (err) {
-      if (!mounted) return;
-      setState(() { _errorMessage = err; _isSending = false; });
-    },
-  );
+  bool callbackHandled = false;
+
+  Timer timeout = Timer(const Duration(seconds: 60), () {
+    if (mounted && !callbackHandled) {
+      setState(() {
+        _isSending = false;
+        _errorMessage = 'SMS not received. Please try again.';
+      });
+    }
+  });
+
+  try {
+    await _authService.sendOtp(
+      phoneNumber: widget.contact,
+      onCodeSent: (id) {
+        callbackHandled = true;
+        timeout.cancel();
+        if (mounted) {
+          setState(() {
+            _verificationId = id;
+            _isSending = false;
+          });
+        }
+      },
+      onError: (err) {
+        callbackHandled = true;
+        timeout.cancel();
+        if (mounted) {
+          setState(() { _errorMessage = err; _isSending = false; });
+        }
+      },
+    );
+  } catch (e) {
+    callbackHandled = true;
+    timeout.cancel();
+    if (mounted) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isSending = false;
+      });
+    }
+  }
 }
+  
 
   Future<void> _verifySmsOtp() async {
     if (_verificationId == null) {
@@ -132,10 +157,7 @@ void initState() {
 
  Future<void> _resend() async {
   if (widget.isPhoneFlow) {
-    _otpCallCount = 0;
     await _sendSmsOtp();
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) await _sendSmsOtp();
   } else {
     await _sendEmailOtp();
   }
@@ -159,8 +181,11 @@ void initState() {
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
       appBar: AppBar(
+        elevation: 0,
         scrolledUnderElevation: 0,
         backgroundColor: const Color(0xFFFAFAFA),
+        surfaceTintColor: const Color(0xFFFAFAFA),
+        shadowColor: Colors.transparent,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back_ios_new_outlined),

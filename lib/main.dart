@@ -6,7 +6,10 @@ import 'Splash_Screen/splash.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
- 
+  onCodeSent: (id) {
+  debugPrint('onCodeSent: verificationId received');
+  // ...
+};
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
