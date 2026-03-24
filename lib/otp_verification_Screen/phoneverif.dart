@@ -7,6 +7,7 @@ import 'package:fahamni/models/tutor_model.dart';
 import 'package:fahamni/models/parent_model.dart';
 import 'package:fahamni/Services/auth_.service.dart';
 import 'package:fahamni/Services/email_otp_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class PhoneVerificationPage extends StatefulWidget {
   final Map<String, dynamic> data;
@@ -20,23 +21,20 @@ class PhoneVerificationPage extends StatefulWidget {
 class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
   final List<TextEditingController> _controllers =
       List.generate(6, (_) => TextEditingController());
-  final List<FocusNode> _focusNodes =
- List.generate(6, (_) => FocusNode());
+  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
   final _authService = AuthService();
   final _emailOtpService = EmailOtpService();
-  String? _verificationId;   
+  String? _verificationId;
   String? _errorMessage;
-  bool _isSending  = true;
-  bool _isVerifying = false; 
+  bool _isSending = true;
+  bool _isVerifying = false;
   int _otpCallCount = 0;
-  late bool _isPhoneFlow; 
+  late bool _isPhoneFlow;
 
-
-   
-@override
+  @override
   void initState() {
     super.initState();
-    _isPhoneFlow = widget.data['verificationMethod'] == 'phone'; // ← was missing!
+    _isPhoneFlow = widget.data['verificationMethod'] == 'phone';
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (_isPhoneFlow) {
         _otpCallCount = 0;
@@ -51,32 +49,33 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
 
   @override
   void dispose() {
-    for (final c in _controllers) { c.dispose();  }
-    for (final f in _focusNodes) {  f.dispose();
-    }
+    for (final c in _controllers) { c.dispose(); }
+    for (final f in _focusNodes) { f.dispose(); }
     super.dispose();
   }
 
   String get _otpCode => _controllers.map((c) => c.text).join();
-   Future<void> _sendOtp() async {
+
+  Future<void> _sendOtp() async {
     setState(() { _isSending = true; _errorMessage = null; });
     await _authService.sendOtp(
-    phoneNumber: widget.data['phone'] as String,
-    onCodeSent: (verificationId) {
-      if (!mounted) return;
-      _otpCallCount++;
-      if (_otpCallCount < 2) return; 
-      setState(() { 
-        _verificationId = verificationId; 
-        _isSending = false; 
-      });
-    },
+      phoneNumber: widget.data['phone'] as String,
+      onCodeSent: (verificationId) {
+        if (!mounted) return;
+        _otpCallCount++;
+        if (_otpCallCount < 2) return;
+        setState(() {
+          _verificationId = verificationId;
+          _isSending = false;
+        });
+      },
       onError: (error) {
         if (!mounted) return;
         setState(() { _errorMessage = error; _isSending = false; });
       },
     );
   }
+
   Future<void> _verifyOtp() async {
     if (_verificationId == null) {
       setState(() => _errorMessage = 'OTP not sent yet. Tap "Resend Code".');
@@ -88,13 +87,22 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
     }
     setState(() { _isVerifying = true; _errorMessage = null; });
     try {
+      final userModel = _buildUserModel();
       await _authService.verifyOtpAndRegister(
         verificationId: _verificationId!,
         smsCode:        _otpCode,
         email:          widget.data['email'],
         password:       widget.data['password'],
-        userModel:      _buildUserModel(),
+        userModel:      userModel,
       );
+       await FirebaseAuth.instance.authStateChanges().firstWhere((u) => u != null);
+      if (userModel.role == UserRole.parent && widget.data['children'] != null) {
+  final uid = FirebaseAuth.instance.currentUser!.uid;
+  await _authService.saveChildren(
+    parentUid: uid,
+    children: List<Map<String, dynamic>>.from(widget.data['children']),
+  );
+}
       _goToComplete();
     } catch (e) {
       setState(() => _errorMessage = e.toString());
@@ -118,7 +126,7 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
     }
   }
 
-   Future<void> _verifyEmailOtp() async {
+  Future<void> _verifyEmailOtp() async {
     if (_otpCode.length < 6) {
       setState(() => _errorMessage = 'Please enter the full 6-digit code.');
       return;
@@ -129,11 +137,20 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
         email: widget.data['email'],
         code:  _otpCode,
       );
+      final userModel = _buildUserModel();
       await _authService.signUp(
         widget.data['email'],
         widget.data['password'],
-        _buildUserModel(),
+        userModel,
       );
+       await FirebaseAuth.instance.authStateChanges().firstWhere((u) => u != null);
+      if (userModel.role == UserRole.parent && widget.data['children'] != null) {
+  final uid = FirebaseAuth.instance.currentUser!.uid;
+  await _authService.saveChildren(
+    parentUid: uid,
+    children: List<Map<String, dynamic>>.from(widget.data['children']),
+  );
+}
       _goToComplete();
     } catch (e) {
       setState(() => _errorMessage = e.toString());
@@ -143,21 +160,26 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
   }
 
   Future<void> _resend() async {
-  if (_isPhoneFlow) {
-    _otpCallCount = 0;
-    await _sendOtp();
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) await _sendOtp();
-  } else {
-    await _sendEmailOtp();
+    if (_isPhoneFlow) {
+      _otpCallCount = 0;
+      await _sendOtp();
+      await Future.delayed(const Duration(seconds: 2));
+      if (mounted) await _sendOtp();
+    } else {
+      await _sendEmailOtp();
+    }
   }
-}
 
   void _goToComplete() {
     if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => RegistrationComplete(email: widget.data['email'], firstName: widget.data['firstName'])),
+      MaterialPageRoute(
+        builder: (_) => RegistrationComplete(
+          email:     widget.data['email'],
+          firstName: widget.data['firstName'],
+        ),
+      ),
       (route) => false,
     );
   }
@@ -193,8 +215,8 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
         schoolLevel:        data['schoolLevel']        ?? '',
         learningObjectives: data['learningObjectives'] ?? '',
         preferredSubjects:  List<String>.from(data['preferredSubjects'] ?? []),
-        favoriteTeachers:   List<String>.from(data['favoriteTeachers'] ?? []),  // ADD
-        Courses:            List<String>.from(data['courses'] ?? []), 
+        favoriteTeachers:   List<String>.from(data['favoriteTeachers'] ?? []),
+        Courses:            List<String>.from(data['courses'] ?? []),
         picture: data['picture'] ?? _defaultPicture(),
       );
     } else if (role == UserRole.tutor) {
@@ -231,7 +253,6 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
     final isLoading = _isSending || _isVerifying;
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
-
       appBar: AppBar(
         scrolledUnderElevation: 0,
         backgroundColor: const Color(0xFFFAFAFA),
@@ -240,14 +261,12 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
           icon: const Icon(Icons.arrow_back_ios_new_outlined),
         ),
       ),
-
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(8, 0, 8, 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-
               Container(
                 alignment: Alignment.center,
                 child: Image.asset(
@@ -255,9 +274,7 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
                   height: 100,
                 ),
               ),
-
               const SizedBox(height: 10),
-
               const Text(
                 "Fahamni",
                 style: TextStyle(
@@ -268,8 +285,6 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
                   letterSpacing: -0.75,
                 ),
               ),
-
-
               const Text(
                 "A peaceful place for growth",
                 style: TextStyle(
@@ -279,19 +294,15 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
                   color: Color(0xff64748B),
                 ),
               ),
-
               const SizedBox(height: 40),
-
-               Text(
+              Text(
                 _isPhoneFlow ? "Phone Verification" : "Email Verification",
                 style: const TextStyle(
                   fontFamily: 'Inter', color: Color(0xFF0F172A),
                   fontWeight: FontWeight.w700, fontSize: 28,
                 ),
               ),
-
               const SizedBox(height: 6),
-
               Text(
                 _isPhoneFlow
                     ? (_isSending
@@ -299,31 +310,26 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
                         : "Enter the code sent to ${widget.data['phone']}")
                     : (_isSending
                         ? "Sending code to ${widget.data['email']}…"
-                        : "Enter the code sent to\n${widget.data['email']}.\n, Check your inbox and spam folder."),
+                        : "Enter the code sent to\n${widget.data['email']}.\nCheck your inbox and spam folder."),
                 style: const TextStyle(
                   fontFamily: "Inter", fontSize: 16, color: Color(0xff64748B),
                 ),
                 textAlign: TextAlign.center,
               ),
-
               const SizedBox(height: 30),
-
-            
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: List.generate(6, (index) => OTPBox(
-                      controller: _controllers[index],
-                      focusNode:  _focusNodes[index],
-                      nextFocusNode: index < 5 ? _focusNodes[index + 1] : null,
-                    )),
-                  ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: List.generate(6, (index) => OTPBox(
+                    controller: _controllers[index],
+                    focusNode:  _focusNodes[index],
+                    nextFocusNode: index < 5 ? _focusNodes[index + 1] : null,
+                  )),
                 ),
-
+              ),
               const SizedBox(height: 40),
-              
-    if (_errorMessage != null)
+              if (_errorMessage != null)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Text(
@@ -335,32 +341,31 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
                     textAlign: TextAlign.center,
                   ),
                 ),
-           const SizedBox(height: 8),
-
-            SizedBox(
-                    width: double.infinity,
-                    height: 55,
-                    child: Container(
-                      margin: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF000080),
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0x33137FEC),
-                            offset: const Offset(0, 8),
-                            blurRadius: 10,
-                            spreadRadius: -6,
-                          ),
-                          BoxShadow(
-                            color: const Color(0x33137FEC),
-                            offset: const Offset(0, 20),
-                            blurRadius: 25,
-                            spreadRadius: -5,
-                          ),
-                        ],
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                height: 55,
+                child: Container(
+                  margin: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF000080),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0x33137FEC),
+                        offset: const Offset(0, 8),
+                        blurRadius: 10,
+                        spreadRadius: -6,
                       ),
-                    child: Material(
+                      BoxShadow(
+                        color: const Color(0x33137FEC),
+                        offset: const Offset(0, 20),
+                        blurRadius: 25,
+                        spreadRadius: -5,
+                      ),
+                    ],
+                  ),
+                  child: Material(
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(24),
@@ -374,9 +379,9 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
                                 child: CircularProgressIndicator(
                                   color: Colors.white, strokeWidth: 2.5),
                               )
-                            : Text(
+                            : const Text(
                                 "Verify Code",
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white, fontSize: 16,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -387,17 +392,16 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
                 ),
               ),
               const SizedBox(height: 15),
-
               TextButton(
-  onPressed: isLoading ? null : _resend,
-  child: Text(
-    _isSending ? "Sending…" : "Resend Code",
-    style: const TextStyle(
-      fontFamily: "Inter", color: Color(0xBF000080),
-      fontSize: 16, fontWeight: FontWeight.w600,
-    ),
-  ),
-),
+                onPressed: isLoading ? null : _resend,
+                child: Text(
+                  _isSending ? "Sending…" : "Resend Code",
+                  style: const TextStyle(
+                    fontFamily: "Inter", color: Color(0xBF000080),
+                    fontSize: 16, fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             ],
           ),
         ),

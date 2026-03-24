@@ -51,39 +51,23 @@ class ChildCard extends StatelessWidget {
   }
 
   static const List<List<String>> subjectLists = [
-    // 1st Year Primary
     ['Arabic Language', 'Mathematics', 'Islamic Education', 'Civic Education', 'Art Education', 'Physical Education and Sports'],
-    // 2nd Year Primary
     ['Arabic Language', 'Mathematics', 'Islamic Education', 'Civic Education', 'Art Education', 'Physical Education and Sports'],
-    // 3rd Year Primary
     ['Arabic Language', 'Mathematics', 'Science', 'History - Geography', 'French', 'English', 'Islamic Education', 'Civic Education', 'Art Education', 'Physical Education and Sports'],
-    // 4th Year Primary
     ['Arabic Language', 'Tamazight Language (region dependent)', 'Mathematics', 'Science', 'History - Geography', 'French', 'English', 'Islamic Education', 'Civic Education', 'Art Education', 'Physical Education and Sports'],
-    // 5th Year Primary
     ['Arabic Language', 'Tamazight Language (region dependent)', 'Mathematics', 'Science', 'History - Geography', 'French', 'English', 'Islamic Education', 'Civic Education', 'Art Education', 'Physical Education and Sports'],
-    // 1st Year Middle
     ['Arabic Language', 'Tamazight Language (region dependent)', 'Mathematics', 'Life and Earth Sciences', 'Physics Sciences and Technology', 'History - Geography', 'French', 'English', 'Islamic Education', 'Civic Education', 'Computer Science', 'Art Education', 'Physical Education and Sports'],
-    // 2nd Year Middle
     ['Arabic Language', 'Tamazight Language (region dependent)', 'Mathematics', 'Life and Earth Sciences', 'Physics Sciences', 'History - Geography', 'French', 'English', 'Islamic Education', 'Civic Education', 'Computer Science', 'Art Education', 'Physical Education and Sports'],
-    // 3rd Year Middle
     ['Arabic Language', 'Tamazight Language (region dependent)', 'Mathematics', 'Life and Earth Sciences', 'Physics Sciences', 'History - Geography', 'French', 'English', 'Islamic Education', 'Civic Education', 'Computer Science', 'Art Education', 'Physical Education and Sports'],
-    // 4th Year Middle
     ['Arabic Language', 'Tamazight Language (region dependent)', 'Mathematics', 'Life and Earth Sciences', 'Physics Sciences', 'History - Geography', 'French', 'English', 'Islamic Education', 'Civic Education', 'Computer Science', 'Art Education', 'Physical Education and Sports'],
-    // High - Experimental Sciences
     ['Arabic Language', 'Tamazight Language (region dependent)', 'Philosophy', 'Mathematics', 'Life and Earth Sciences', 'Physics Sciences', 'History - Geography', 'French', 'English', 'Islamic Education', 'Physical Education and Sports'],
-    // High - Mathematics
     ['Arabic Language', 'Tamazight Language (region dependent)', 'Philosophy', 'Advanced Mathematics', 'Physics Sciences', 'Life and Earth Sciences', 'History - Geography', 'French', 'English', 'Islamic Education', 'Physical Education and Sports'],
-    // High - Technical Mathematics
     ['Arabic Language', 'Tamazight Language (region dependent)', 'Philosophy', 'Mathematics', 'Physics Sciences', 'Industrial Technology', 'Engineering (specialty dependent)', 'Technical Drawing', 'History - Geography', 'French', 'English', 'Islamic Education', 'Physical Education and Sports'],
-    // High - Management and Economics
     ['Arabic Language', 'Tamazight Language (region dependent)', 'Philosophy', 'Applied Mathematics', 'General Economics', 'Management and Accounting', 'Law', 'History - Geography', 'French', 'English', 'Islamic Education', 'Physical Education and Sports'],
-    // High - Letters and Philosophy
     ['Advanced Arabic Language', 'Tamazight Language (region dependent)', 'Advanced Philosophy', 'History - Geography', 'Islamic Sciences', 'French', 'English', 'Light Mathematics', 'Physical Education and Sports'],
-    // High - Foreign Languages
     ['Arabic Language', 'Tamazight Language (region dependent)', 'Philosophy', 'Advanced French', 'Advanced English', 'Third Foreign Language', 'History - Geography', 'Light Mathematics', 'Islamic Education', 'Physical Education and Sports'],
   ];
 
-  // Reusable border helpers
   static OutlineInputBorder _border([Color color = const Color(0xFFE0E0E0), double width = 1]) =>
       OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -114,6 +98,7 @@ class ChildCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+
             // Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -155,7 +140,7 @@ class ChildCard extends StatelessWidget {
               initialValue: data['name'],
               onChanged: (value) => onChanged({...data, 'name': value}),
               validator: (value) {
-                if (value == null || value.isEmpty) {
+                if (value == null || value.trim().isEmpty) {
                   return 'Child name is required';
                 }
                 return null;
@@ -177,6 +162,58 @@ class ChildCard extends StatelessWidget {
                 fillColor: const Color(0xFFF9F9F9),
               ),
             ),
+
+            const SizedBox(height: 16),
+
+            // Gender
+            const Text(
+              "Gender",
+              style: TextStyle(
+                fontFamily: "Inter",
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF334155),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: ['Male', 'Female'].map((g) {
+                final isSelected = data['gender'] == g.toLowerCase();
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(g),
+                    selected: isSelected,
+                    checkmarkColor: Colors.white,
+                    selectedColor: const Color(0xFF000080),
+                    backgroundColor: const Color(0xFFF9F9F9),
+                    side: BorderSide(
+                      color: data['genderError'] == true
+                          ? Colors.red
+                          : const Color(0xFFE0E0E0),
+                    ),
+                    labelStyle: TextStyle(
+                      fontFamily: "Inter",
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected ? Colors.white : const Color(0xFF475569),
+                    ),
+                    onSelected: (_) {
+                      onChanged({...data, 'gender': g.toLowerCase(), 'genderError': false});
+                    },
+                  ),
+                );
+              }).toList(),
+            ),
+            if (data['genderError'] == true)
+              const Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Text(
+                  'Please select a gender',
+                  style: TextStyle(color: Colors.red, fontSize: 12),
+                ),
+              ),
+
             const SizedBox(height: 16),
 
             // Level of Study
@@ -191,7 +228,7 @@ class ChildCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              initialValue: data['level'],
+              value: data['level'],
               isExpanded: true,
               borderRadius: BorderRadius.circular(12),
               dropdownColor: Colors.white,
@@ -215,7 +252,7 @@ class ChildCard extends StatelessWidget {
                       ))
                   .toList(),
               onChanged: (value) {
-                onChanged({...data, 'level': value, 'grade': null});
+                onChanged({...data, 'level': value, 'grade': null, 'speciality': null, 'subjects': <String>[]});
               },
               decoration: InputDecoration(
                 prefixIcon: const Icon(Icons.school_outlined, color: Color(0xFF94A3B8)),
@@ -242,7 +279,6 @@ class ChildCard extends StatelessWidget {
                       color: Color(0xFF334155),
                     ),
                   ),
-                  // Shows red hint if grade not selected after validation attempt
                   if (data['gradeError'] == true) ...[
                     const SizedBox(width: 8),
                     const Text(
@@ -269,6 +305,7 @@ class ChildCard extends StatelessWidget {
                                   'grade': grade,
                                   'gradeError': false,
                                   'speciality': null,
+                                  'subjects': <String>[],
                                 });
                               },
                               selectedColor: const Color(0xFF000080),

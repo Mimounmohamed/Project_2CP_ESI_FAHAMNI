@@ -58,7 +58,7 @@ class StudentModel extends UserModel {
       phone:             map['phone']        ?? '',
       location:          map['location']     ?? '',
       gender:            Gender.values.byName(map['gender'] ?? 'male'),
-      birthday:          (map['birthday'] as Timestamp).toDate(), // FIXED
+      birthday:          (map['birthday'] as Timestamp).toDate(), 
       picture:           map['picture'],
       accountStatus:     AccountStatus.values.byName(map['account_status'] ?? 'pending'),
       schoolLevel:       map['school_level']        ?? '',

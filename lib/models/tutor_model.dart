@@ -45,7 +45,7 @@ class TutorModel extends UserModel {
       'phone':        phone,
       'location':     location,
       'gender':       gender.name,
-      'birthday':     Timestamp.fromDate(birthday), // FIXED
+      'birthday':     Timestamp.fromDate(birthday), 
       'picture':      picture,
       'role':         role.name,
       'account_status': accountStatus.name,
@@ -70,7 +70,7 @@ class TutorModel extends UserModel {
       phone:        map['phone']      ?? '',
       location:     map['location']   ?? '',
       gender:       Gender.values.byName(map['gender'] ?? 'male'),
-      birthday:     (map['birthday'] as Timestamp).toDate(), // FIXED
+      birthday:     (map['birthday'] as Timestamp).toDate(), 
       picture:      map['picture'],
       accountStatus: AccountStatus.values.byName(map['account_status'] ?? 'pending'),
       expertiseDomain:        map['expertise_domain']        ?? '',

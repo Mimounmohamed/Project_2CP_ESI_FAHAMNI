@@ -354,5 +354,44 @@ Future<UserModel?> loginWithGoogle() async {
 }
 
 
+Future<void> saveChildren({
+  required String parentUid,
+  required List<Map<String, dynamic>> children,
+}) async {
+  final batch = _db.batch();
+  final List<String> childIds = [];
+
+  for (final child in children) {
+    final ref = _db.collection('children').doc();
+    childIds.add(ref.id);
+
+    final gender = child['gender'] ?? 'male';
+    final picture = child['picture'] != null && child['picture'] != ''
+        ? child['picture']
+        : gender == 'female'
+            ? 'assets/images/childgirl.png'
+            : 'assets/images/chidboy.png';
+
+    batch.set(ref, {
+      'id':         ref.id,
+      'parentUid':  parentUid,
+      'name':       child['name']       ?? '',
+      'gender':     gender,
+      'level':      child['level']      ?? '',
+      'grade':      child['grade']      ?? '',
+      'speciality': child['speciality'] ?? '',
+      'subjects':   child['subjects']   ?? [],
+      'picture':    picture,           
+      'createdAt':  FieldValue.serverTimestamp(),
+    });
+  }
+
+  await batch.commit();
+
+  await _db.collection('parents').doc(parentUid).update({
+    'childrenUids': childIds,
+  });
+}
+
   
 }

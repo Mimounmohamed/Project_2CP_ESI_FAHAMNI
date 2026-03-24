@@ -10,18 +10,28 @@ class Parent_widget extends StatefulWidget {
 
 class Parent_widgetState extends State<Parent_widget> {
   final _formKey = GlobalKey<FormState>();
-
+  List<Map<String, dynamic>> get childrenData => children;
   List<Map<String, dynamic>> children = [
-    {"id": UniqueKey().toString(), "name": "", "level": null, "grade": null}
+    {
+      "id":         UniqueKey().toString(),
+      "name":       "",
+      "gender":     null,
+      "level":      null,
+      "grade":      null,
+      "speciality": null,
+      "subjects":   <String>[],
+    }
   ];
 
-  // Called from parent via GlobalKey
   bool validate() {
     bool chipErrors = false;
 
-    // Check chip fields (grade, speciality) manually
     final updated = children.map((child) {
       Map<String, dynamic> c = {...child};
+      if (c['gender'] == null) {
+        c['genderError'] = true;
+        chipErrors = true;
+      }
       if (c['level'] != null && c['grade'] == null) {
         c['gradeError'] = true;
         chipErrors = true;
@@ -42,10 +52,13 @@ class Parent_widgetState extends State<Parent_widget> {
   void addChild() {
     setState(() {
       children.add({
-        "id": UniqueKey().toString(),
-        "name": "",
-        "level": null,
-        "grade": null
+        "id":         UniqueKey().toString(),
+        "name":       "",
+        "gender":     null,
+        "level":      null,
+        "grade":      null,
+        "speciality": null,
+        "subjects":   <String>[],
       });
     });
   }
