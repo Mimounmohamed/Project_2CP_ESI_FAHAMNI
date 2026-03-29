@@ -61,6 +61,25 @@ class TutorModel extends UserModel {
     };
   }
 
+  @override
+  TutorModel copyWithUid(String uid) => TutorModel(
+    uid: uid,
+    firstName: firstName, lastName: lastName,
+    email: email, phone: phone,
+    location: location, gender: gender,
+    birthday: birthday, picture: picture,
+    accountStatus: accountStatus,
+    expertiseDomain: expertiseDomain,
+    levelsTaught: levelsTaught,
+    teachingMode: teachingMode,
+    isAvailable: isAvailable,
+    Certified: Certified,
+    pedagogicalDescription: pedagogicalDescription,
+    averageRating: averageRating,
+    yearsOfExperience: yearsOfExperience,
+    academicDescription: academicDescription,
+  );
+
   factory TutorModel.fromMap(Map<String, dynamic> map) {
     return TutorModel(
       uid:          map['uid']        ?? '',

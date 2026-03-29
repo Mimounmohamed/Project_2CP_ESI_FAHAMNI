@@ -49,6 +49,21 @@ class StudentModel extends UserModel {
     };
   }
 
+  @override
+  StudentModel copyWithUid(String uid) => StudentModel(
+    uid: uid,
+    firstName: firstName, lastName: lastName,
+    email: email, phone: phone,
+    location: location, gender: gender,
+    birthday: birthday, picture: picture,
+    accountStatus: accountStatus,
+    schoolLevel: schoolLevel,
+    learningObjectives: learningObjectives,
+    preferredSubjects: preferredSubjects,
+    favoriteTeachers: favoriteTeachers,
+    Courses: Courses,
+  );
+
   factory StudentModel.fromMap(Map<String, dynamic> map) {
     return StudentModel(
       uid:               map['uid']          ?? '',

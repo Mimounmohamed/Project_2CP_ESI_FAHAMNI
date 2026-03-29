@@ -6,7 +6,8 @@ import 'package:recaptcha_enterprise_flutter/recaptcha_action.dart';
 
 class PhoneAuthService {
   static const _siteKey = '6LfFtI8sAAAAALjEg6LqzvO4j9MbyQV39f4QIQEd';
-  static RecaptchaClient? _client; // ← was RecaptchaHandle, now RecaptchaClient
+  static RecaptchaClient? _client;
+  static int? _resendToken;
 
   // Call once at app startup
   static Future<void> init() async {
@@ -37,6 +38,7 @@ class PhoneAuthService {
     await FirebaseAuth.instance.verifyPhoneNumber(
       phoneNumber: phoneNumber,
       timeout: const Duration(seconds: 60),
+      forceResendingToken: _resendToken,
       verificationCompleted: (PhoneAuthCredential credential) async {
         onAutoVerified();
       },
@@ -44,6 +46,7 @@ class PhoneAuthService {
         onError(e.message ?? 'Verification failed');
       },
       codeSent: (String verificationId, int? resendToken) {
+        _resendToken = resendToken;
         onCodeSent(verificationId);
       },
       codeAutoRetrievalTimeout: (String verificationId) {

@@ -37,6 +37,17 @@ class ParentModel extends UserModel {
     };
   }
 
+  @override
+  ParentModel copyWithUid(String uid) => ParentModel(
+    uid: uid,
+    firstName: firstName, lastName: lastName,
+    email: email, phone: phone,
+    location: location, gender: gender,
+    birthday: birthday, picture: picture,
+    accountStatus: accountStatus,
+    childrenUids: childrenUids,
+  );
+
   factory ParentModel.fromMap(Map<String, dynamic> map) {
     return ParentModel(
       uid:          map['uid']        ?? '',

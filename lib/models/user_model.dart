@@ -37,6 +37,8 @@ abstract class UserModel {
 
   Map<String, dynamic> toMap();
 
+  UserModel copyWithUid(String uid);
+
   factory UserModel.fromMap(Map<String, dynamic> map) {
     final roleString = map['role'] ?? 'student';
     final role = UserRole.values.byName(roleString);

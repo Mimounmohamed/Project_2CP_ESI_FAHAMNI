@@ -28,7 +28,6 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
   String? _errorMessage;
   bool _isSending = true;
   bool _isVerifying = false;
-  int _otpCallCount = 0;
   late bool _isPhoneFlow;
 
   @override
@@ -37,10 +36,7 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
     _isPhoneFlow = widget.data['verificationMethod'] == 'phone';
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (_isPhoneFlow) {
-        _otpCallCount = 0;
         await _sendOtp();
-        await Future.delayed(const Duration(seconds: 2));
-        if (mounted) await _sendOtp();
       } else {
         _sendEmailOtp();
       }
@@ -62,8 +58,6 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
       phoneNumber: widget.data['phone'] as String,
       onCodeSent: (verificationId) {
         if (!mounted) return;
-        _otpCallCount++;
-        if (_otpCallCount < 2) return;
         setState(() {
           _verificationId = verificationId;
           _isSending = false;
@@ -161,10 +155,7 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
 
   Future<void> _resend() async {
     if (_isPhoneFlow) {
-      _otpCallCount = 0;
       await _sendOtp();
-      await Future.delayed(const Duration(seconds: 2));
-      if (mounted) await _sendOtp();
     } else {
       await _sendEmailOtp();
     }
