@@ -2,7 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class ChatButtons extends StatefulWidget {
-  const ChatButtons({super.key});
+  const ChatButtons({
+    super.key,
+    required this.selectedIndex,
+    required this.onChanged,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onChanged;
 
   @override
   State<ChatButtons> createState() => _MyMessagesWidgetState();
@@ -19,10 +26,21 @@ class _MyMessagesWidgetState extends State<ChatButtons>
     super.initState();
     
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.index = widget.selectedIndex;
 
     _tabController.addListener(() {
+      if (_tabController.indexIsChanging) return;
+      widget.onChanged(_tabController.index);
       setState(() {});
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant ChatButtons oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedIndex != _tabController.index) {
+      _tabController.animateTo(widget.selectedIndex);
+    }
   }
 
   @override

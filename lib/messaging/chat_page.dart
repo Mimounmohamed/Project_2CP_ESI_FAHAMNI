@@ -1,81 +1,142 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import '../Services/chat_service.dart';
+import '../models/user_model.dart';
 import 'chat_buttons.dart';
 import 'ConversationBox.dart';
 import '../models/chat_model.dart';
+import '../repositories/firestore_chat_repository.dart';
+import 'ai_study_chat_page.dart';
 
-class ChatPage extends StatelessWidget {
-  ChatPage({super.key});
+class ChatPage extends StatefulWidget {
+  const ChatPage({super.key});
 
-  final String myId = "moh";
+  @override
+  State<ChatPage> createState() => _ChatPageState();
+}
 
-  final List<Map<String, dynamic>> mockConversations = [
-    {
-      "id": "user2",
-      "name": "Patrick",
-      "avatar": "https://anniversaire-celebrite.com/images/celebrites/patrick-etoile-de-mer.jpg",
-    },
-    {
-      "id": "user3",
-      "name": "Hamza",
-      "avatar": "https://randomuser.me/api/portraits/men/32.jpg",
-    },
-    {
-      "id": "user4",
-      "name": "Sara",
-      "avatar": "https://randomuser.me/api/portraits/women/44.jpg",
-    },
-    {
-      "id": "user5",
-      "name": "Mohamed",
-      "avatar": "https://randomuser.me/api/portraits/men/75.jpg",
-    },
-    {
-      "id": "user6",
-      "name": "Lina",
-      "avatar": "https://randomuser.me/api/portraits/women/68.jpg",
-    },
-  ];
+class _ChatPageState extends State<ChatPage> {
+  final ChatService _chatService =
+      ChatService(FirestoreChatRepository());
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  int _selectedTabIndex = 0;
+  bool _didResolveInitialTab = false;
 
-  ConversationModel _buildMockConversation(Map<String, dynamic> user) {
-    return ConversationModel(
-      conversationId: "conv_${user['id']}",
-      conversationName: user['name'],
-      participants: [myId, user['name']],
-      status: "active",
-      createdAt: DateTime.now(),
-      messages: [
-        MessageModel(
-          messageId: "m1",
-          conversationId: "conv_${user['id']}",
-          senderId: user['id'],
-          receiverId: myId,
-          content: "Hey! How are you doing?",
-          sendingDateTime: DateTime.now().subtract(const Duration(minutes: 10)),
-        ),
-        MessageModel(
-          messageId: "m1",
-          conversationId: "conv_${user['id']}",
-          senderId: myId,
-          receiverId: user['id'],
-          content: "Hey! How are you doing?",
-          sendingDateTime: DateTime.now().subtract(const Duration(minutes: 10)),
-        ),
-      ],
-      media : [
-        'https://anniversaire-celebrite.com/images/celebrites/patrick-etoile-de-mer.jpg',
-        'https://anniversaire-celebrite.com/images/celebrites/patrick-etoile-de-mer.jpg',
-        'https://anniversaire-celebrite.com/images/celebrites/patrick-etoile-de-mer.jpg',
-        'https://anniversaire-celebrite.com/images/celebrites/patrick-etoile-de-mer.jpg',
-        'https://anniversaire-celebrite.com/images/celebrites/patrick-etoile-de-mer.jpg',
-      ]
+  String? get _currentUserId => _auth.currentUser?.uid;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveInitialTab();
+  }
+
+  Object? get _conversationFilter {
+    switch (_selectedTabIndex) {
+      case 0:
+        return UserRole.tutor;
+      case 1:
+        return UserRole.student;
+      case 2:
+        return ChatConversationFilter.group;
+      default:
+        return null;
+    }
+  }
+
+  Future<void> _resolveInitialTab() async {
+    final String? userId = _currentUserId;
+    if (userId == null || _didResolveInitialTab) return;
+
+    UserRole? currentRole;
+    final DocumentSnapshot<Map<String, dynamic>> userSnapshot =
+        await _firestore.collection('users').doc(userId).get();
+    final String? roleName = userSnapshot.data()?['role'] as String?;
+
+    if (roleName != null) {
+      for (final UserRole role in UserRole.values) {
+        if (role.name == roleName) {
+          currentRole = role;
+          break;
+        }
+      }
+    }
+
+    if (currentRole == null) {
+      final List<MapEntry<String, UserRole>> checks = <MapEntry<String, UserRole>>[
+        const MapEntry<String, UserRole>('tutors', UserRole.tutor),
+        const MapEntry<String, UserRole>('students', UserRole.student),
+        const MapEntry<String, UserRole>('parents', UserRole.parent),
+      ];
+
+      for (final MapEntry<String, UserRole> check in checks) {
+        final DocumentSnapshot<Map<String, dynamic>> snapshot =
+            await _firestore.collection(check.key).doc(userId).get();
+        if (snapshot.exists) {
+          currentRole = check.value;
+          break;
+        }
+      }
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _didResolveInitialTab = true;
+      _selectedTabIndex = currentRole == UserRole.tutor ? 1 : 0;
+    });
+  }
+
+  String _conversationName(ConversationModel conversation) {
+    if (conversation.participantDisplayName.trim().isNotEmpty) {
+      return conversation.participantDisplayName.trim();
+    }
+
+    if (conversation.conversationName.trim().isNotEmpty) {
+      return conversation.conversationName.trim();
+    }
+
+    if (conversation.conversationId.trim().isNotEmpty) {
+      return conversation.conversationId.trim();
+    }
+
+    final Iterable<String> otherParticipants = conversation.participants.where(
+      (participantId) => participantId != _currentUserId,
+    );
+
+    return otherParticipants.isNotEmpty
+        ? otherParticipants.first
+        : 'Conversation';
+  }
+
+  String _conversationAvatar(ConversationModel conversation) {
+    if (conversation.participantAvatarUrl.trim().isNotEmpty) {
+      return conversation.participantAvatarUrl.trim();
+    }
+
+    final String name = _conversationName(conversation);
+    final String encodedName = Uri.encodeComponent(name);
+    return 'https://ui-avatars.com/api/?name=$encodedName&background=000080&color=ffffff';
+  }
+
+  void _openStudyAiPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AIStudyChatPage(),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final String? currentUserId = _currentUserId;
+
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       appBar: AppBar(
         backgroundColor: const Color(0xFFFAFAFA),
         elevation: 0,
@@ -135,26 +196,98 @@ class ChatPage extends StatelessWidget {
           ),
 
           // Tabs
-          const ChatButtons(),
+          ChatButtons(
+            selectedIndex: _selectedTabIndex,
+            onChanged: (int index) {
+              setState(() {
+                _selectedTabIndex = index;
+              });
+            },
+          ),
 
           // Conversation list
           Expanded(
-            child: ListView.separated(
-              itemCount: mockConversations.length,
-              separatorBuilder: (context, index) =>
-                  const Divider(height: 1, indent: 80),
-              itemBuilder: (context, index) {
-                final user = mockConversations[index];
-                return Conversationbox(
-                  conversation: _buildMockConversation(user),
-                  imageUrl: user['avatar'],
-                  currentUserId: myId,
-                );
-              },
-            ),
+            child: currentUserId == null
+                ? const Center(
+                    child: Text(
+                      'Sign in to view your conversations.',
+                    ),
+                  )
+                : StreamBuilder<List<ConversationModel>>(
+                    stream: _chatService.getConversations(
+                      currentUserId,
+                      filter: _conversationFilter,
+                    ),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasError) {
+                        return const Center(
+                          child: Text('Failed to load conversations.'),
+                        );
+                      }
+
+                      if (snapshot.connectionState == ConnectionState.waiting &&
+                          !snapshot.hasData) {
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      }
+
+                      final List<ConversationModel> conversations =
+                          snapshot.data ?? const <ConversationModel>[];
+
+                      if (conversations.isEmpty) {
+                        return const Center(
+                          child: Text('No conversations yet.'),
+                        );
+                      }
+
+                      return ListView.separated(
+                        itemCount: conversations.length,
+                        separatorBuilder: (context, index) =>
+                            const Divider(height: 1, indent: 80),
+                        itemBuilder: (context, index) {
+                          final ConversationModel conversation =
+                              conversations[index].copyWith(
+                            conversationName:
+                                _conversationName(conversations[index]),
+                          );
+
+                          return Conversationbox(
+                            conversation: conversation,
+                            imageUrl: _conversationAvatar(conversation),
+                            currentUserId: currentUserId,
+                          );
+                        },
+                      );
+                    },
+                  ),
           ),
         ],
       ),
+      floatingActionButton: currentUserId == null
+          ? null
+          : FloatingActionButton.extended(
+              onPressed: _openStudyAiPage,
+              backgroundColor: const Color(0xFFF5F7FF),
+              foregroundColor: const Color(0xFF000080),
+              elevation: 4,
+              highlightElevation: 6,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+                side: const BorderSide(
+                  color: Color.fromARGB(40, 0, 0, 128),
+                ),
+              ),
+              icon: const Icon(Icons.auto_awesome_rounded, size: 20),
+              label: Text(
+                'AI Study Help',
+                style: GoogleFonts.nunito(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF000080),
+                ),
+              ),
+            ),
     );
   }
 }

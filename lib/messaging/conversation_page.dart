@@ -1,20 +1,29 @@
 import 'package:fahamni/messaging/conversation_doc_page.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import '../Services/ai_service.dart';
+import '../Services/chat_service.dart';
 import '../models/chat_model.dart';
+import '../models/student_profile.dart';
+import '../repositories/firestore_chat_repository.dart';
 import 'Message_input.dart';
+import 'ai_assistant_sheet.dart';
 import 'messagerow.dart';
 
 class ConversationPage extends StatefulWidget {
   final ConversationModel conversation;
   final String imageUrl;
   final String currentUserId;
+  final bool openAiOnLoad;
 
   const ConversationPage({
     super.key,
     required this.conversation,
     required this.imageUrl,
     required this.currentUserId,
+    this.openAiOnLoad = false,
   });
 
   @override
@@ -23,16 +32,153 @@ class ConversationPage extends StatefulWidget {
 
 class _ConversationPageState extends State<ConversationPage> {
   final ScrollController _scrollController = ScrollController();
-  final bool _showDetails = false; // toggles the media/members/attachments panel
+  final TextEditingController _messageController = TextEditingController();
+  final AIService _aiService = AIService();
+  final ChatService _chatService =
+      ChatService(FirestoreChatRepository());
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  int _lastMessageCount = 0;
+  List<MessageModel> _latestMessages = const <MessageModel>[];
+  StudentProfile? _studentProfile;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.openAiOnLoad) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _openAiAssistant();
+        }
+      });
+    }
+  }
+
+  String _receiverIdFor(String senderId) {
+    for (final String participantId in widget.conversation.participants) {
+      if (participantId != senderId) {
+        return participantId;
+      }
+    }
+
+    final MessageModel? lastMessage =
+        _latestMessages.isNotEmpty ? _latestMessages.last : widget.conversation.lastMessage;
+    if (lastMessage != null) {
+      if (lastMessage.senderId == senderId) {
+        return lastMessage.receiverId;
+      }
+      return lastMessage.senderId;
+    }
+
+    return '';
+  }
+
+  void _scrollToBottom({bool animated = true}) {
+    if (!_scrollController.hasClients) return;
+
+    final double target = _scrollController.position.maxScrollExtent;
+    if (animated) {
+      _scrollController.animateTo(
+        target,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+      return;
+    }
+
+    _scrollController.jumpTo(target);
+  }
+
+  void _scheduleScrollToBottom({bool animated = true}) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _scrollToBottom(animated: animated);
+    });
+  }
+
+  Future<void> _handleSend(String text) async {
+    final String senderId = _auth.currentUser?.uid ?? widget.currentUserId;
+    final String receiverId = _receiverIdFor(senderId);
+    if (senderId.isEmpty || receiverId.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to identify the conversation recipient.'),
+        ),
+      );
+      return;
+    }
+
+    try {
+      await _chatService.sendMessage(
+        conversationId: widget.conversation.conversationId,
+        senderId: senderId,
+        receiverId: receiverId,
+        content: text,
+        controller: _messageController,
+      );
+      _scheduleScrollToBottom();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Message failed to send: $error')),
+      );
+    }
+  }
+
+  Future<void> _handleSendToTutor(String text) async {
+    final String senderId = _auth.currentUser?.uid ?? widget.currentUserId;
+    final String receiverId = _receiverIdFor(senderId);
+    if (senderId.isEmpty || receiverId.isEmpty) {
+      return;
+    }
+
+    await _chatService.sendMessage(
+      conversationId: widget.conversation.conversationId,
+      senderId: senderId,
+      receiverId: receiverId,
+      content: text,
+      controller: null,
+    );
+  }
+
+  Future<void> _openAiAssistant() async {
+    final String currentUserId = _auth.currentUser?.uid ?? widget.currentUserId;
+    try {
+      _studentProfile ??= await _aiService.getStudentProfile(currentUserId);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('AI assistant unavailable: $error')),
+      );
+      return;
+    }
+
+    if (!mounted || _studentProfile == null) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AIAssistantSheet(
+        aiService: _aiService,
+        studentProfile: _studentProfile!,
+        conversationMessages: _latestMessages,
+        onSendToTutor: _handleSendToTutor,
+      ),
+    );
+  }
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _messageController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final String activeUserId = _auth.currentUser?.uid ?? widget.currentUserId;
+
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
       appBar: AppBar(
@@ -91,6 +237,13 @@ class _ConversationPageState extends State<ConversationPage> {
         ),
         actions: [
   IconButton(
+    onPressed: _openAiAssistant,
+    icon: const Icon(
+      Icons.auto_awesome_rounded,
+      color: Color(0xFF000080),
+    ),
+  ),
+  IconButton(
     onPressed: () {
       Navigator.push(
   context,
@@ -127,19 +280,49 @@ class _ConversationPageState extends State<ConversationPage> {
 
           // messages list
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: widget.conversation.messages.length,
-              itemBuilder: (context, index) {
-                final msg = widget.conversation.messages[index];
-                final bool isMe = msg.senderId == widget.currentUserId;
-                return MessageRow(
-                  message: msg,
-                  isMe: isMe,
-                  senderAvatarUrl: isMe
-                      ? 'https://static.wikia.nocookie.net/viacom4633/images/4/47/Spongebob.png/revision/latest?cb=20241216025934'
-                      : widget.imageUrl,
+            child: StreamBuilder<List<MessageModel>>(
+              stream: _chatService.getMessages(
+                widget.conversation.conversationId,
+              ),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return const Center(
+                    child: Text('Failed to load messages.'),
+                  );
+                }
+
+                if (snapshot.connectionState == ConnectionState.waiting &&
+                    !snapshot.hasData) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+
+                final List<MessageModel> messages =
+                    snapshot.data ?? const <MessageModel>[];
+                _latestMessages = messages;
+
+                if (messages.length != _lastMessageCount) {
+                  final bool animated = _lastMessageCount != 0;
+                  _lastMessageCount = messages.length;
+                  _scheduleScrollToBottom(animated: animated);
+                }
+
+                return ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final MessageModel msg = messages[index];
+                    final bool isMe = msg.senderId == activeUserId;
+                    return MessageRow(
+                      message: msg,
+                      isMe: isMe,
+                      senderAvatarUrl: isMe
+                          ? 'https://ui-avatars.com/api/?name=Me&background=000080&color=ffffff'
+                          : widget.imageUrl,
+                    );
+                  },
                 );
               },
             ),
@@ -150,7 +333,10 @@ class _ConversationPageState extends State<ConversationPage> {
           // message input
           Container(
             margin: const EdgeInsets.all(16),
-            child: const MessageInput(),
+            child: MessageInput(
+              controller: _messageController,
+              onSend: _handleSend,
+            ),
           ),
         ],
       ),

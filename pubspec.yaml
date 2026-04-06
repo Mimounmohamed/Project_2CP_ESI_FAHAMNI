@@ -38,6 +38,9 @@ dependencies:
   custom_info_window: ^1.0.0
   file_picker: ^8.0.0
   http: ^1.2.0
+  flutter_dotenv: ^5.1.0
+  flutter_markdown: ^0.7.3+1
+  flutter_math_fork: ^0.7.2
   cloud_functions: ^5.6.2
   google_sign_in: ^6.2.1
   recaptcha_enterprise_flutter: ^18.6.1
@@ -81,6 +84,7 @@ flutter:
     - assets/images/
     - assets/images/map.png
     - assets/map_style.json
+    - .env
 
     - assets/ 
   fonts:
