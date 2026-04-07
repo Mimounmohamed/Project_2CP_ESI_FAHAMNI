@@ -9,6 +9,7 @@ import 'package:fahamni/models/session_model.dart';
 import 'package:fahamni/models/student_model.dart';
 import 'package:fahamni/models/tutor_model.dart';
 import 'package:fahamni/models/user_model.dart';
+import 'package:fahamni/student_profile/student_account_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fahamni/widgets/customnavbar.dart';
@@ -145,10 +146,11 @@ class _StudenthomepageState extends State<Studenthomepage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Container(
-          margin: EdgeInsets.fromLTRB(16, 5, 16, 0), // Added right margin
+        child: SingleChildScrollView(
+          child: Container(
+          margin: EdgeInsets.fromLTRB(16, 5, 16, 16),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start, // Align to start
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // First row with avatar and icons
               Row(
@@ -543,7 +545,12 @@ class _StudenthomepageState extends State<Studenthomepage> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: (){},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const CoursesPage()),
+                      );
+                    },
                     child: Text(
                       'See All',
                       style: TextStyle(
@@ -553,235 +560,93 @@ class _StudenthomepageState extends State<Studenthomepage> {
                         color: Color(0xFF000080),
                       ),
                     ),
-
                   )
                 ],
               ),
               if(courses?.isEmpty ?? true)
-                Row(
-                  children: [
-                    SizedBox(width: 100 ,),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: Column(
                       children: [
-                        SizedBox(height: 50,),
+                        Icon(Icons.menu_book_rounded, size: 52, color: Color(0xFF000080).withValues(alpha: 0.25)),
+                        SizedBox(height: 12),
                         Text(
-                            "Start your Journey",
+                          "Start your Journey",
                           style: TextStyle(
                             fontFamily: 'Nunito',
                             fontWeight: FontWeight.w700,
-                            fontSize: 20,
+                            fontSize: 18,
                             color: Colors.grey,
                           ),
                         ),
-                        SizedBox(height: 10,),
+                        SizedBox(height: 4),
+                        Text(
+                          "Book a session to see it here",
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                            color: Colors.grey.withValues(alpha: 0.8),
+                          ),
+                        ),
+                        SizedBox(height: 16),
                         ElevatedButton(
-                            onPressed:(){},
-                            style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF000080),
-                                foregroundColor: Colors.white,
-                                minimumSize: Size(100, 50),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                 )
-                            ),
-                              child: Text(
-                                  'Book a Session',
-                                style: TextStyle(
-                                  fontFamily: 'Nunito',
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                  fontSize: 18
-
-                                ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => Explorepage(student: student!),
                               ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFF000080),
+                            foregroundColor: Colors.white,
+                            minimumSize: Size(160, 46),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                          ),
+                          child: Text(
+                            'Explore Tutors',
+                            style: TextStyle(
+                              fontFamily: 'Lexend',
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                            ),
+                          ),
                         )
                       ],
                     ),
-                  ],
+                  ),
                 )
               else if(sessiontutor != null && _nextCourse != null)
-                Container(
-                  margin: EdgeInsets.fromLTRB(0, 10, 0, 10),
-                  height: 230,
-                  width: 400,
-                  decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border(
-                        left: BorderSide(
-                          color: Color(0xFF000080), // Your custom color
-                          width: 5, // Border width
-                          style: BorderStyle.solid, // solid is default
-                        ),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Color(0xFF000080).withOpacity(0.5),
-                          spreadRadius: 2,
-                          blurRadius: 5,
-                          offset: Offset(2, 3),
-                        )
-                      ]
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              height: 20,
-                              width: 120,
-                              decoration: BoxDecoration(
-                                color: Color(0xFF6324EB).withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.fromLTRB(5, 0, 0, 0),
-                                child: Text(
-                                  'NEXT COURSE',
-                                  style: TextStyle(
-                                    fontFamily: "Nunito",
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF000080),
-                                    letterSpacing: 1,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 150,),
-                            Container(
-                              height: 25,
-                              width:70,
-                              decoration: BoxDecoration(
-                                color: _nextCourse!.type == "online" ? Color(0xFFDCFCE7) : Colors.black,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.fromLTRB(4, 4, 4, 4),
-                                child: Center(
-                                  child: Text(
-                                    _nextCourse!.type,
-                                    style: TextStyle(
-                                      fontFamily: "Nunito",
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: _nextCourse!.type == "online" ? Color(0xFF16A34A) : Colors.white,
-                                      height: 1.25,
-                                    ),
-
-                                  ),
-                                ),
-                              ),
-                            )
-                          ],
-                        ),
-                        SizedBox(height: 10,),
-                        SizedBox(
-                          width: 200,
-                          height: 28,
-                          child: Text(
-                            sessiontutor!.expertiseDomain,
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontFamily: "Inter",
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 10,),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            SvgPicture.asset(
-                              "assets/images/person.svg",
-                              height: 20,
-                              width: 20,
-                              color: Color(0xFF475569),
-                            ),
-
-                            SizedBox(width: 10,),
-                            Text(
-                              sessiontutor!.firstName,
-                              style: TextStyle(
-                                color: Color(0xFF475569),
-                                fontFamily: "Lexend",
-                                fontWeight: FontWeight.w400,
-                                fontSize: 15,
-                              ),
-                            )
-                          ],
-                        ),
-                        SizedBox(height: 15,),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            SvgPicture.asset(
-                              "assets/images/time.svg",
-                              height: 20,
-                              width: 20,
-                              color: Color(0xFF475569),
-                            ),
-                            SizedBox(width: 10,),
-                            Text(
-                              DateFormat('HH:mm').format(_nextCourse!.startTime)+ "-"+
-                              DateFormat('HH:mm').format(_nextCourse!.endTime)+" ("+
-                              '$minutes min)',
-                              style: TextStyle(
-                                color: Color(0xFF475569),
-                                fontFamily: "Lexend",
-                                fontWeight: FontWeight.w400,
-                                fontSize: 15,
-                              ),
-                            )
-                          ],
-                        ),
-                        SizedBox(height: 28,),
-                        SizedBox(
-                          height: 48,
-                          width: 370,
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const CoursesPage()),
-                              );
-                            },
-                            icon: ImageIcon(
-                              AssetImage('assets/images/Icon.png'),
-
-                            ),
-
-                            label: Text(
-                              'Join the course',
-                              style: TextStyle(
-                                  fontFamily: "Lexend",
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFF000080), // Your dark color
-                              foregroundColor: Colors.white,
-                              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              //  minimumSize: Size(324, 48), // Minimum width and height
-                            ),
-                          ),
-                        )
-                      ],
-
+                _NextCourseCard(
+                  session: _nextCourse!,
+                  tutor: sessiontutor!,
+                  minutes: minutes,
+                  onJoin: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const CoursesPage()),
+                    );
+                  },
+                )
+              else if(courses?.isNotEmpty == true)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: Color(0xFF000080),
+                      strokeWidth: 2,
                     ),
                   ),
                 ),
             ],
           ),
         ),
+        ), // SingleChildScrollView
       ),
       bottomNavigationBar: CustomBottomNavbar(
           selectedIndex: _selectedIndex,
@@ -802,12 +667,226 @@ class _StudenthomepageState extends State<Studenthomepage> {
                 MaterialPageRoute(builder: (context) => ChatPage() ),
               );
             }
+            else if (index == 4) {
+              Navigator.push(context,
+                MaterialPageRoute(builder: (context) => const StudentAccountPage()),
+              ).then((_) => loadStudent());
+            }
             else{
               setState(() {
                 _selectedIndex = index ;
               });
             }
           })
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Next Course Card — polished, responsive schedule card
+// ---------------------------------------------------------------------------
+
+class _NextCourseCard extends StatelessWidget {
+  const _NextCourseCard({
+    required this.session,
+    required this.tutor,
+    required this.minutes,
+    required this.onJoin,
+  });
+
+  final dynamic session;   // SessionModel
+  final dynamic tutor;     // TutorModel
+  final int minutes;
+  final VoidCallback onJoin;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isOnline = session.type == 'online';
+    final Color typeColor = isOnline ? const Color(0xFF16A34A) : const Color(0xFF475569);
+    final Color typeBg = isOnline ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9);
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(0, 10, 0, 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: const Border(
+          left: BorderSide(color: Color(0xFF000080), width: 5),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF000080).withValues(alpha: 0.15),
+            spreadRadius: 0,
+            blurRadius: 12,
+            offset: const Offset(2, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Header row: label + type badge ──────────────────────────
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6324EB).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text(
+                    'NEXT COURSE',
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11,
+                      color: Color(0xFF000080),
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: typeBg,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    session.type,
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: typeColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // ── Subject title ─────────────────────────────────────────
+            Text(
+              tutor.expertiseDomain,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xFF1F2937),
+                fontFamily: 'Inter',
+                fontSize: 19,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            // ── Date row ─────────────────────────────────────────────
+            Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/images/time.svg',
+                  height: 17,
+                  width: 17,
+                  colorFilter: const ColorFilter.mode(
+                    Color(0xFF475569), BlendMode.srcIn),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  DateFormat('EEE, dd MMM yyyy').format(session.date),
+                  style: const TextStyle(
+                    color: Color(0xFF475569),
+                    fontFamily: 'Lexend',
+                    fontWeight: FontWeight.w400,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 8),
+
+            // ── Time row ─────────────────────────────────────────────
+            Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/images/time.svg',
+                  height: 17,
+                  width: 17,
+                  colorFilter: const ColorFilter.mode(
+                    Color(0xFF000080), BlendMode.srcIn),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${DateFormat('HH:mm').format(session.startTime)} – '
+                  '${DateFormat('HH:mm').format(session.endTime)}  ($minutes min)',
+                  style: const TextStyle(
+                    color: Color(0xFF1F2937),
+                    fontFamily: 'Lexend',
+                    fontWeight: FontWeight.w500,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 8),
+
+            // ── Tutor row ─────────────────────────────────────────────
+            Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/images/person.svg',
+                  height: 17,
+                  width: 17,
+                  colorFilter: const ColorFilter.mode(
+                    Color(0xFF475569), BlendMode.srcIn),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${tutor.firstName} ${tutor.lastName}'.trim(),
+                  style: const TextStyle(
+                    color: Color(0xFF475569),
+                    fontFamily: 'Lexend',
+                    fontWeight: FontWeight.w400,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // ── Join button ───────────────────────────────────────────
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: ElevatedButton(
+                onPressed: onJoin,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF000080),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  'View My Courses',
+                  style: TextStyle(
+                    fontFamily: 'Lexend',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

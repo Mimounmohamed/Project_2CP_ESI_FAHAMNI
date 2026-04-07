@@ -329,20 +329,27 @@ class _CourseCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF000080).withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  session.type,
-                  style: const TextStyle(
-                    color: Color(0xFF000080),
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF000080).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      session.type,
+                      style: const TextStyle(
+                        color: Color(0xFF000080),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 6),
+                  _StatusBadge(status: session.status),
+                ],
               ),
             ],
           ),
@@ -448,6 +455,58 @@ class _CourseMetaChip extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({required this.status});
+  final SessionStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bg;
+    final Color fg;
+    final String label;
+
+    switch (status) {
+      case SessionStatus.Ongoing:
+        bg = const Color(0xFFDCFCE7);
+        fg = const Color(0xFF16A34A);
+        label = 'Ongoing';
+        break;
+      case SessionStatus.Completed:
+        bg = const Color(0xFFF1F5F9);
+        fg = const Color(0xFF64748B);
+        label = 'Completed';
+        break;
+      case SessionStatus.Canceled:
+        bg = const Color(0xFFFEF2F2);
+        fg = const Color(0xFFDC2626);
+        label = 'Canceled';
+        break;
+      case SessionStatus.Planned:
+        bg = const Color(0xFFEFF6FF);
+        fg = const Color(0xFF2563EB);
+        label = 'Planned';
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontFamily: 'Nunito',
+          fontWeight: FontWeight.w700,
+          fontSize: 11,
+          color: fg,
+        ),
       ),
     );
   }
