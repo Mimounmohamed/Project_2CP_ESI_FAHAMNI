@@ -8,7 +8,6 @@ import 'package:fahamni/models/student_model.dart';
 import 'package:fahamni/models/tutor_model.dart';
 import 'package:fahamni/widgets/customnavbar.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../widgets/servicedetails.dart';
 
@@ -19,10 +18,13 @@ class CoursesPage extends StatefulWidget {
   State<CoursesPage> createState() => _CoursesPageState();
 }
 
+enum _CourseFilter { all, inProgress, done }
+
 class _CoursesPageState extends State<CoursesPage> {
   final studenthomepage_service _service = studenthomepage_service();
   late Future<_CoursesViewData> _coursesFuture;
   int _selectedIndex = 2;
+  _CourseFilter _filter = _CourseFilter.all;
 
   @override
   void initState() {
@@ -108,20 +110,7 @@ class _CoursesPageState extends State<CoursesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFAFAFA),
-        elevation: 0,
-        centerTitle: true,
-        title: const Text(
-          'Courses',
-          style: TextStyle(
-            color: Color(0xFF1F2937),
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
+      backgroundColor: Colors.white,
       body: FutureBuilder<_CoursesViewData>(
         future: _coursesFuture,
         builder: (context, snapshot) {
@@ -162,6 +151,17 @@ class _CoursesPageState extends State<CoursesPage> {
           }
 
           final _CoursesViewData data = snapshot.data!;
+          final List<_CourseCardData> visibleCourses = data.courses.where((course) {
+            switch (_filter) {
+              case _CourseFilter.all:
+                return true;
+              case _CourseFilter.inProgress:
+                return course.session.status == SessionStatus.Ongoing ||
+                    course.session.status == SessionStatus.Planned;
+              case _CourseFilter.done:
+                return course.session.status == SessionStatus.Completed;
+            }
+          }).toList();
 
           if (data.courses.isEmpty) {
             return RefreshIndicator(
@@ -200,29 +200,84 @@ class _CoursesPageState extends State<CoursesPage> {
 
           return RefreshIndicator(
             onRefresh: _refresh,
-            child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
-              itemCount: data.courses.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 14),
-              itemBuilder: (context, index) {
-                final _CourseCardData course = data.courses[index];
-                return _CourseCard(
-                  course: course,
-                  onOpenService: course.service == null
-                      ? null
-                      : () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => Servicedetails(
-                                tutor: course.tutor,
-                                service: course.service!,
-                              ),
-                            ),
-                          );
-                        },
-                );
-              },
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 56, 16, 120),
+              children: [
+                const Center(
+                  child: Text(
+                    'Courses',
+                    style: TextStyle(
+                      color: Color(0xFF1F2937),
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _FilterPill(
+                        label: 'All',
+                        selected: _filter == _CourseFilter.all,
+                        onTap: () => setState(() => _filter = _CourseFilter.all),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _FilterPill(
+                        label: 'In Progress',
+                        selected: _filter == _CourseFilter.inProgress,
+                        onTap: () => setState(() => _filter = _CourseFilter.inProgress),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _FilterPill(
+                        label: 'Done',
+                        selected: _filter == _CourseFilter.done,
+                        onTap: () => setState(() => _filter = _CourseFilter.done),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                if (visibleCourses.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 48),
+                    child: Text(
+                      'No courses match this filter.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  )
+                else
+                  ...visibleCourses.map((course) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: _CourseCard(
+                        course: course,
+                        onOpenService: course.service == null
+                            ? null
+                            : () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => Servicedetails(
+                                      tutor: course.tutor,
+                                      service: course.service!,
+                                    ),
+                                  ),
+                                );
+                              },
+                      ),
+                    );
+                  }),
+              ],
             ),
           );
         },
@@ -269,148 +324,137 @@ class _CourseCard extends StatelessWidget {
       if (service?.subject.isNotEmpty == true) service!.subject,
       if (service?.level.isNotEmpty == true) service!.level,
     ].join(' • ');
+    final String subjectLabel =
+        service?.subject.isNotEmpty == true ? service!.subject.toUpperCase() : 'COURSE';
+    final String tutorLabel =
+        'Prof. ${tutor.firstName} ${tutor.lastName}'.trim();
+    final String sessionsLabel =
+        '${service?.sessionsnum ?? 1} ${service?.sessionsnum == 1 ? 'Session' : 'Sessions'}';
+    final String durationLabel =
+        '${service?.duration ?? session.endTime.difference(session.startTime).inMinutes} min session';
 
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFD8DFF0)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF000080).withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            color: const Color(0xFF000080).withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundImage: tutor.picture.isNotEmpty
-                    ? _imageProvider(tutor.picture)
-                    : null,
-                child: tutor.picture.isEmpty
-                    ? Text(
-                        tutor.firstName.isNotEmpty
-                            ? tutor.firstName[0].toUpperCase()
-                            : 'T',
-                      )
-                    : null,
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+            child: SizedBox(
+              height: 135,
+              width: double.infinity,
+              child: Image(
+                image: _courseCoverImage(service),
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: const Color(0xFF1F5A4E),
+                  alignment: Alignment.center,
+                  child: const Icon(
+                    Icons.menu_book_rounded,
+                    color: Colors.white,
+                    size: 42,
+                  ),
+                ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF1F2937),
-                      ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEDEBFF),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    subjectLabel,
+                    style: const TextStyle(
+                      color: Color(0xFF000080),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                      letterSpacing: 0.3,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${tutor.firstName} ${tutor.lastName}'.trim(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Color(0xFF64748B),
-                        fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1F2937),
+                  ),
+                ),
+                if (subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: Color(0xFF64748B),
+                      fontWeight: FontWeight.w500,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 12,
+                      backgroundImage:
+                          tutor.picture.isNotEmpty ? _imageProvider(tutor.picture) : null,
+                      child: tutor.picture.isEmpty
+                          ? Text(
+                              tutor.firstName.isNotEmpty
+                                  ? tutor.firstName[0].toUpperCase()
+                                  : 'T',
+                              style: const TextStyle(fontSize: 10),
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        tutorLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF7B8BA7),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF000080).withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      session.type,
-                      style: const TextStyle(
-                        color: Color(0xFF000080),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  _StatusBadge(status: session.status),
-                ],
-              ),
-            ],
-          ),
-          if (subtitle.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            Text(
-              subtitle,
-              style: const TextStyle(
-                color: Color(0xFF000080),
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-              ),
+                const SizedBox(height: 10),
+                _CourseStatRow(
+                  icon: Icons.access_time_rounded,
+                  label: durationLabel,
+                ),
+                const SizedBox(height: 8),
+                _CourseStatRow(
+                  icon: Icons.calendar_month_outlined,
+                  label: sessionsLabel,
+                ),
+              ],
             ),
-          ],
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 12,
-            runSpacing: 10,
-            children: [
-              _CourseMetaChip(
-                icon: Icons.calendar_today_outlined,
-                label: DateFormat('EEE, dd MMM').format(session.date),
-              ),
-              _CourseMetaChip(
-                icon: Icons.access_time_rounded,
-                label:
-                    '${DateFormat('HH:mm').format(session.startTime)} - ${DateFormat('HH:mm').format(session.endTime)}',
-              ),
-              _CourseMetaChip(
-                icon: Icons.hourglass_bottom_rounded,
-                label:
-                    '${session.endTime.difference(session.startTime).inMinutes} min',
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  tutor.expertiseDomain,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Color(0xFF64748B),
-                    fontSize: 14,
-                  ),
-                ),
-              ),
-              if (onOpenService != null)
-                TextButton(
-                  onPressed: onOpenService,
-                  child: const Text(
-                    'Open service',
-                    style: TextStyle(
-                      color: Color(0xFF000080),
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-            ],
           ),
         ],
       ),
@@ -423,10 +467,17 @@ class _CourseCard extends StatelessWidget {
     }
     return AssetImage(path);
   }
+
+  ImageProvider _courseCoverImage(ServiceModel? service) {
+    if (service?.picture.isNotEmpty == true) {
+      return _imageProvider(service!.picture);
+    }
+    return const AssetImage('assets/images/slide0.png');
+  }
 }
 
-class _CourseMetaChip extends StatelessWidget {
-  const _CourseMetaChip({
+class _CourseStatRow extends StatelessWidget {
+  const _CourseStatRow({
     required this.icon,
     required this.label,
   });
@@ -436,76 +487,56 @@ class _CourseMetaChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: const Color(0xFF000080)),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Color(0xFF334155),
-              fontWeight: FontWeight.w600,
-            ),
+    return Row(
+      children: [
+        Icon(icon, size: 19, color: const Color(0xFF6F82A7)),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF6F82A7),
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
 
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.status});
-  final SessionStatus status;
+class _FilterPill extends StatelessWidget {
+  const _FilterPill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final Color bg;
-    final Color fg;
-    final String label;
-
-    switch (status) {
-      case SessionStatus.Ongoing:
-        bg = const Color(0xFFDCFCE7);
-        fg = const Color(0xFF16A34A);
-        label = 'Ongoing';
-        break;
-      case SessionStatus.Completed:
-        bg = const Color(0xFFF1F5F9);
-        fg = const Color(0xFF64748B);
-        label = 'Completed';
-        break;
-      case SessionStatus.Canceled:
-        bg = const Color(0xFFFEF2F2);
-        fg = const Color(0xFFDC2626);
-        label = 'Canceled';
-        break;
-      case SessionStatus.Planned:
-        bg = const Color(0xFFEFF6FF);
-        fg = const Color(0xFF2563EB);
-        label = 'Planned';
-        break;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontFamily: 'Nunito',
-          fontWeight: FontWeight.w700,
-          fontSize: 11,
-          color: fg,
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF000080) : Colors.white,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: selected ? const Color(0xFF000080) : const Color(0xFFD5DDEA),
+          ),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: selected ? Colors.white : const Color(0xFF374151),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );

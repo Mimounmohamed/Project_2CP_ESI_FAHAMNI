@@ -4,6 +4,7 @@ import 'package:fahamni/Explore_map_pages/explorepage.dart';
 import 'package:fahamni/feedback/feedback_pages.dart';
 import 'package:fahamni/Notification_page/notification_page.dart';
 import 'package:fahamni/Courses/courses_page.dart';
+import 'package:fahamni/Courses/schedule_page.dart';
 import 'package:fahamni/messaging/chat_page.dart';
 import 'package:fahamni/models/session_model.dart';
 import 'package:fahamni/models/student_model.dart';
@@ -548,7 +549,7 @@ class _StudenthomepageState extends State<Studenthomepage> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const CoursesPage()),
+                        MaterialPageRoute(builder: (_) => const SchedulePage()),
                       );
                     },
                     child: Text(
@@ -629,7 +630,7 @@ class _StudenthomepageState extends State<Studenthomepage> {
                   onJoin: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const CoursesPage()),
+                      MaterialPageRoute(builder: (_) => const SchedulePage()),
                     );
                   },
                 )
@@ -875,7 +876,7 @@ class _NextCourseCard extends StatelessWidget {
                   elevation: 0,
                 ),
                 child: const Text(
-                  'View My Courses',
+                  'View My Sessions',
                   style: TextStyle(
                     fontFamily: 'Lexend',
                     fontSize: 15,
