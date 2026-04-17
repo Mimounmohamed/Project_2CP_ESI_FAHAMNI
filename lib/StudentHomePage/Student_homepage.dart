@@ -265,18 +265,19 @@ class _StudenthomepageState extends State<Studenthomepage> {
                       ),
                     ),
                   ),
-                  SizedBox(width: 2,),
+                  const SizedBox(width: 6),
                   SizedBox(
-                    height: 70,
+                    height: 50,
                     width: 50,
                     child: Center(
                       child: IconButton(
-                          onPressed: (){},
-                          icon: ImageIcon(
-                              AssetImage('assets/images/search.png'),
-                            color: Colors.black,
-                          ),
-                          iconSize: 40,
+                        padding: EdgeInsets.zero,
+                        onPressed: (){},
+                        icon: const ImageIcon(
+                          AssetImage('assets/images/search.png'),
+                          color: Colors.black,
+                        ),
+                        iconSize: 32,
                       ),
                     ),
                   )
@@ -297,8 +298,8 @@ class _StudenthomepageState extends State<Studenthomepage> {
                     Stack(
                       children: [
                         Container(
-                        margin: EdgeInsets.all(5),
-                        width: 398,
+                        margin: const EdgeInsets.all(5),
+                        width: double.infinity,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(10),
                           image: DecorationImage(image: AssetImage(item),fit: BoxFit.cover),
@@ -313,11 +314,11 @@ class _StudenthomepageState extends State<Studenthomepage> {
                         ),
                         ),
                         Positioned(
-                            top: 140 ,
+                            bottom: 18,
                             left: 23,
                             child: Container(
-                             height: 35,
-                             width: 100,
+                             constraints: const BoxConstraints(minHeight: 35, minWidth: 100),
+                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                              decoration: BoxDecoration(
                                color: Colors.white,
                                borderRadius: BorderRadius.circular(8),
@@ -412,55 +413,26 @@ class _StudenthomepageState extends State<Studenthomepage> {
               ),
              SizedBox(
                height: 100,
-               child: 
+               child:
                favoriteTutors?.length == 0 ?
-                     Center(
-                     child: SizedBox(
-                       height: 500,
-                       child: Row(
-                         mainAxisAlignment: MainAxisAlignment.center,
-                         children: [
-                           SizedBox(width: 80 ,),
-                           Text(
-                               'NO Favorite Teachers :(',
-                               style: TextStyle(
-                                 fontFamily: 'Nunito',
-                                 fontWeight: FontWeight.w700,
-                                 fontSize: 20,
-                                 color: Colors.grey,
-                               ),
-                           ),
-                         ],
+                     const Center(
+                       child: Text(
+                         'NO Favorite Teachers :(',
+                         textAlign: TextAlign.center,
+                         style: TextStyle(
+                           fontFamily: 'Nunito',
+                           fontWeight: FontWeight.w700,
+                           fontSize: 20,
+                           color: Colors.grey,
+                         ),
                        ),
-
-                     ))
+                     )
                    :    
                ListView.builder(
                  scrollDirection: Axis.horizontal,
                  shrinkWrap: true,
                  itemCount: favoriteTutors?.length,
                  itemBuilder: (context, index) {
-                   if(favoriteTutors?.length == 0){
-                     return SizedBox(
-                       height: 500,
-                       child: Row(
-                         mainAxisAlignment: MainAxisAlignment.center,
-                         children: [
-                           SizedBox(width: 80 ,),
-                           Text(
-                               'NO Favorite Teachers :(',
-                               style: TextStyle(
-                                 fontFamily: 'Nunito',
-                                 fontWeight: FontWeight.w700,
-                                 fontSize: 20,
-                                 color: Colors.grey,
-                               ),
-                           ),
-                         ],
-                       ),
-
-                     );
-                   }
                    return Column(
                        children: [
                          Padding(

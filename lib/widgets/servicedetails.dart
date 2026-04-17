@@ -7,6 +7,7 @@ import 'package:fahamni/widgets/customnavbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import '../StudentHomePage/Student_homepage.dart';
+import '../student_profile/student_account_page.dart';
 import '../models/service_model.dart';
 import '../models/tutor_model.dart';
 
@@ -756,6 +757,12 @@ class _ServicedetailsState extends State<Servicedetails> {
           else if (index == 3) {
             Navigator.push( context,
               MaterialPageRoute(builder: (context) => ChatPage()),
+            );
+          }
+          else if (index == 4) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const StudentAccountPage()),
             );
           }
           else {

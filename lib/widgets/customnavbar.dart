@@ -16,49 +16,60 @@ class CustomBottomNavbar extends StatefulWidget {
 }
 
 class _CustomBottomNavbarState extends State<CustomBottomNavbar> {
-  Widget navItem(String iconpath, String label, int index) {
+  Widget navItem(
+    String iconpath,
+    String label,
+    int index, {
+    required bool compact,
+  }) {
     bool selected = widget.selectedIndex == index;
 
     return GestureDetector(
       onTap: () {
-        widget.onTap(index); // ← add this
+        widget.onTap(index);
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
-        padding: selected ? const EdgeInsets.symmetric(horizontal: 16, vertical: 10) : const EdgeInsets.symmetric(horizontal: 10, vertical: 10) ,
+        padding: compact
+            ? const EdgeInsets.symmetric(horizontal: 8, vertical: 10)
+            : selected
+                ? const EdgeInsets.symmetric(horizontal: 16, vertical: 10)
+                : const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? Color(0xFF000080) : Colors.white,
+          color: selected ? const Color(0xFF000080) : Colors.white,
           borderRadius: BorderRadius.circular(25),
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             SvgPicture.asset(
-                iconpath,
-                height: 24,
-                width: 24,
-                color: selected ? Colors.white : Color(0xFF000080)),
+              iconpath,
+              height: compact ? 22 : 24,
+              width: compact ? 22 : 24,
+              color: selected ? Colors.white : const Color(0xFF000080),
+            ),
             AnimatedSize(
-              duration: Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
-              child: selected
+              child: selected && !compact
                   ? Row(
-                children: [
-                  SizedBox(width: 8),
-                  AnimatedOpacity(
-                    opacity: selected ? 1.0 : 0.0,
-                    duration: Duration(milliseconds: 200),
-                    child: Text(
-                      label,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              )
-                  : SizedBox.shrink(),
+                      children: [
+                        const SizedBox(width: 8),
+                        AnimatedOpacity(
+                          opacity: selected ? 1.0 : 0.0,
+                          duration: const Duration(milliseconds: 200),
+                          child: Text(
+                            label,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
             ),
           ],
         ),
@@ -68,39 +79,71 @@ class _CustomBottomNavbarState extends State<CustomBottomNavbar> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.fromLTRB(8, 0, 8, 20),
-      height: 70,
-      width: 400,
-      decoration: BoxDecoration(
-        color: Color(0xFF94A3B8).withOpacity(0.2),
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child:ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10), // the glass blur
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final bool compact = constraints.maxWidth < 390;
+
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(30),
           child: Container(
+            margin: const EdgeInsets.fromLTRB(8, 0, 8, 20),
+            height: 70,
+            width: double.infinity,
             decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.2), // grey glass tint
+              color: const Color(0xFF94A3B8).withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(30),
             ),
-            child: Padding(
-              padding: EdgeInsetsGeometry.symmetric(horizontal: 15 , vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  navItem("assets/images/fi-rr-home.svg", "Home", 0),
-                  navItem("assets/images/explore.svg", "explore", 1),
-                  navItem("assets/images/course.svg", "Courses", 2),
-                  navItem("assets/images/chat.svg", "Chat", 3),
-                  navItem("assets/images/profile.svg", "Profile", 4),
-                ],
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: compact ? 8 : 15,
+                  vertical: 10,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    navItem(
+                      "assets/images/fi-rr-home.svg",
+                      "Home",
+                      0,
+                      compact: compact,
+                    ),
+                    navItem(
+                      "assets/images/explore.svg",
+                      "Explore",
+                      1,
+                      compact: compact,
+                    ),
+                    navItem(
+                      "assets/images/course.svg",
+                      "Courses",
+                      2,
+                      compact: compact,
+                    ),
+                    navItem(
+                      "assets/images/chat.svg",
+                      "Chat",
+                      3,
+                      compact: compact,
+                    ),
+                    navItem(
+                      "assets/images/profile.svg",
+                      "Profile",
+                      4,
+                      compact: compact,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

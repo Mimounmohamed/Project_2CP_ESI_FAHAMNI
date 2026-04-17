@@ -7,6 +7,7 @@ import 'package:fahamni/feedback/feedback_pages.dart';
 import 'package:fahamni/messaging/chat_page.dart';
 import 'package:fahamni/messaging/conversation_page.dart';
 import 'package:fahamni/models/chat_model.dart';
+import 'package:fahamni/student_profile/student_account_page.dart';
 import 'package:fahamni/widgets/customnavbar.dart';
 import 'package:flutter/material.dart';
 import '../models/notification_model.dart';
@@ -280,6 +281,12 @@ class _NotificationPageState extends State<NotificationPage> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const CoursesPage()),
+        );
+        break;
+      case 4:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const StudentAccountPage()),
         );
         break;
       default:

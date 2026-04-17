@@ -15,13 +15,13 @@ class ServiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-     return Padding(
+    return Padding(
         padding: const EdgeInsets.all(16),
         child: Card(
                 elevation: 6,
-                shadowColor: Color(0xFF000080).withOpacity(0.45),
+                shadowColor: const Color(0xFF000080).withValues(alpha: 0.45),
                 color: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadiusGeometry.circular(12)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 clipBehavior: Clip.antiAlias,
                 child: Stack(
                   children: [
@@ -34,30 +34,38 @@ class ServiceCard extends StatelessWidget {
                             height: 120,
                             width: double.infinity,
                             fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Image.asset(
+                              "assets/images/default_service_img.png",
+                              height: 120,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
                           ),
-                        Image.asset(
-                          "assets/images/default_service_img.png",
-                          height: 120,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
+                        if(service.picture == "")
+                          Image.asset(
+                            "assets/images/default_service_img.png",
+                            height: 120,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
                         Padding(
-                          padding: EdgeInsetsGeometry.fromLTRB(15,15,0,0),
+                          padding: const EdgeInsets.fromLTRB(15, 15, 15, 15),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.start,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Container(
-                                height: 23,
-                                width: 100,
+                                constraints: const BoxConstraints(minHeight: 23, maxWidth: 140),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Color(0x19000080),
+                                  color: const Color(0x19000080),
                                   borderRadius: BorderRadius.circular(999)
                                 ),
                                 child: Center(
                                   child: Text(
                                     service.subject,
-                                    style: TextStyle(
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
                                       color: const Color(0xFF000080),
                                       fontSize: 13,
                                       fontFamily: 'Nunito',
@@ -68,60 +76,68 @@ class ServiceCard extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              SizedBox(height: 10,),
+                              const SizedBox(height: 10),
                               Text(
-                              service.name,
-                              style: TextStyle(
-                              color: const Color(0xFF1F2937),
-                              fontSize: 18,
-                              fontFamily: 'Inter',
-                              fontWeight: FontWeight.w700,
-                              height: 1.38,
+                                service.name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Color(0xFF1F2937),
+                                  fontSize: 18,
+                                  fontFamily: 'Inter',
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.38,
+                                ),
                               ),
-                              ),
-                              SizedBox(height: 10 ,),
+                              const SizedBox(height: 10),
                               Row(
                                 children: [
                                   CircleAvatar(
                                     backgroundImage: NetworkImage(tutor.picture),
                                     radius: 20,
                                   ),
-                                  SizedBox(width: 5,),
-                                  Text(
-                                    tutor.firstName,
-                                    style: TextStyle(
-                                      color: const Color(0xFF64748B),
-                                      fontSize: 14,
-                                      fontFamily: 'Nunito',
-                                      fontWeight: FontWeight.w400,
-                                      height: 1.43,
+                                  const SizedBox(width: 5),
+                                  Expanded(
+                                    child: Text(
+                                      tutor.firstName,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Color(0xFF64748B),
+                                        fontSize: 14,
+                                        fontFamily: 'Nunito',
+                                        fontWeight: FontWeight.w400,
+                                        height: 1.43,
+                                      ),
                                     ),
-                                  )
+                                  ),
                                 ],
                               ),
-                              SizedBox(height: 10,),
+                              const SizedBox(height: 10),
                               Row(
                                 children: [
                                   SvgPicture.asset(
                                     "assets/images/time.svg",
                                     height: 20,
                                     width: 20,
-                                    color: Color(0xFF475569),
+                                    color: const Color(0xFF475569),
                                   ),
-                                  SizedBox(width: 5,),
-                                  Text(
-                                    "${service.duration}min session",
-                                    style: TextStyle(
-                                      color: const Color(0xFF64748B),
-                                      fontSize: 14,
-                                      fontFamily: 'Nunito',
-                                      fontWeight: FontWeight.w400,
-                                      height: 1.43,
+                                  const SizedBox(width: 5),
+                                  Expanded(
+                                    child: Text(
+                                      "${service.duration}min session",
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Color(0xFF64748B),
+                                        fontSize: 14,
+                                        fontFamily: 'Nunito',
+                                        fontWeight: FontWeight.w400,
+                                        height: 1.43,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
-                              SizedBox(height: 10,),
+                              const SizedBox(height: 10),
                               if(service.maxnum - service.enrollednum <= 10)
                               Row(
                                 children: [
@@ -131,20 +147,23 @@ class ServiceCard extends StatelessWidget {
                                     width: 20,
                                     color: const Color(0xFFDD0D0D),
                                   ),
-                                  SizedBox(width: 5,),
-                                  Text(
-                                    '${service.maxnum - service.enrollednum} places left',
-                                    style: TextStyle(
-                                      color: const Color(0xFFDD0D0D),
-                                      fontSize: 14,
-                                      fontFamily: 'Nunito',
-                                      fontWeight: FontWeight.w400,
-                                      height: 1.43,
+                                  const SizedBox(width: 5),
+                                  Expanded(
+                                    child: Text(
+                                      '${service.maxnum - service.enrollednum} places left',
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Color(0xFFDD0D0D),
+                                        fontSize: 14,
+                                        fontFamily: 'Nunito',
+                                        fontWeight: FontWeight.w400,
+                                        height: 1.43,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
-                              SizedBox(height: 8,),
+                              const SizedBox(height: 8),
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
@@ -158,13 +177,13 @@ class ServiceCard extends StatelessWidget {
                                       height: 1.56,
                                     ),
                                   ),
-                                  SizedBox(width: 80,),
+                                  const Spacer(),
                                   ElevatedButton(
                                     onPressed:(){},
                                     style: ElevatedButton.styleFrom(
-                                        backgroundColor: Color(0xFF000080),
+                                        backgroundColor: const Color(0xFF000080),
                                         foregroundColor: Colors.white,
-                                        minimumSize: Size(100, 40),
+                                        minimumSize: const Size(100, 40),
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(12),
                                         )
@@ -190,7 +209,7 @@ class ServiceCard extends StatelessWidget {
                     ),
                     Positioned(
                         top: 15,
-                        left: 250,
+                        right: 16,
                         child: Container(
                           height: 25,
                           width: 50,

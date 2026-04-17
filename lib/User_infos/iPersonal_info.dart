@@ -44,7 +44,9 @@ class _IpersonalInfoState extends State<IpersonalInfo> {
 
   @override
   Widget build(BuildContext context) {
+    final double keyboardInset = MediaQuery.of(context).viewInsets.bottom;
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: const Color(0xfff9f9f9),
       bottomNavigationBar: Column(
   mainAxisSize: MainAxisSize.min,
@@ -73,7 +75,7 @@ class _IpersonalInfoState extends State<IpersonalInfo> {
         ),
       ),
     Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+      padding: EdgeInsets.fromLTRB(24, 0, 24, keyboardInset > 0 ? 12 : 32),
       child: ElevatedButton(
         onPressed: _isLoading ? null : () async {
           final formValid = _formKey.currentState!.validate();
@@ -173,7 +175,8 @@ class _IpersonalInfoState extends State<IpersonalInfo> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: EdgeInsets.fromLTRB(8, 0, 8, 8 + keyboardInset),
           child: Form(
             key: _formKey,
             child: Column(

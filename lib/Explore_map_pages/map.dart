@@ -31,8 +31,7 @@ class _MappageState extends State<Mappage> {
   Position? _currentPosition;
   final Set<Marker> _markers = {};
   Set<Polyline> _polylines = {};
-  List<TutorModel> teachers = [];
-  List<List<Location>> positions = [];
+  final List<_MappedTutor> _mappedTutors = <_MappedTutor>[];
   TutorModel? _selectedTutor;
   int? _selectedIndex;
   bool _hasLocationConsent = false;
@@ -221,35 +220,41 @@ class _MappageState extends State<Mappage> {
     for (TutorModel tutor in tutors) {
       if (tutor.location.isEmpty) continue;
       try {
-        List<Location> locations = await locationFromAddress(tutor.location);
-        if (locations.isEmpty) continue;
+        final Location? location = await _geocodeTutorLocation(tutor.location);
+        if (location == null) continue;
+        final LatLng markerPosition = LatLng(
+          location.latitude,
+          location.longitude,
+        );
+        final int mappedIndex = _mappedTutors.length;
         final BitmapDescriptor icon = await _buildCircularMarker(tutor.picture);
         final marker = Marker(
           markerId: MarkerId(tutor.uid),
-          position: LatLng(locations[0].latitude, locations[0].longitude),
+          position: markerPosition,
           icon: icon,
           onTap: () {
-            final index = teachers.indexWhere((t) => t.uid == tutor.uid);
             setState(() {
               _selectedTutor = tutor;
-              _selectedIndex = index;
+              _selectedIndex = mappedIndex;
             });
             _sheetController.animateTo(
               0.45,
-              duration: Duration(milliseconds: 300),
+              duration: const Duration(milliseconds: 300),
               curve: Curves.easeOut,
             );
-            _controller!.animateCamera(
-              CameraUpdate.newLatLng(
-                LatLng(locations[0].latitude, locations[0].longitude),
-              ),
+            _controller?.animateCamera(
+              CameraUpdate.newLatLng(markerPosition),
             );
           },
         );
         setState(() {
           _markers.add(marker);
-          teachers = tutors;
-          positions.add(locations);
+          _mappedTutors.add(
+            _MappedTutor(
+              tutor: tutor,
+              location: location,
+            ),
+          );
         });
       } catch (e) {
         print('Could not geocode: $e');
@@ -257,13 +262,40 @@ class _MappageState extends State<Mappage> {
     }
   }
 
+  Future<Location?> _geocodeTutorLocation(String rawLocation) async {
+    final String trimmed = rawLocation.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+
+    final List<String> attempts = <String>[
+      trimmed,
+      if (!trimmed.toLowerCase().contains('algeria')) '$trimmed, Algeria',
+      if (!trimmed.toLowerCase().contains('algeria')) '$trimmed, Alger',
+    ];
+
+    for (final String query in attempts) {
+      try {
+        final List<Location> locations = await locationFromAddress(query);
+        if (locations.isNotEmpty) {
+          return locations.first;
+        }
+      } catch (_) {
+        continue;
+      }
+    }
+
+    return null;
+  }
+
   String _getDistance(int index) {
     if (_currentPosition == null) return '';
+    final Location location = _mappedTutors[index].location;
     final distanceInMeters = Geolocator.distanceBetween(
       _currentPosition!.latitude,
       _currentPosition!.longitude,
-      positions[index][0].latitude,
-      positions[index][0].longitude,
+      location.latitude,
+      location.longitude,
     );
     final km = distanceInMeters / 1000;
     return km < 1
@@ -282,8 +314,8 @@ class _MappageState extends State<Mappage> {
           _currentPosition?.longitude ?? _defaultMapCenter.longitude,
         ),
         destination: PointLatLng(
-          positions[index][0].latitude,
-          positions[index][0].longitude,
+          _mappedTutors[index].location.latitude,
+          _mappedTutors[index].location.longitude,
         ),
         mode: TravelMode.driving,
       ),
@@ -309,8 +341,8 @@ class _MappageState extends State<Mappage> {
   }
 
   void _openGoogleMapsDirections(int index) async {
-    final lat = positions[index][0].latitude;
-    final lng = positions[index][0].longitude;
+    final lat = _mappedTutors[index].location.latitude;
+    final lng = _mappedTutors[index].location.longitude;
     final url = Uri.parse(
       'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving',
     );
@@ -477,20 +509,21 @@ class _MappageState extends State<Mappage> {
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           padding: EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: teachers.length,
+                          itemCount: _mappedTutors.length,
                           itemBuilder: (context, index) {
                             final isSelected = _selectedIndex == index;
+                            final TutorModel tutor = _mappedTutors[index].tutor;
                             return GestureDetector(
                               onTap: () {
                                 setState(() {
-                                  _selectedTutor = teachers[index];
+                                  _selectedTutor = tutor;
                                   _selectedIndex = index;
                                 });
-                                _controller!.animateCamera(
+                                _controller?.animateCamera(
                                   CameraUpdate.newLatLng(
                                     LatLng(
-                                      positions[index][0].latitude,
-                                      positions[index][0].longitude,
+                                      _mappedTutors[index].location.latitude,
+                                      _mappedTutors[index].location.longitude,
                                     ),
                                   ),
                                 );
@@ -511,7 +544,7 @@ class _MappageState extends State<Mappage> {
                                         shape: BoxShape.circle,
                                         image: DecorationImage(
                                           image: NetworkImage(
-                                            teachers[index].picture,
+                                            tutor.picture,
                                           ),
                                           fit: BoxFit.cover,
                                         ),
@@ -525,7 +558,7 @@ class _MappageState extends State<Mappage> {
                                     ),
                                     SizedBox(height: 4),
                                     Text(
-                                      teachers[index].firstName,
+                                      tutor.firstName,
                                       style: TextStyle(
                                         fontFamily: "Lexend",
                                         fontWeight: isSelected
@@ -837,4 +870,14 @@ class _MappageState extends State<Mappage> {
     _controller?.dispose();
     super.dispose();
   }
+}
+
+class _MappedTutor {
+  const _MappedTutor({
+    required this.tutor,
+    required this.location,
+  });
+
+  final TutorModel tutor;
+  final Location location;
 }

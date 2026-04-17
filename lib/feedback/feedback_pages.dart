@@ -83,6 +83,7 @@ class _TutorProfilePageState extends State<TutorProfilePage>
   }
 
   Future<void> _submitFeedback() async {
+    FocusScope.of(context).unfocus();
     final String comment = _feedbackController.text.trim();
     if (_selectedRating == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -266,10 +267,15 @@ class _TutorProfilePageState extends State<TutorProfilePage>
 
   @override
   Widget build(BuildContext context) {
+    final bool keyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
-      body: SafeArea(
-        child: FutureBuilder<TutorReviewBundle>(
+      resizeToAvoidBottomInset: true,
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: SafeArea(
+          child: FutureBuilder<TutorReviewBundle>(
           future: _bundleFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -287,8 +293,15 @@ class _TutorProfilePageState extends State<TutorProfilePage>
             final TutorModel tutor = bundle.tutor;
             final List<ReviewModel> previewReviews = bundle.reviews.take(2).toList();
 
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            return AnimatedPadding(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+              padding: EdgeInsets.fromLTRB(
+                20,
+                16,
+                20,
+                20 + MediaQuery.of(context).viewInsets.bottom,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -338,6 +351,8 @@ class _TutorProfilePageState extends State<TutorProfilePage>
                             ),
                           ),
                           ListView(
+                            keyboardDismissBehavior:
+                                ScrollViewKeyboardDismissBehavior.onDrag,
                             padding: const EdgeInsets.only(bottom: 16),
                             children: [
                               _RatingsSummaryCard(
@@ -377,62 +392,65 @@ class _TutorProfilePageState extends State<TutorProfilePage>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 18),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: _isActionLoading
-                              ? null
-                              : () => _openConversation(tutor),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFD9D9D9),
-                            foregroundColor: const Color(0xFF1F2937),
-                            minimumSize: const Size(0, 56),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(28),
+                  if (!keyboardVisible) ...[
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _isActionLoading
+                                ? null
+                                : () => _openConversation(tutor),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFD9D9D9),
+                              foregroundColor: const Color(0xFF1F2937),
+                              minimumSize: const Size(0, 56),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(28),
+                              ),
                             ),
-                          ),
-                          icon: const Icon(Icons.message_outlined),
-                          label: const Text(
-                            'Message',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: _isActionLoading
-                              ? null
-                              : () => _bookSession(tutor, bundle.services),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF000080),
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size(0, 56),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(28),
-                            ),
-                          ),
-                          icon: const Icon(Icons.calendar_today_outlined),
-                          label: const Text(
-                            'Book Session',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 16,
+                            icon: const Icon(Icons.message_outlined),
+                            label: const Text(
+                              'Message',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _isActionLoading
+                                ? null
+                                : () => _bookSession(tutor, bundle.services),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF000080),
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size(0, 56),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(28),
+                              ),
+                            ),
+                            icon: const Icon(Icons.calendar_today_outlined),
+                            label: const Text(
+                              'Book Session',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             );
           },
+        ),
         ),
       ),
     );
@@ -1298,6 +1316,8 @@ class _FeedbackComposerCard extends StatelessWidget {
               controller: controller,
               maxLength: 200,
               maxLines: 3,
+              textInputAction: TextInputAction.done,
+              onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
               decoration: const InputDecoration(
                 hintText: 'Write something...',
                 border: InputBorder.none,

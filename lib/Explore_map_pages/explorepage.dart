@@ -1,6 +1,9 @@
+import 'dart:math' as math;
+
 import 'package:fahamni/messaging/chat_page.dart';
 import 'package:fahamni/feedback/feedback_pages.dart';
 import 'package:fahamni/Courses/courses_page.dart';
+import 'package:fahamni/StudentHomePage/studenthome_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geocoding/geocoding.dart';
@@ -9,10 +12,12 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fahamni/widgets/customnavbar.dart';
 import 'package:fahamni/models/service_model.dart';
+import 'package:fahamni/models/session_model.dart';
 import 'package:fahamni/models/student_model.dart';
 import 'package:fahamni/models/tutor_model.dart';
 import 'package:fahamni/widgets/servicecard.dart';
 import 'package:fahamni/StudentHomePage/Student_homepage.dart';
+import 'package:fahamni/student_profile/student_account_page.dart';
 import 'package:fahamni/widgets/explore_service.dart';
 import 'package:fahamni/widgets/servicedetails.dart';
 import 'map.dart';
@@ -29,6 +34,7 @@ class Explorepage extends StatefulWidget {
 
 class _ExplorepageState extends State<Explorepage> {
   final TextEditingController _searchController = TextEditingController();
+  final studenthomepage_service _studentService = studenthomepage_service();
   Position? _currentPosition;
   GoogleMapController? _controller;
 
@@ -37,9 +43,6 @@ class _ExplorepageState extends State<Explorepage> {
   String? selectedRating;
   String? selectedPrice;
 
-  List<ServiceModel> filteredServices = [];
-  List<ServiceModel> allServices = [];
-  List<TutorModel> allTutors = [];
   List<String> op = ['Subject', 'Price', 'Rating', 'Mode'];
   List<List<String>> options = [
     ['Mathematics', 'Physics', 'English'],
@@ -52,9 +55,10 @@ class _ExplorepageState extends State<Explorepage> {
   int _selectedIndex2 = 0;
   int nearbyTutorsCount = 0;
 
-  List<TutorModel>? tutors;
-  List<ServiceModel>? services;
-  List<TutorModel>? tutorservice;
+  List<_RecommendedTutorEntry>? tutors;
+  List<_RecommendedServiceEntry>? services;
+  List<_RecommendedTutorEntry> _allTutors = <_RecommendedTutorEntry>[];
+  List<_RecommendedServiceEntry> _allServices = <_RecommendedServiceEntry>[];
 
   @override
   void dispose() {
@@ -136,34 +140,28 @@ class _ExplorepageState extends State<Explorepage> {
   }
 
   Future<void> _getDistances() async {
-    // 1. Get User Location first
-
-    // 2. Fetch Tutors
-    List<TutorModel> allTutors = await Explore_service().getAllTutors();
+    if (_currentPosition == null || tutors == null) {
+      return;
+    }
     int count = 0;
 
-    for (var tutor in tutors!) {
+    for (final _RecommendedTutorEntry entry in tutors!) {
+      final TutorModel tutor = entry.tutor;
       if (tutor.location.isNotEmpty) {
         try {
-          // 3. Geocode the tutor's address string
-          List<Location> locations = await locationFromAddress(tutor.location);
+          final List<Location> locations = await locationFromAddress(tutor.location);
 
           if (locations.isNotEmpty) {
-            // 4. Calculate distance in KM
-            double distance = Geolocator.distanceBetween(
+            final double distance = Geolocator.distanceBetween(
               _currentPosition!.latitude,
               _currentPosition!.longitude,
               locations[0].latitude,
               locations[0].longitude,
             ) / 1000;
 
-            // 5. Check if less than 20km
             if (distance < 20.0) {
               count++;
             }
-
-            // Optional: Store distance in the tutor object if you updated your model
-            // tutor.distance = distance;
           }
         } catch (e) {
           print("Geocoding failed for ${tutor.firstName}: $e");
@@ -178,15 +176,54 @@ class _ExplorepageState extends State<Explorepage> {
   Future<void> loadTutorsServices() async {
     final teachers = await Explore_service().getAllTutors();
     final fetchedServices = await Explore_service().getAllServices();
-    final teacherservice = await Explore_service().getTutorsFromServices(
-      fetchedServices,
+    final sessions = await _studentService.getCourses(widget.student.Courses);
+    final Map<String, TutorModel> tutorById = <String, TutorModel>{
+      for (final TutorModel tutor in teachers) tutor.uid: tutor,
+    };
+
+    final List<ServiceModel> previousServices = (await Future.wait<ServiceModel?>(
+      sessions.map((session) => _studentService.getServiceData(session.serviceId)),
+    ))
+        .whereType<ServiceModel>()
+        .toList();
+
+    final _RecommendationContext recommendationContext = _buildRecommendationContext(
+      student: widget.student,
+      sessions: sessions,
+      previousServices: previousServices,
     );
+
+    final List<_RecommendedTutorEntry> rankedTutors = teachers
+        .map(
+          (teacher) => _RecommendedTutorEntry(
+            tutor: teacher,
+            score: _scoreTutor(teacher, recommendationContext),
+          ),
+        )
+        .toList()
+      ..sort(_compareTutorEntries);
+
+    final List<_RecommendedServiceEntry> rankedServices = fetchedServices
+        .map((service) {
+          final TutorModel? tutor = tutorById[service.tutorId];
+          if (tutor == null) {
+            return null;
+          }
+          return _RecommendedServiceEntry(
+            service: service,
+            tutor: tutor,
+            score: _scoreService(service, tutor, recommendationContext),
+          );
+        })
+        .whereType<_RecommendedServiceEntry>()
+        .toList()
+      ..sort(_compareServiceEntries);
+
     setState(() {
-      tutors = teachers;
-      allTutors = teachers;
-      services = fetchedServices;
-      allServices = fetchedServices;
-      tutorservice = teacherservice;
+      tutors = rankedTutors;
+      _allTutors = rankedTutors;
+      services = rankedServices;
+      _allServices = rankedServices;
     });
   }
 
@@ -409,18 +446,17 @@ class _ExplorepageState extends State<Explorepage> {
                         fit: BoxFit.cover,
                       ),
                     Positioned(
-                      top: 150,
-                      left: 25,
+                      left: 12,
+                      right: 12,
+                      bottom: 10,
                       child: Container(
-                        height: 40,
-                        width: 330,
+                        constraints: const BoxConstraints(minHeight: 40),
                         padding: const EdgeInsets.all(2),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             SvgPicture.asset(
                               "assets/images/position.svg",
@@ -428,25 +464,20 @@ class _ExplorepageState extends State<Explorepage> {
                               width: 25,
                             ),
                             const SizedBox(width: 5),
-                            nearbyTutorsCount == 0 ?
-                             Text(
-                              '$nearbyTutorsCount Tutors found near you',
-                              style: TextStyle(
-                                fontFamily: "Lexend",
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                                color: Color(0xFF0F172A),
-                              ),
-                            ) : Text(
-                              'Discover Tutors found near you',
-                              style: TextStyle(
-                                fontFamily: "Lexend",
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                                color: Color(0xFF0F172A),
+                            Expanded(
+                              child: Text(
+                                nearbyTutorsCount == 0
+                                    ? '$nearbyTutorsCount Tutors found near you'
+                                    : 'Discover Tutors found near you',
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontFamily: "Lexend",
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                  color: Color(0xFF0F172A),
+                                ),
                               ),
                             ),
-                            const Spacer(),
                             GestureDetector(
                               onTap: () {
                                 _openFullMap();
@@ -514,171 +545,37 @@ class _ExplorepageState extends State<Explorepage> {
                   ),
                 )
               else
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: tutors!.length,
-                  itemBuilder: (context, index) {
-                    final TutorModel tutor = tutors![index];
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                TutorProfilePage(tutorId: tutor.uid),
-                          ),
-                        );
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(0, 0, 0, 8),
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(
-                                  0xFF000000,
-                                ).withValues(alpha: 0.05),
-                                blurRadius: 2,
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                height: 64,
-                                width: 64,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                clipBehavior: Clip.antiAlias,
-                                child: Image.network(
-                                  tutor.picture,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      Image.asset(
-                                        'assets/images/tutormale.png',
-                                        fit: BoxFit.cover,
-                                      ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '${tutor.firstName} ${tutor.lastName}',
-                                      style: const TextStyle(
-                                        fontFamily: "Lexend",
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      tutor.expertiseDomain,
-                                      style: const TextStyle(
-                                        fontFamily: "Lexend",
-                                        fontWeight: FontWeight.w400,
-                                        fontSize: 12,
-                                        color: Color(0xFF64748B),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Wrap(
-                                      spacing: 8,
-                                      runSpacing: 4,
-                                      crossAxisAlignment:
-                                          WrapCrossAlignment.center,
-                                      children: [
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            SvgPicture.asset(
-                                              "assets/images/position.svg",
-                                              height: 12,
-                                              width: 12,
-                                              colorFilter:
-                                                  const ColorFilter.mode(
-                                                    Color(0xFF64748B),
-                                                    BlendMode.srcIn,
-                                                  ),
-                                            ),
-                                            const SizedBox(width: 2),
-                                            Text(
-                                              tutor.location,
-                                              style: const TextStyle(
-                                                fontFamily: "Lexend",
-                                                fontWeight: FontWeight.w500,
-                                                fontSize: 10,
-                                                color: Color(0xFF64748B),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        Text(
-                                          tutor.isAvailable
-                                              ? 'Available'
-                                              : 'Busy',
-                                          style: TextStyle(
-                                            fontFamily: "Lexend",
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 10,
-                                            color: tutor.isAvailable
-                                                ? const Color(0xFF16A34A)
-                                                : const Color(0xFFDC2626),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: ShapeDecoration(
-                                  color: const Color(
-                                    0xFF000080,
-                                  ).withValues(alpha: 0.1),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(6),
+                SizedBox(
+                  height: 398,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: (tutors!.length / 3).ceil(),
+                    itemBuilder: (context, pageIndex) {
+                      final int start = pageIndex * 3;
+                      final int end = math.min(start + 3, tutors!.length);
+                      final List<_RecommendedTutorEntry> pageTutors =
+                          tutors!.sublist(start, end);
+
+                      return Container(
+                        width: math.min(MediaQuery.of(context).size.width - 32, 420),
+                        margin: EdgeInsets.only(
+                          right: pageIndex == (tutors!.length / 3).ceil() - 1 ? 0 : 14,
+                        ),
+                        child: Column(
+                          children: pageTutors
+                              .map(
+                                (entry) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 10),
+                                  child: _RecommendedTeacherTile(
+                                    tutor: entry.tutor,
                                   ),
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    SvgPicture.asset(
-                                      "assets/images/star.svg",
-                                      height: 12,
-                                      width: 12,
-                                    ),
-                                    const SizedBox(width: 3),
-                                    Text(
-                                      tutor.averageRating.toStringAsFixed(1),
-                                      style: const TextStyle(
-                                        color: Color(0xFF1E293B),
-                                        fontSize: 12,
-                                        fontFamily: 'Lexend',
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                              )
+                              .toList(),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               const SizedBox(height: 5),
               // Recommended Services
@@ -728,24 +625,27 @@ class _ExplorepageState extends State<Explorepage> {
                         scrollDirection: Axis.horizontal,
                         itemCount: services!.length,
                         itemBuilder: (context, index) {
+                          final _RecommendedServiceEntry entry = services![index];
+                          final double cardWidth =
+                              math.min(MediaQuery.of(context).size.width * 0.84, 350);
                           return SizedBox(
                             height: 430,
-                            width: 350,
+                            width: cardWidth,
                             child: GestureDetector(
                               onTap: () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => Servicedetails(
-                                      tutor: tutorservice![index],
-                                      service: services![index],
+                                      tutor: entry.tutor,
+                                      service: entry.service,
                                     ),
                                   ),
                                 );
                               },
                               child: ServiceCard(
-                                tutor: tutorservice![index],
-                                service: services![index],
+                                tutor: entry.tutor,
+                                service: entry.service,
                               ),
                             ),
                           );
@@ -774,6 +674,11 @@ class _ExplorepageState extends State<Explorepage> {
               context,
               MaterialPageRoute(builder: (context) => ChatPage()),
             );
+          } else if (index == 4) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const StudentAccountPage()),
+            );
           } else {
             setState(() {
               _selectedIndex = index;
@@ -788,26 +693,29 @@ class _ExplorepageState extends State<Explorepage> {
     final query = _searchController.text.toLowerCase();
 
     setState(() {
-      services = allServices.where((s) {
+      services = _allServices.where((entry) {
+        final ServiceModel s = entry.service;
+        final TutorModel tutor = entry.tutor;
         final matchSubject =
-            selectedSubject == null || s.subject == selectedSubject;
+            selectedSubject == null ||
+            s.subject.toLowerCase() == selectedSubject!.toLowerCase() ||
+            tutor.expertiseDomain.toLowerCase() == selectedSubject!.toLowerCase();
         final matchPrice =
             selectedPrice == null ||
             s.price <= double.parse(selectedPrice!.replaceAll('<', ''));
         final matchSearch =
             query.isEmpty ||
+            s.name.toLowerCase().contains(query) ||
             s.subject.toLowerCase().contains(query) ||
+            s.description.toLowerCase().contains(query) ||
+            tutor.firstName.toLowerCase().contains(query) ||
+            tutor.lastName.toLowerCase().contains(query) ||
             s.price.toString().toLowerCase().contains(query);
-
-        final tutor = tutorservice?.firstWhere(
-          (t) => t.uid == s.tutorId,
-          orElse: () => tutorservice![0],
-        );
         final matchMode =
-            selectedMode == null || tutor?.teachingMode == selectedMode;
+            selectedMode == null || tutor.teachingMode == selectedMode;
         final matchRating =
             selectedRating == null ||
-            (tutor?.averageRating ?? 0) >=
+            tutor.averageRating >=
                 double.parse(selectedRating!.replaceAll(',', '.'));
 
         return matchSubject &&
@@ -817,11 +725,13 @@ class _ExplorepageState extends State<Explorepage> {
             matchSearch;
       }).toList();
 
-      tutors = allTutors.where((t) {
+      tutors = _allTutors.where((entry) {
+        final TutorModel t = entry.tutor;
         final matchMode =
             selectedMode == null || t.teachingMode == selectedMode;
         final matchSubject =
-            selectedSubject == null || t.expertiseDomain == selectedSubject;
+            selectedSubject == null ||
+            t.expertiseDomain.toLowerCase() == selectedSubject!.toLowerCase();
         final matchRating =
             selectedRating == null ||
             t.averageRating >=
@@ -835,5 +745,353 @@ class _ExplorepageState extends State<Explorepage> {
         return matchMode && matchRating && matchSubject && matchSearch;
       }).toList();
     });
+  }
+
+  _RecommendationContext _buildRecommendationContext({
+    required StudentModel student,
+    required List<SessionModel> sessions,
+    required List<ServiceModel> previousServices,
+  }) {
+    final Set<String> preferredSubjects = student.preferredSubjects
+        .map(_normalize)
+        .where((value) => value.isNotEmpty)
+        .toSet();
+    final Set<String> previousSubjects = previousServices
+        .map((service) => _normalize(service.subject))
+        .where((value) => value.isNotEmpty)
+        .toSet();
+    final Set<String> previousTutorIds = sessions
+        .map((session) => session.tutorId.trim())
+        .where((value) => value.isNotEmpty)
+        .toSet();
+    final Set<String> previousModes = <String>{
+      ...previousServices.map((service) => _normalize(service.area)),
+      ...sessions.map((session) => _normalize(session.modality)),
+    }.where((value) => value.isNotEmpty).toSet();
+    final Set<String> favoriteTutorIds = widget.student.favoriteTeachers
+        .map((id) => id.trim())
+        .where((value) => value.isNotEmpty)
+        .toSet();
+    final Set<String> objectiveKeywords = _extractKeywords(student.learningObjectives);
+
+    return _RecommendationContext(
+      preferredSubjects: preferredSubjects,
+      previousSubjects: previousSubjects,
+      previousTutorIds: previousTutorIds,
+      previousModes: previousModes,
+      favoriteTutorIds: favoriteTutorIds,
+      schoolLevel: _normalize(student.schoolLevel),
+      objectiveKeywords: objectiveKeywords,
+    );
+  }
+
+  double _scoreTutor(TutorModel tutor, _RecommendationContext context) {
+    double score = 0;
+    final String expertise = _normalize(tutor.expertiseDomain);
+    final Set<String> tutorLevels = tutor.levelsTaught.map(_normalize).toSet();
+    final Set<String> tutorKeywords = _extractKeywords(
+      '${tutor.expertiseDomain} ${tutor.academicDescription} ${tutor.pedagogicalDescription}',
+    );
+
+    if (context.favoriteTutorIds.contains(tutor.uid)) score += 30;
+    if (context.previousTutorIds.contains(tutor.uid)) score += 24;
+    if (context.preferredSubjects.contains(expertise)) score += 26;
+    if (context.previousSubjects.contains(expertise)) score += 22;
+    if (context.schoolLevel.isNotEmpty && tutorLevels.contains(context.schoolLevel)) {
+      score += 16;
+    }
+    if (context.previousModes.contains(_normalize(tutor.teachingMode))) score += 8;
+    score += _keywordOverlapScore(context.objectiveKeywords, tutorKeywords, maxBonus: 14);
+    if (tutor.isAvailable) score += 8;
+    score += tutor.averageRating * 3.5;
+    score += math.min(tutor.yearsOfExperience.toDouble(), 12);
+
+    return score;
+  }
+
+  double _scoreService(
+    ServiceModel service,
+    TutorModel tutor,
+    _RecommendationContext context,
+  ) {
+    double score = 0;
+    final String subject = _normalize(service.subject);
+    final Set<String> serviceKeywords = _extractKeywords(
+      '${service.name} ${service.subject} ${service.description} ${service.area} ${service.level}',
+    );
+
+    if (context.preferredSubjects.contains(subject)) score += 30;
+    if (context.previousSubjects.contains(subject)) score += 26;
+    if (context.favoriteTutorIds.contains(tutor.uid)) score += 20;
+    if (context.previousTutorIds.contains(tutor.uid)) score += 16;
+    if (context.schoolLevel.isNotEmpty &&
+        _normalize(service.level) == context.schoolLevel) {
+      score += 18;
+    }
+    if (context.previousModes.contains(_normalize(service.area)) ||
+        context.previousModes.contains(_normalize(tutor.teachingMode))) {
+      score += 8;
+    }
+    score += _keywordOverlapScore(context.objectiveKeywords, serviceKeywords, maxBonus: 16);
+    if (service.isActive) score += 8;
+    score += tutor.averageRating * 3;
+    score += math.max(service.maxnum - service.enrollednum, 0) * 0.3;
+
+    return score;
+  }
+
+  int _compareTutorEntries(_RecommendedTutorEntry a, _RecommendedTutorEntry b) {
+    final int scoreCompare = b.score.compareTo(a.score);
+    if (scoreCompare != 0) return scoreCompare;
+    return b.tutor.averageRating.compareTo(a.tutor.averageRating);
+  }
+
+  int _compareServiceEntries(_RecommendedServiceEntry a, _RecommendedServiceEntry b) {
+    final int scoreCompare = b.score.compareTo(a.score);
+    if (scoreCompare != 0) return scoreCompare;
+    return b.tutor.averageRating.compareTo(a.tutor.averageRating);
+  }
+
+  String _normalize(String value) => value.trim().toLowerCase();
+
+  Set<String> _extractKeywords(String text) {
+    final Set<String> stopWords = <String>{
+      'the',
+      'and',
+      'for',
+      'with',
+      'from',
+      'that',
+      'this',
+      'your',
+      'you',
+      'are',
+      'about',
+      'into',
+      'online',
+      'onsite',
+      'course',
+      'courses',
+      'study',
+      'learn',
+      'want',
+    };
+
+    return text
+        .toLowerCase()
+        .split(RegExp(r'[^a-z0-9]+'))
+        .where((token) => token.length >= 3 && !stopWords.contains(token))
+        .toSet();
+  }
+
+  double _keywordOverlapScore(
+    Set<String> source,
+    Set<String> target, {
+    required double maxBonus,
+  }) {
+    if (source.isEmpty || target.isEmpty) {
+      return 0;
+    }
+    final int overlap = source.intersection(target).length;
+    return math.min(overlap * 4.0, maxBonus);
+  }
+}
+
+class _RecommendationContext {
+  const _RecommendationContext({
+    required this.preferredSubjects,
+    required this.previousSubjects,
+    required this.previousTutorIds,
+    required this.previousModes,
+    required this.favoriteTutorIds,
+    required this.schoolLevel,
+    required this.objectiveKeywords,
+  });
+
+  final Set<String> preferredSubjects;
+  final Set<String> previousSubjects;
+  final Set<String> previousTutorIds;
+  final Set<String> previousModes;
+  final Set<String> favoriteTutorIds;
+  final String schoolLevel;
+  final Set<String> objectiveKeywords;
+}
+
+class _RecommendedTutorEntry {
+  const _RecommendedTutorEntry({
+    required this.tutor,
+    required this.score,
+  });
+
+  final TutorModel tutor;
+  final double score;
+}
+
+class _RecommendedServiceEntry {
+  const _RecommendedServiceEntry({
+    required this.service,
+    required this.tutor,
+    required this.score,
+  });
+
+  final ServiceModel service;
+  final TutorModel tutor;
+  final double score;
+}
+
+class _RecommendedTeacherTile extends StatelessWidget {
+  const _RecommendedTeacherTile({
+    required this.tutor,
+  });
+
+  final TutorModel tutor;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => TutorProfilePage(tutorId: tutor.uid),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF000000).withValues(alpha: 0.05),
+              blurRadius: 2,
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              height: 64,
+              width: 64,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Image.network(
+                tutor.picture,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Image.asset(
+                  'assets/images/tutormale.png',
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${tutor.firstName} ${tutor.lastName}',
+                    style: const TextStyle(
+                      fontFamily: "Lexend",
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    tutor.expertiseDomain,
+                    style: const TextStyle(
+                      fontFamily: "Lexend",
+                      fontWeight: FontWeight.w400,
+                      fontSize: 12,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SvgPicture.asset(
+                            "assets/images/position.svg",
+                            height: 12,
+                            width: 12,
+                            colorFilter: const ColorFilter.mode(
+                              Color(0xFF64748B),
+                              BlendMode.srcIn,
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            tutor.location,
+                            style: const TextStyle(
+                              fontFamily: "Lexend",
+                              fontWeight: FontWeight.w500,
+                              fontSize: 10,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        tutor.isAvailable ? 'Available' : 'Busy',
+                        style: TextStyle(
+                          fontFamily: "Lexend",
+                          fontWeight: FontWeight.w600,
+                          fontSize: 10,
+                          color: tutor.isAvailable
+                              ? const Color(0xFF16A34A)
+                              : const Color(0xFFDC2626),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 4,
+              ),
+              decoration: ShapeDecoration(
+                color: const Color(0xFF000080).withValues(alpha: 0.1),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SvgPicture.asset(
+                    "assets/images/star.svg",
+                    height: 12,
+                    width: 12,
+                  ),
+                  const SizedBox(width: 3),
+                  Text(
+                    tutor.averageRating.toStringAsFixed(1),
+                    style: const TextStyle(
+                      color: Color(0xFF1E293B),
+                      fontSize: 12,
+                      fontFamily: 'Lexend',
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
