@@ -6,11 +6,19 @@ import '../models/service_model.dart';
 class ServiceCard extends StatelessWidget {
   final TutorModel tutor;
   final ServiceModel service;
+  final bool showBookButton;
+  final String primaryActionLabel;
+  final VoidCallback? onPrimaryAction;
+  final Widget? trailingActions;
 
   const ServiceCard({
     super.key,
     required this.tutor,
     required this.service,
+    this.showBookButton = true,
+    this.primaryActionLabel = 'Book Now',
+    this.onPrimaryAction,
+    this.trailingActions,
   });
 
   @override
@@ -178,28 +186,30 @@ class ServiceCard extends StatelessWidget {
                                     ),
                                   ),
                                   const Spacer(),
-                                  ElevatedButton(
-                                    onPressed:(){},
-                                    style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFF000080),
-                                        foregroundColor: Colors.white,
-                                        minimumSize: const Size(100, 40),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                        )
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        'Book Now',
-                                        style: TextStyle(
-                                            fontFamily: 'Nunito',
-                                            fontWeight: FontWeight.w700,
-                                            color: Colors.white,
-                                            fontSize: 15
+                                  if (trailingActions != null) trailingActions!,
+                                  if (showBookButton)
+                                    ElevatedButton(
+                                      onPressed: onPrimaryAction ?? () {},
+                                      style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFF000080),
+                                          foregroundColor: Colors.white,
+                                          minimumSize: const Size(100, 40),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          )
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          primaryActionLabel,
+                                          style: const TextStyle(
+                                              fontFamily: 'Nunito',
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.white,
+                                              fontSize: 15
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  )
                                 ],
                               )
                             ],

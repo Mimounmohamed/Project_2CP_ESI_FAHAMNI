@@ -1,4 +1,4 @@
-const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const nodemailer = require("nodemailer");
 const { defineString, defineSecret } = require("firebase-functions/params");
@@ -304,3 +304,206 @@ exports.sendPasswordChangedEmail = onCall(
     }
   }
 );
+
+function normalizePath(path = "") {
+  return path.replace(/^\/+/, "").replace(/\/+$/, "");
+}
+
+exports.teacherApi = onRequest(async (req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  if (req.method === "OPTIONS") {
+    res.status(204).send("");
+    return;
+  }
+
+  const route = normalizePath(req.path);
+
+  try {
+    if (req.method === "POST" && route === "services") {
+      const {
+        tutorId,
+        serviceName,
+        description,
+        domain,
+        grade,
+        subject,
+        price,
+        membersNumber,
+        mode,
+        sessionsNumber,
+        sessionDuration,
+        image,
+      } = req.body || {};
+
+      if (!tutorId || !serviceName || !subject) {
+        res.status(400).json({ error: "Missing required fields." });
+        return;
+      }
+
+      const docRef = admin.firestore().collection("services").doc();
+      await docRef.set({
+        service_id: docRef.id,
+        tutor_id: tutorId,
+        name: serviceName,
+        description: description || "",
+        area: domain || "",
+        level: grade || "",
+        subject,
+        price: Number(price || 0),
+        maxstudents: Number(membersNumber || 1),
+        is_active: true,
+        enrolled_num: 0,
+        sessions_num: Number(sessionsNumber || 1),
+        duration: Number(sessionDuration || 30),
+        mode: mode || "online",
+        picture: image || "",
+        created_at: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      res.status(201).json({ id: docRef.id });
+      return;
+    }
+
+    if (req.method === "GET" && route === "requests") {
+      const tutorId = req.query.tutorId;
+      if (!tutorId) {
+        res.status(400).json({ error: "Missing tutorId query parameter." });
+        return;
+      }
+
+      const snapshot = await admin
+        .firestore()
+        .collection("quotes")
+        .where("tutor_id", "==", tutorId)
+        .get();
+
+      const requests = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      res.status(200).json({ requests });
+      return;
+    }
+
+    if (req.method === "POST" && route.startsWith("requests/") && route.endsWith("/respond")) {
+      const parts = route.split("/");
+      const requestId = parts[1];
+      const { status, price, sessions, sessionDuration } = req.body || {};
+
+      if (!requestId || !status) {
+        res.status(400).json({ error: "Missing request id or status." });
+        return;
+      }
+
+      const payload = {
+        status,
+        responded_at: admin.firestore.FieldValue.serverTimestamp(),
+      };
+      if (price !== undefined) {
+        payload.teacher_price = Number(price);
+      }
+      if (sessions !== undefined) {
+        payload.teacher_sessions_num = Number(sessions);
+      }
+      if (sessionDuration !== undefined) {
+        payload.teacher_session_duration = Number(sessionDuration);
+      }
+
+      const quoteRef = admin.firestore().collection("quotes").doc(requestId);
+      const quoteSnap = await quoteRef.get();
+      if (quoteSnap.exists) {
+        await quoteRef.set(payload, { merge: true });
+      } else {
+        await admin.firestore().collection("quote_requests").doc(requestId).set(payload, { merge: true });
+      }
+
+      res.status(200).json({ success: true });
+      return;
+    }
+
+    if (req.method === "POST" && route === "sessions") {
+      const {
+        tutorId,
+        serviceId,
+        studentIds,
+        dateISO,
+        startISO,
+        endISO,
+        modality,
+        type,
+        onlineLink,
+      } = req.body || {};
+
+      if (!tutorId || !serviceId || !dateISO || !startISO || !endISO) {
+        res.status(400).json({ error: "Missing session fields." });
+        return;
+      }
+
+      const docRef = admin.firestore().collection("sessions").doc();
+      await docRef.set({
+        session_id: docRef.id,
+        tutor_id: tutorId,
+        service_id: serviceId,
+        student_ids: Array.isArray(studentIds) ? studentIds : [],
+        status: "Planned",
+        type: type || "regular",
+        modality: modality || "online",
+        online_link: onlineLink || "",
+        date: admin.firestore.Timestamp.fromDate(new Date(dateISO)),
+        start_time: admin.firestore.Timestamp.fromDate(new Date(startISO)),
+        end_time: admin.firestore.Timestamp.fromDate(new Date(endISO)),
+      });
+
+      res.status(201).json({ id: docRef.id });
+      return;
+    }
+
+    if (req.method === "POST" && route === "resources") {
+      const {
+        tutorId,
+        sessionId,
+        name,
+        resourceType,
+        urlOrPath,
+        subject,
+        level,
+      } = req.body || {};
+
+      if (!tutorId || !sessionId || !name) {
+        res.status(400).json({ error: "Missing resource fields." });
+        return;
+      }
+
+      const docRef = admin.firestore().collection("resources").doc();
+      const isLink = (resourceType || "").toLowerCase() === "link";
+      await docRef.set({
+        resource_id: docRef.id,
+        tutor_id: tutorId,
+        session_id: sessionId,
+        title: name,
+        subject: subject || "",
+        level: level || "",
+        description: "",
+        content_type: isLink ? "media" : "document",
+        access_level: "session",
+        allowed_users: [],
+        is_public: false,
+        added_at: admin.firestore.FieldValue.serverTimestamp(),
+        media_url: isLink ? (urlOrPath || "") : "",
+        file_url: isLink ? "" : (urlOrPath || ""),
+        platform: isLink ? "url" : "",
+        doc_type: isLink ? "" : "file",
+      });
+
+      res.status(201).json({ id: docRef.id });
+      return;
+    }
+
+    res.status(404).json({ error: "Route not found." });
+  } catch (error) {
+    res.status(500).json({ error: error.message || "Internal error." });
+  }
+});

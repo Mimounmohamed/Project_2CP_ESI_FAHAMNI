@@ -1,5 +1,10 @@
+import 'service_model.dart';
+import 'tutor_model.dart';
+
 class TeacherDashboardModel {
   const TeacherDashboardModel({
+    required this.tutorProfile,
+    required this.serviceRecords,
     required this.teacherName,
     required this.teacherRoleLabel,
     required this.profileImage,
@@ -17,6 +22,8 @@ class TeacherDashboardModel {
     required this.quoteRequests,
   });
 
+  final TutorModel tutorProfile;
+  final List<ServiceModel> serviceRecords;
   final String teacherName;
   final String teacherRoleLabel;
   final String profileImage;
@@ -83,17 +90,33 @@ class TeacherDashboardServiceCard {
 class TeacherDashboardQuoteRequest {
   const TeacherDashboardQuoteRequest({
     required this.id,
+    required this.studentId,
     required this.studentName,
     required this.studentLevel,
     required this.subtitle,
+    required this.subject,
+    required this.objective,
+    required this.frequency,
+    required this.duration,
+    required this.budget,
+    required this.createdAtLabel,
+    required this.status,
     required this.avatarPath,
     required this.actionLabel,
   });
 
   final String id;
+  final String studentId;
   final String studentName;
   final String studentLevel;
   final String subtitle;
+  final String subject;
+  final String objective;
+  final String frequency;
+  final String duration;
+  final String budget;
+  final String createdAtLabel;
+  final String status;
   final String avatarPath;
   final String actionLabel;
 }

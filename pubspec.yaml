@@ -87,7 +87,6 @@ flutter:
     - assets/images/
     - assets/images/map.png
     - assets/map_style.json
-    - .env
 
     - assets/ 
   fonts:

@@ -4,7 +4,10 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_options.dart';
 import 'Splash_Screen/splash.dart';
+import 'TeacherDashboard/teacher_dashboard.dart';
 import 'navigation/app_navigation.dart';
+
+const bool kSkipSplash = true;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,7 +41,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       navigatorKey: NavigationService.instance.navigatorKey,
-      home: const SplashScreen(),
+      home: kSkipSplash ? const TeacherDashboardScreen() : const SplashScreen(),
+
     );
   }
 }
