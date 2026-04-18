@@ -7,6 +7,7 @@ import '../models/tutor_model.dart';
 import '../models/student_model.dart';
 import '../models/parent_model.dart'; 
 import 'phone_auth_service.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 
 class AuthService {
@@ -231,6 +232,88 @@ Future<void> checkIfUserExists({
     }
   }
 }
+
+Future<void> updateEmail({required String newEmail}) async {
+  try {
+    final user = _auth.currentUser;
+    if (user == null) throw 'Not logged in.';
+
+    final emailQuery = await _db
+        .collection('users')
+        .where('email', isEqualTo: newEmail)
+        .limit(1)
+        .get();
+    if (emailQuery.docs.isNotEmpty) throw 'This email is already registered.';
+
+    final uid = user.uid;
+
+    await FirebaseFunctions.instanceFor(region: 'us-central1')
+        .httpsCallable('updateUserEmail')
+        .call({'newEmail': newEmail});
+
+    await _db.collection('users').doc(uid).update({'email': newEmail});
+    final userDoc = await _db.collection('users').doc(uid).get();
+    final role = UserRole.values.firstWhere(
+      (r) => r.name == (userDoc['role'] ?? 'student'),
+      orElse: () => UserRole.student,
+    );
+    await _db.collection(_collectionForRole(role)).doc(uid).update({'email': newEmail});
+
+  } on FirebaseAuthException catch (e) {
+    throw _handleAuthError(e);
+  }
+}
+
+
+Future<void> updatePhone({required String newPhone}) async {
+  try {
+    final user = _auth.currentUser;
+    if (user == null) throw 'Not logged in.';
+
+    for (final collection in ['students', 'tutors', 'parents']) {
+      final query = await _db
+          .collection(collection)
+          .where('phone', isEqualTo: newPhone)
+          .limit(1)
+          .get();
+      if (query.docs.isNotEmpty) throw 'This phone number is already registered.';
+    }
+
+    final uid = user.uid;
+
+    await FirebaseFunctions.instanceFor(region: 'us-central1')
+        .httpsCallable('updateUserPhone')
+        .call({'newPhone': newPhone});
+
+    // Update Firestore
+    final userDoc = await _db.collection('users').doc(uid).get();
+    final role = UserRole.values.firstWhere(
+      (r) => r.name == (userDoc['role'] ?? 'student'),
+      orElse: () => UserRole.student,
+    );
+    await _db.collection(_collectionForRole(role)).doc(uid).update({'phone': newPhone});
+
+  } on FirebaseAuthException catch (e) {
+    throw _handleAuthError(e);
+  }
+}
+
+Future<void> verifyCurrentPassword(String password) async {
+  final user = _auth.currentUser;
+  if (user == null) throw 'Not logged in.';
+
+  final credential = EmailAuthProvider.credential(
+    email: user.email!,
+    password: password,
+  );
+
+  try {
+    await user.reauthenticateWithCredential(credential);
+  } on FirebaseAuthException catch (e) {
+    throw _handleAuthError(e);
+  }
+}
+
 Future<void> sendPasswordResetEmail(String email) async {
   try {
     final emailQuery = await _db

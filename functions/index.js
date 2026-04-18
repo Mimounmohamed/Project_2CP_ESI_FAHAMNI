@@ -19,6 +19,45 @@ function getTransporter() {
   });
 }
 
+exports.updateUserEmail = onCall(
+  { allowUnauthenticated: false, secrets: [mailPass] },
+  async (request) => {
+    const { newEmail } = request.data;
+    const uid = request.auth?.uid;
+
+    if (!uid || !newEmail) {
+      throw new HttpsError("invalid-argument", "Missing fields.");
+    }
+
+    try {
+      // Admin SDK can force-update email without deprecation issues
+      await admin.auth().updateUser(uid, { email: newEmail });
+      return { success: true };
+    } catch (e) {
+      throw new HttpsError("internal", e.message);
+    }
+  }
+);
+
+exports.updateUserPhone = onCall(
+  { allowUnauthenticated: false },
+  async (request) => {
+    const { newPhone } = request.data;
+    const uid = request.auth?.uid;
+
+    if (!uid || !newPhone) {
+      throw new HttpsError("invalid-argument", "Missing fields.");
+    }
+
+    try {
+      await admin.auth().updateUser(uid, { phoneNumber: newPhone });
+      return { success: true };
+    } catch (e) {
+      throw new HttpsError("internal", e.message);
+    }
+  }
+);
+
 // ── HTML Helpers ──────────────────────────────────────────────────────────────
 function digitBoxes(digits) {
   return digits.map(d => `

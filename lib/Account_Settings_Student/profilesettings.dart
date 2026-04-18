@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'language_screen.dart';
 import 'deleteacc_screen.dart';
-import 'changepas_screen.dart'; // ← change if your change password screen is different
+import 'changepas_screen.dart'; 
+import 'updateemailpass_screen.dart';
+import 'updatephonepass_screen.dart';
 
 class ProfileSettingsScreen extends StatelessWidget {
   const ProfileSettingsScreen({super.key});
@@ -99,6 +101,28 @@ class ProfileSettingsScreen extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (context) => const ChangePasswordScreen(),
+                  ),
+                );
+              }),
+
+              divider(),
+
+              item(context, "Update Email", () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const UpdateEmailPasswordScreen(),
+                  ),
+                );
+              }),
+
+              divider(),
+
+              item(context, "Update Phone Number", () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const UpdatePhonePasswordScreen(),
                   ),
                 );
               }),

@@ -32,6 +32,25 @@ class EmailOtpService {
     });
   }
 
+  Future<void> sendEmailUpdateOtp({required String newEmail}) async {
+  final code   = _generateCode();
+  final expiry = DateTime.now().add(const Duration(minutes: 10));
+
+  await _db.collection('email_otps').doc(newEmail).set({
+    'code':      code,
+    'expiresAt': Timestamp.fromDate(expiry),
+    'type':      'email_update',
+    'verified':  false,
+  });
+
+  await _functions.httpsCallable('sendOtpEmail').call({
+    'email':     newEmail,
+    'firstName': '',
+    'code':      code,
+    'isReset':   false,
+  });
+}
+
   Future<void> sendPasswordResetOtp({required String email}) async {
     final code   = _generateCode();
     final expiry = DateTime.now().add(const Duration(minutes: 10));
