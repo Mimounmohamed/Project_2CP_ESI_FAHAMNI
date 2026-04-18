@@ -13,7 +13,7 @@ import 'package:fahamni/models/student_model.dart';
 import 'package:fahamni/StudentHomePage/studenthome_service.dart';
 import 'package:fahamni/StudentHomePage/Student_homepage.dart';
 
-class AccountScreen extends StatefulWidget {        // ← StatefulWidget
+class AccountScreen extends StatefulWidget {        
   const AccountScreen({super.key});
 
   @override
@@ -21,7 +21,7 @@ class AccountScreen extends StatefulWidget {        // ← StatefulWidget
 }
 
 class _AccountScreenState extends State<AccountScreen> {
-  int _selectedIndex = 4;                           // ← starts on Account tab
+  int _selectedIndex = 4;                          
   StudentModel? student;
 
   @override

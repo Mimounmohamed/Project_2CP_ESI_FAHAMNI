@@ -4,7 +4,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 
 class EmailOtpService {
   final _db        = FirebaseFirestore.instance;
-  final _functions = FirebaseFunctions.instance;
+  final _functions = FirebaseFunctions.instanceFor(region: 'us-central1');
 
   String _generateCode() {
     final rng = Random.secure();
