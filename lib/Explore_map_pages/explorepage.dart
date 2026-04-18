@@ -17,7 +17,7 @@ import 'package:fahamni/models/student_model.dart';
 import 'package:fahamni/models/tutor_model.dart';
 import 'package:fahamni/widgets/servicecard.dart';
 import 'package:fahamni/StudentHomePage/Student_homepage.dart';
-import 'package:fahamni/student_profile/student_account_page.dart';
+import 'package:fahamni/Account_Settings_Student/account_screen.dart';
 import 'package:fahamni/widgets/explore_service.dart';
 import 'package:fahamni/widgets/servicedetails.dart';
 import 'map.dart';
@@ -677,7 +677,7 @@ class _ExplorepageState extends State<Explorepage> {
           } else if (index == 4) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const StudentAccountPage()),
+              MaterialPageRoute(builder: (context) => const AccountScreen()),
             );
           } else {
             setState(() {

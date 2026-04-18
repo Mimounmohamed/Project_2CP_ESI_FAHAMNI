@@ -10,7 +10,7 @@ import 'package:fahamni/models/session_model.dart';
 import 'package:fahamni/models/student_model.dart';
 import 'package:fahamni/models/tutor_model.dart';
 import 'package:fahamni/models/user_model.dart';
-import 'package:fahamni/student_profile/student_account_page.dart';
+import 'package:fahamni/Account_Settings_Student/account_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fahamni/widgets/customnavbar.dart';
@@ -641,7 +641,7 @@ class _StudenthomepageState extends State<Studenthomepage> {
             }
             else if (index == 4) {
               Navigator.push(context,
-                MaterialPageRoute(builder: (context) => const StudentAccountPage()),
+                MaterialPageRoute(builder: (context) => const AccountScreen()),
               ).then((_) => loadStudent());
             }
             else{

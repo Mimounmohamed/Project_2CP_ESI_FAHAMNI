@@ -30,6 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  image_picker: ^1.0.7 
   google_maps_flutter: ^2.9.0
   geolocator: ^13.0.0
   geocoding: ^3.0.0
@@ -82,6 +83,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/icons/
     - assets/images/
     - assets/images/map.png
     - assets/map_style.json
