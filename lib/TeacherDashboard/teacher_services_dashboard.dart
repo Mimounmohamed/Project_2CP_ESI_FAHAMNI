@@ -317,6 +317,7 @@ class _TeacherServiceCard extends StatelessWidget {
             top: 18,
             right: 18,
             child: Container(
+              top
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: service.isActive
