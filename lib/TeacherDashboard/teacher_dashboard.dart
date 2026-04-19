@@ -1,11 +1,12 @@
 import 'package:fahamni/TeacherDashboard/teacher_dashboard_service.dart';
 import 'package:fahamni/TeacherDashboard/teacher_schedule_page.dart';
+import 'package:fahamni/TeacherDashboard/teacher_services_dashboard.dart';
+import 'package:fahamni/TeacherDashboard/widgets/teacher_navbar.dart';
 import 'package:fahamni/Notification_page/notification_page.dart';
 import 'package:fahamni/messaging/chat_page.dart';
 import 'package:fahamni/models/teacher_dashboard_model.dart';
 import 'package:fahamni/navigation/app_navigation.dart';
 import 'package:fahamni/otp_verification_Screen/primarybutton.dart';
-import 'package:fahamni/widgets/customnavbar.dart';
 import 'package:flutter/material.dart';
 
 class Teacherpage extends StatelessWidget {
@@ -65,18 +66,18 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
       case 0:
         break;
       case 1:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Teacher explore is coming soon.')),
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const TeacherServicesDashboardScreen()),
         );
         break;
       case 2:
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const TeacherSchedulePage()),
+          MaterialPageRoute(builder: (_) => const ChatPage()),
         );
         break;
       case 3:
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const ChatPage()),
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Teacher profile is coming soon.')),
         );
         break;
       default:
@@ -90,7 +91,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _pageBackground,
-      bottomNavigationBar: CustomBottomNavbar(
+      bottomNavigationBar: TeacherNavbar(
         selectedIndex: _selectedIndex,
         onTap: _handleNavigation,
       ),
@@ -149,11 +150,17 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                           _SectionHeader(
                             title: dashboard.myServicesTitle,
                             actionLabel: dashboard.seeAllLabel,
-                            onActionTap: () {},
+                            onActionTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const TeacherServicesDashboardScreen(),
+                                ),
+                              );
+                            },
                           ),
                           const SizedBox(height: 14),
                           SizedBox(
-                            height: 248,
+                            height: 266,
                             child: dashboard.services.isEmpty
                                 ? _EmptyCard(label: dashboard.emptyServicesLabel)
                                 : ListView.builder(
@@ -175,7 +182,13 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                           _SectionHeader(
                             title: dashboard.quoteRequestsTitle,
                             actionLabel: dashboard.seeAllLabel,
-                            onActionTap: () {},
+                            onActionTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const TeacherServicesDashboardScreen(),
+                                ),
+                              );
+                            },
                           ),
                           const SizedBox(height: 14),
                           if (dashboard.quoteRequests.isEmpty)
@@ -524,14 +537,14 @@ class _ServiceCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Flexible(
+                    Expanded(
                       child: _TagChip(
                         label: service.category,
                         backgroundColor: const Color(0xFFE8EAF6),
                         textColor: const Color(0xFF1A237E),
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 8),
                     _TagChip(
                       label: service.statusLabel,
                       backgroundColor: const Color(0xFFE8F7EC),
@@ -555,12 +568,16 @@ class _ServiceCard extends StatelessWidget {
                   children: [
                     const Icon(Icons.schedule_rounded, color: Color(0xFF94A3B8), size: 16),
                     const SizedBox(width: 6),
-                    Text(
-                      service.sessionsLabel,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF64748B),
+                    Expanded(
+                      child: Text(
+                        service.sessionsLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF64748B),
+                        ),
                       ),
                     ),
                   ],
@@ -751,6 +768,8 @@ class _TagChip extends StatelessWidget {
       ),
       child: Text(
         label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w700,

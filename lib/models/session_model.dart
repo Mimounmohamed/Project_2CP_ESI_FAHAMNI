@@ -10,6 +10,8 @@ class SessionModel {
   final SessionStatus status;
   final String type;
   final String modality;
+  final String meetingLink;
+  final String notes;
   final DateTime date;
   final DateTime startTime;
   final DateTime endTime;
@@ -22,6 +24,8 @@ class SessionModel {
     required this.status,
     required this.type,
     required this.modality,
+    this.meetingLink = '',
+    this.notes = '',
     required this.date,
     required this.startTime,
     required this.endTime,
@@ -39,6 +43,8 @@ class SessionModel {
       ),
       type: map['type'] ?? '',
       modality: map['modality'] ?? '',
+      meetingLink: map['meeting_link'] ?? '',
+      notes: map['notes'] ?? '',
       // .toLocal() is crucial for Algiers (UTC+1) alignment
       date: (map['date'] as Timestamp).toDate().toLocal(),
       startTime: (map['start_time'] as Timestamp).toDate().toLocal(),
@@ -55,6 +61,8 @@ class SessionModel {
       'status': status.name,
       'type': type,
       'modality': modality,
+      'meeting_link': meetingLink,
+      'notes': notes,
       'date': Timestamp.fromDate(date),
       'start_time': Timestamp.fromDate(startTime),
       'end_time': Timestamp.fromDate(endTime),

@@ -103,21 +103,33 @@ class TeacherDashboardService {
   }
 
   Future<TutorModel> _loadCurrentTutor() async {
-    final User? currentUser = _auth.currentUser;
+    final User? currentUser = await _auth.authStateChanges().first;
     if (currentUser == null) {
       throw Exception('You need to be signed in to open the teacher dashboard.');
     }
 
-    final DocumentSnapshot<Map<String, dynamic>> tutorSnapshot =
-        await _firestore.collection('tutors').doc(currentUser.uid).get();
+    final DocumentSnapshot<Map<String, dynamic>> userSnapshot =
+        await _firestore.collection('users').doc(currentUser.uid).get();
 
-    if (!tutorSnapshot.exists || tutorSnapshot.data() == null) {
-      throw Exception('Teacher profile not found.');
+    if (!userSnapshot.exists || userSnapshot.data() == null) {
+      throw Exception('User profile not found in users collection.');
     }
 
+    final Map<String, dynamic> userData = userSnapshot.data()!;
+    if (userData['role'] != 'tutor') {
+      throw Exception('This account does not have the teacher role.');
+    }
+
+    final DocumentSnapshot<Map<String, dynamic>> tutorSnapshot =
+        await _firestore.collection('tutors').doc(currentUser.uid).get();
+    final Map<String, dynamic> mergedData = <String, dynamic>{
+      ...userData,
+      if (tutorSnapshot.data() != null) ...tutorSnapshot.data()!,
+    };
+
     return TutorModel.fromMap({
-      ...tutorSnapshot.data()!,
-      'uid': tutorSnapshot.id,
+      ...mergedData,
+      'uid': userSnapshot.id,
     });
   }
 
@@ -375,6 +387,9 @@ class TeacherDashboardService {
 
     return TeacherScheduleSession(
       id: session.sessionId,
+      date: session.date,
+      startTime: session.startTime,
+      endTime: session.endTime,
       title: service?.name.trim().isNotEmpty == true
           ? service!.name
           : '${_capitalize(session.type)} Session',

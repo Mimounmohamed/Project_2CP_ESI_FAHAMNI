@@ -35,6 +35,8 @@ abstract class ResourceModel {
     final type = map['content_type'] ?? 'document';
     if (type == 'media') {
       return MediaResource.fromMap(map);
+    } else if (type == 'link') {
+      return LinkResource.fromMap(map);
     } else {
       return DocumentResource.fromMap(map);
     }
@@ -155,6 +157,61 @@ class MediaResource extends ResourceModel {
       addedAt: (map['added_at'] as dynamic).toDate(),
       mediaUrl: map['media_url'] ?? '',
       platform: map['platform'] ?? '',
+    );
+  }
+}
+
+class LinkResource extends ResourceModel {
+  final String linkUrl;
+
+  LinkResource({
+    required super.resourceId,
+    required super.tutorId,
+    required super.sessionId,
+    required super.title,
+    required super.subject,
+    required super.level,
+    required super.description,
+    required super.accessLevel,
+    required super.allowedUsers,
+    required super.isPublic,
+    required super.addedAt,
+    required this.linkUrl,
+  }) : super(contentType: 'link');
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {
+      'resource_id': resourceId,
+      'tutor_id': tutorId,
+      'session_id': sessionId,
+      'title': title,
+      'subject': subject,
+      'level': level,
+      'description': description,
+      'content_type': 'link',
+      'access_level': accessLevel,
+      'allowed_users': allowedUsers,
+      'is_public': isPublic,
+      'added_at': addedAt,
+      'link_url': linkUrl,
+    };
+  }
+
+  factory LinkResource.fromMap(Map<String, dynamic> map) {
+    return LinkResource(
+      resourceId: map['resource_id'] ?? '',
+      tutorId: map['tutor_id'] ?? '',
+      sessionId: map['session_id'] ?? '',
+      title: map['title'] ?? '',
+      subject: map['subject'] ?? '',
+      level: map['level'] ?? '',
+      description: map['description'] ?? '',
+      accessLevel: map['access_level'] ?? '',
+      allowedUsers: List<String>.from(map['allowed_users'] ?? []),
+      isPublic: map['is_public'] ?? false,
+      addedAt: (map['added_at'] as dynamic).toDate(),
+      linkUrl: map['link_url'] ?? '',
     );
   }
 }

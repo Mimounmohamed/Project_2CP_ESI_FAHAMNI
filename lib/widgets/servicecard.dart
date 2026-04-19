@@ -6,11 +6,15 @@ import '../models/service_model.dart';
 class ServiceCard extends StatelessWidget {
   final TutorModel tutor;
   final ServiceModel service;
+  final bool showPrimaryAction;
+  final double bottomContentPadding;
 
   const ServiceCard({
     super.key,
     required this.tutor,
     required this.service,
+    this.showPrimaryAction = true,
+    this.bottomContentPadding = 0,
   });
 
   @override
@@ -28,28 +32,14 @@ class ServiceCard extends StatelessWidget {
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if(service.picture != "")
-                          Image.network(
-                            service.picture,
-                            height: 120,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Image.asset(
-                              "assets/images/default_service_img.png",
-                              height: 120,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        if(service.picture == "")
-                          Image.asset(
-                            "assets/images/default_service_img.png",
-                            height: 120,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
+                        _ServiceHeaderImage(imagePath: service.picture),
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(15, 15, 15, 15),
+                          padding: EdgeInsets.fromLTRB(
+                            15,
+                            15,
+                            15,
+                            15 + bottomContentPadding,
+                          ),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.start,
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,7 +56,7 @@ class ServiceCard extends StatelessWidget {
                                     service.subject,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
-                                      color: const Color(0xFF000080),
+                                      color: Color(0xFF000080),
                                       fontSize: 13,
                                       fontFamily: 'Nunito',
                                       fontWeight: FontWeight.w700,
@@ -92,10 +82,7 @@ class ServiceCard extends StatelessWidget {
                               const SizedBox(height: 10),
                               Row(
                                 children: [
-                                  CircleAvatar(
-                                    backgroundImage: NetworkImage(tutor.picture),
-                                    radius: 20,
-                                  ),
+                                  _TutorAvatar(imagePath: tutor.picture),
                                   const SizedBox(width: 5),
                                   Expanded(
                                     child: Text(
@@ -119,7 +106,10 @@ class ServiceCard extends StatelessWidget {
                                     "assets/images/time.svg",
                                     height: 20,
                                     width: 20,
-                                    color: const Color(0xFF475569),
+                                    colorFilter: const ColorFilter.mode(
+                                      Color(0xFF475569),
+                                      BlendMode.srcIn,
+                                    ),
                                   ),
                                   const SizedBox(width: 5),
                                   Expanded(
@@ -139,30 +129,33 @@ class ServiceCard extends StatelessWidget {
                               ),
                               const SizedBox(height: 10),
                               if(service.maxnum - service.enrollednum <= 10)
-                              Row(
-                                children: [
-                                  SvgPicture.asset(
-                                    "assets/images/circle-alert.svg",
-                                    height: 20,
-                                    width: 20,
-                                    color: const Color(0xFFDD0D0D),
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Expanded(
-                                    child: Text(
-                                      '${service.maxnum - service.enrollednum} places left',
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: Color(0xFFDD0D0D),
-                                        fontSize: 14,
-                                        fontFamily: 'Nunito',
-                                        fontWeight: FontWeight.w400,
-                                        height: 1.43,
+                                Row(
+                                  children: [
+                                    SvgPicture.asset(
+                                      "assets/images/circle-alert.svg",
+                                      height: 20,
+                                      width: 20,
+                                      colorFilter: const ColorFilter.mode(
+                                        Color(0xFFDD0D0D),
+                                        BlendMode.srcIn,
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
+                                    const SizedBox(width: 5),
+                                    Expanded(
+                                      child: Text(
+                                        '${service.maxnum - service.enrollednum} places left',
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Color(0xFFDD0D0D),
+                                          fontSize: 14,
+                                          fontFamily: 'Nunito',
+                                          fontWeight: FontWeight.w400,
+                                          height: 1.43,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               const SizedBox(height: 8),
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -177,29 +170,31 @@ class ServiceCard extends StatelessWidget {
                                       height: 1.56,
                                     ),
                                   ),
-                                  const Spacer(),
-                                  ElevatedButton(
-                                    onPressed:(){},
-                                    style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFF000080),
-                                        foregroundColor: Colors.white,
-                                        minimumSize: const Size(100, 40),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                        )
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        'Book Now',
-                                        style: TextStyle(
-                                            fontFamily: 'Nunito',
-                                            fontWeight: FontWeight.w700,
-                                            color: Colors.white,
-                                            fontSize: 15
+                                  if (showPrimaryAction) ...[
+                                    const Spacer(),
+                                    ElevatedButton(
+                                      onPressed:(){},
+                                      style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFF000080),
+                                          foregroundColor: Colors.white,
+                                          minimumSize: const Size(100, 40),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          )
+                                      ),
+                                      child: const Center(
+                                        child: Text(
+                                          'Book Now',
+                                          style: TextStyle(
+                                              fontFamily: 'Nunito',
+                                              fontWeight: FontWeight.w700,
+                                              color: Colors.white,
+                                              fontSize: 15
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  )
+                                    )
+                                  ],
                                 ],
                               )
                             ],
@@ -249,4 +244,71 @@ class ServiceCard extends StatelessWidget {
               ),
     );
   }
+}
+
+class _TutorAvatar extends StatelessWidget {
+  const _TutorAvatar({
+    required this.imagePath,
+  });
+
+  final String imagePath;
+
+  @override
+  Widget build(BuildContext context) {
+    final ImageProvider<Object>? imageProvider = _resolveImageProvider(imagePath);
+    return CircleAvatar(
+      radius: 20,
+      backgroundColor: const Color(0xFFE2E8F0),
+      backgroundImage: imageProvider,
+      child: imageProvider == null
+          ? const Icon(
+              Icons.person_rounded,
+              color: Color(0xFF64748B),
+            )
+          : null,
+    );
+  }
+}
+
+class _ServiceHeaderImage extends StatelessWidget {
+  const _ServiceHeaderImage({
+    required this.imagePath,
+  });
+
+  final String imagePath;
+
+  @override
+  Widget build(BuildContext context) {
+    final ImageProvider<Object>? imageProvider = _resolveImageProvider(imagePath);
+    return SizedBox(
+      height: 120,
+      width: double.infinity,
+      child: imageProvider == null
+          ? Image.asset(
+              "assets/images/default_service_img.png",
+              fit: BoxFit.cover,
+            )
+          : Ink.image(
+              image: imageProvider,
+              fit: BoxFit.cover,
+            ),
+    );
+  }
+}
+
+ImageProvider<Object>? _resolveImageProvider(String imagePath) {
+  final String trimmed = imagePath.trim();
+  if (trimmed.isEmpty) {
+    return null;
+  }
+
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return NetworkImage(trimmed);
+  }
+
+  if (trimmed.startsWith('assets/')) {
+    return AssetImage(trimmed);
+  }
+
+  return null;
 }
