@@ -8,6 +8,7 @@ import 'package:fahamni/models/teacher_dashboard_model.dart';
 import 'package:fahamni/navigation/app_navigation.dart';
 import 'package:fahamni/otp_verification_Screen/primarybutton.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class Teacherpage extends StatelessWidget {
   const Teacherpage({super.key});
@@ -160,7 +161,7 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                           ),
                           const SizedBox(height: 14),
                           SizedBox(
-                            height: 266,
+                            height: 300,
                             child: dashboard.services.isEmpty
                                 ? _EmptyCard(label: dashboard.emptyServicesLabel)
                                 : ListView.builder(
@@ -263,10 +264,14 @@ class _DashboardHeader extends StatelessWidget {
               MaterialPageRoute(builder: (_) => const NotificationPage()),
             );
           },
-          icon: const Icon(
-            Icons.notifications_none_rounded,
-            color: Color(0xFF1F2937),
-            size: 28,
+          icon: SvgPicture.asset(
+            'assets/images/bell.svg',
+            width: 28,
+            height: 28,
+            colorFilter: const ColorFilter.mode(
+              Color(0xFF1F2937),
+              BlendMode.srcIn,
+            ),
           ),
         ),
       ],
@@ -507,15 +512,15 @@ class _ServiceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 208,
+      width: 220,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -523,15 +528,15 @@ class _ServiceCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             child: SizedBox(
-              height: 112,
+              height: 132,
               width: double.infinity,
               child: _DashboardImage(imagePath: service.imagePath),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -544,7 +549,7 @@ class _ServiceCard extends StatelessWidget {
                         textColor: const Color(0xFF1A237E),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     _TagChip(
                       label: service.statusLabel,
                       backgroundColor: const Color(0xFFE8F7EC),
@@ -552,22 +557,23 @@ class _ServiceCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
                 Text(
                   service.title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
                     color: Color(0xFF1F2937),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     const Icon(Icons.schedule_rounded, color: Color(0xFF94A3B8), size: 16),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         service.sessionsLabel,
@@ -582,13 +588,13 @@ class _ServiceCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 14),
                 Text(
                   service.priceLabel,
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF1A237E),
+                    color: Color(0xFF0D138B),
                   ),
                 ),
               ],
@@ -820,9 +826,13 @@ class _DashboardImage extends StatelessWidget {
       );
     }
 
-    return Ink.image(
-      image: imageProvider,
-      fit: BoxFit.cover,
+    return Container(
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: imageProvider,
+          fit: BoxFit.cover,
+        ),
+      ),
     );
   }
 }

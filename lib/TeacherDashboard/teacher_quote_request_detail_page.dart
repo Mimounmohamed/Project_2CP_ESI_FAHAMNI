@@ -10,7 +10,7 @@ const Color _titleColor = Color(0xFF1F2937);
 const Color _bodyColor = Color(0xFF52627A);
 const Color _hintColor = Color(0xFFA4B3CE);
 const Color _cardBorder = Color(0xFFE4E8F2);
-const Color _iconChipBackground = Color(0xFFE9ECF8);
+const Color _iconChipBackground = Color(0xFFE7E9F8);
 
 class TeacherQuoteRequestDetailPage extends StatefulWidget {
   const TeacherQuoteRequestDetailPage({
@@ -421,16 +421,16 @@ class _CardSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
+      padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: _cardBorder),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0D138B).withValues(alpha: 0.05),
+            color: const Color(0xFF0D138B).withValues(alpha: 0.08),
             blurRadius: 14,
-            offset: const Offset(0, 4),
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -448,7 +448,7 @@ class _CardSection extends StatelessWidget {
               Text(
                 title,
                 style: const TextStyle(
-                  fontSize: 22,
+                  fontSize: 20,
                   fontWeight: FontWeight.w800,
                   color: _titleColor,
                   fontFamily: 'Inter',
@@ -478,20 +478,20 @@ class _DetailRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.only(bottom: 22),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 48,
-            height: 48,
+            width: 64,
+            height: 64,
             decoration: BoxDecoration(
               color: _iconChipBackground,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(icon, size: 24, color: _primaryBlue),
+            child: Icon(icon, size: 31, color: _primaryBlue),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 18),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -499,19 +499,19 @@ class _DetailRow extends StatelessWidget {
                 Text(
                   label.toUpperCase(),
                   style: const TextStyle(
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: _hintColor,
                     fontFamily: 'Nunito',
-                    letterSpacing: 0.3,
+                    letterSpacing: 0.2,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   value,
                   style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
                     color: _titleColor,
                     fontFamily: 'Nunito',
                   ),

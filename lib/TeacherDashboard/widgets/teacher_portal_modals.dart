@@ -322,7 +322,7 @@ class QuoteResponseModal extends StatefulWidget {
 class _QuoteResponseModalState extends State<QuoteResponseModal> {
   final TextEditingController _priceController =
       TextEditingController(text: '1 DA');
-  int _sessionsCount = 12;
+  final int _sessionsCount = 12;
 
   @override
   void dispose() {
@@ -337,39 +337,46 @@ class _QuoteResponseModalState extends State<QuoteResponseModal> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _TextField(
-            controller: _priceController,
+          const _FieldLabel(
             label: 'PRICE/SESSION',
+            fontSize: 17,
+            color: Color(0xFF273246),
+            letterSpacing: 0,
           ),
-          const SizedBox(height: 14),
-          _DropdownField<int>(
-            label: 'Sessions Number',
-            initialValue: _sessionsCount,
-            items: List<DropdownMenuItem<int>>.generate(
-              12,
-              (index) => DropdownMenuItem<int>(
-                value: index + 1,
-                child: Text('${index + 1}'),
-              ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _priceController,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF6B7B97),
             ),
-            onChanged: (value) {
-              if (value != null) {
-                setState(() {
-                  _sessionsCount = value;
-                });
-              }
-            },
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'Upon submission, the student will receive a PDF document containing the service details and your proposed estimate pricing. You may contact the student directly to discuss any additional requirements or clarifications.',
-            style: TextStyle(
-              fontSize: 11,
-              height: 1.45,
-              color: Color(0xFF94A3B8),
+            decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 30,
+                vertical: 22,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: const BorderSide(color: Color(0xFFDEE5F2)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(24),
+                borderSide: const BorderSide(color: Color(0xFFC9D4EC), width: 1.4),
+              ),
             ),
           ),
           const SizedBox(height: 18),
+          const Text(
+            'Upon submission, the student will receive a PDF document containing the service details and your proposed estimate pricing. You may contact the student directly to discuss any additional requirements or clarifications.',
+            style: TextStyle(
+              fontSize: 16,
+              height: 1.35,
+              color: Color(0xFF6D7F9E),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 34),
           _PrimaryModalButton(
             label: 'Send',
             onTap: () {
@@ -399,11 +406,11 @@ class _TeacherModalShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      insetPadding: const EdgeInsets.symmetric(horizontal: 26, vertical: 24),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 38, vertical: 24),
       backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+        padding: const EdgeInsets.fromLTRB(30, 24, 30, 30),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -414,19 +421,23 @@ class _TeacherModalShell extends StatelessWidget {
                   Text(
                     title,
                     style: const TextStyle(
-                      fontSize: 22,
+                      fontSize: 27,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF1F2937),
+                      color: Color(0xFF273246),
                     ),
                   ),
                   const Spacer(),
                   InkWell(
                     onTap: () => Navigator.of(context).pop(),
-                    child: const Icon(Icons.close, color: Color(0xFF64748B)),
+                    child: const Icon(
+                      Icons.close,
+                      size: 34,
+                      color: Color(0xFF71819C),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 22),
               child,
             ],
           ),
@@ -437,9 +448,17 @@ class _TeacherModalShell extends StatelessWidget {
 }
 
 class _FieldLabel extends StatelessWidget {
-  const _FieldLabel({required this.label});
+  const _FieldLabel({
+    required this.label,
+    this.fontSize = 12,
+    this.color = const Color(0xFF334155),
+    this.letterSpacing = 0.3,
+  });
 
   final String label;
+  final double fontSize;
+  final Color color;
+  final double letterSpacing;
 
   @override
   Widget build(BuildContext context) {
@@ -447,10 +466,11 @@ class _FieldLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 6),
       child: Text(
         label,
-        style: const TextStyle(
-          fontSize: 12,
+        style: TextStyle(
+          fontSize: fontSize,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF334155),
+          color: color,
+          letterSpacing: letterSpacing,
         ),
       ),
     );
@@ -633,17 +653,28 @@ class _PrimaryModalButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      child: ElevatedButton(
-        onPressed: onTap,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF0D138B),
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.w700),
+      child: Center(
+        child: SizedBox(
+          width: 282,
+          child: ElevatedButton(
+            onPressed: onTap,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF120E9B),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
         ),
       ),
     );

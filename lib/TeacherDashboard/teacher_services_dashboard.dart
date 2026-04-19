@@ -8,7 +8,6 @@ import 'package:fahamni/messaging/chat_page.dart';
 import 'package:fahamni/models/quote_model.dart';
 import 'package:fahamni/models/service_model.dart';
 import 'package:fahamni/models/tutor_model.dart';
-import 'package:fahamni/widgets/servicecard.dart';
 import 'package:flutter/material.dart';
 
 import 'teacher_dashboard.dart';
@@ -296,96 +295,244 @@ class _TeacherServiceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFE8EBF7)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0D138B).withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 14),
+            color: const Color(0xFF0D138B).withValues(alpha: 0.10),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: IgnorePointer(
-              child: ServiceCard(
-                tutor: tutor,
-                service: service,
-              ),
-            ),
-          ),
-          Positioned(
-            top: 180,
-            right: 18,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: service.isActive
-                    ? const Color(0xFFE6F8EC)
-                    : const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                service.isActive ? 'ACTIVE' : 'INACTIVE',
-                style: TextStyle(
-                  color: service.isActive
-                      ? const Color(0xFF16A34A)
-                      : const Color(0xFF64748B),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 20,
-            right: 20,
-            bottom: 22,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    height: 46,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.96),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 10),
-                        _RoundIconButton(
-                          icon: Icons.edit_outlined,
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Edit flow can be added on top of the create form.'),
-                              ),
-                            );
-                          },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _TeacherServiceImage(imagePath: service.picture),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
                         ),
-                        const SizedBox(width: 8),
-                        Switch.adaptive(
-                          value: service.isActive,
-                          activeThumbColor: const Color(0xFF0D138B),
-                          activeTrackColor:
-                              const Color(0xFF0D138B).withValues(alpha: 0.35),
-                          onChanged: (_) => onToggleStatus(),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE4E6F7),
+                          borderRadius: BorderRadius.circular(999),
                         ),
-                        const Spacer(),
-                        _RoundIconButton(
-                          icon: Icons.delete_outline_rounded,
-                          onTap: onDelete,
+                        child: Text(
+                          service.subject.isEmpty
+                              ? 'SERVICE'
+                              : service.subject.toUpperCase(),
+                          style: const TextStyle(
+                            color: Color(0xFF0D138B),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.4,
+                          ),
                         ),
-                        const SizedBox(width: 10),
-                      ],
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: service.isActive
+                              ? const Color(0xFFDDF8E5)
+                              : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          service.isActive ? 'ACTIVE' : 'INACTIVE',
+                          style: TextStyle(
+                            color: service.isActive
+                                ? const Color(0xFF22C55E)
+                                : const Color(0xFF64748B),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    service.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF253043),
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      height: 1.15,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.schedule_rounded,
+                        color: Color(0xFF7A88A3),
+                        size: 24,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        '${service.sessionsnum} Session${service.sessionsnum == 1 ? '' : 's'}',
+                        style: const TextStyle(
+                          color: Color(0xFF6A7A99),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${service.price.toInt()} DA',
+                          style: const TextStyle(
+                            color: Color(0xFF0D138B),
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      _RoundIconButton(
+                        icon: Icons.edit_outlined,
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Edit flow can be added on top of the create form.',
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(width: 12),
+                      _TeacherStatusSwitch(
+                        value: service.isActive,
+                        onChanged: (_) => onToggleStatus(),
+                      ),
+                      const SizedBox(width: 12),
+                      _RoundIconButton(
+                        icon: Icons.delete_outline_rounded,
+                        onTap: onDelete,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TeacherServiceImage extends StatelessWidget {
+  const _TeacherServiceImage({required this.imagePath});
+
+  final String imagePath;
+
+  @override
+  Widget build(BuildContext context) {
+    const double headerHeight = 140;
+    final String trimmed = imagePath.trim();
+    final bool isNetwork =
+        trimmed.startsWith('http://') || trimmed.startsWith('https://');
+    final bool isAsset = trimmed.startsWith('assets/');
+
+    if (isNetwork) {
+      return SizedBox(
+        height: headerHeight,
+        width: double.infinity,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: NetworkImage(trimmed),
+              fit: BoxFit.cover,
             ),
           ),
-        ],
+        ),
+      );
+    }
+
+    if (isAsset) {
+      return SizedBox(
+        height: headerHeight,
+        width: double.infinity,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage(trimmed),
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return _fallbackImage();
+  }
+
+  Widget _fallbackImage() {
+    return const SizedBox(
+      height: 140,
+      width: double.infinity,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/images/default_service_img.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TeacherStatusSwitch extends StatelessWidget {
+  const _TeacherStatusSwitch({
+    required this.value,
+    required this.onChanged,
+  });
+
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 92,
+      height: 52,
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: Switch(
+          value: value,
+          onChanged: onChanged,
+          activeThumbColor: Colors.white,
+          activeTrackColor: const Color(0xFF120E9B),
+          inactiveThumbColor: Colors.white,
+          inactiveTrackColor: const Color(0xFFDDE3F5),
+          trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
       ),
     );
   }
@@ -590,7 +737,7 @@ class _StatusFilterBar extends StatelessWidget {
       children: [
         chip('All', TeacherServicesFilter.all),
         chip('Active', TeacherServicesFilter.active),
-        Expanded(child: chip('Inactive', TeacherServicesFilter.inactive)),
+        chip('Inactive', TeacherServicesFilter.inactive),
       ],
     );
   }

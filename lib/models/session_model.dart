@@ -10,6 +10,7 @@ class SessionModel {
   final SessionStatus status;
   final String type;
   final String modality;
+  final String mode;
   final String meetingLink;
   final String notes;
   final DateTime date;
@@ -24,6 +25,7 @@ class SessionModel {
     required this.status,
     required this.type,
     required this.modality,
+    this.mode = '',
     this.meetingLink = '',
     this.notes = '',
     required this.date,
@@ -43,6 +45,7 @@ class SessionModel {
       ),
       type: map['type'] ?? '',
       modality: map['modality'] ?? '',
+      mode: map['mode'] ?? map['modality'] ?? '',
       meetingLink: map['meeting_link'] ?? '',
       notes: map['notes'] ?? '',
       // .toLocal() is crucial for Algiers (UTC+1) alignment
@@ -61,6 +64,7 @@ class SessionModel {
       'status': status.name,
       'type': type,
       'modality': modality,
+      'mode': mode,
       'meeting_link': meetingLink,
       'notes': notes,
       'date': Timestamp.fromDate(date),
