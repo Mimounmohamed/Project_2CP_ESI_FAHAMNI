@@ -145,11 +145,12 @@ class TeacherDashboardService {
       area: payload.domain,
       level: payload.grade,
       subject: payload.subject,
+      mode: payload.mode,
       description: payload.description,
       price: payload.price,
       duration: payload.sessionDuration,
       isActive: true,
-      maxnum: payload.membersNumber,
+      maxStudents: payload.membersNumber,
       enrollednum: 0,
       sessionsnum: payload.sessionsNumber,
       picture: payload.picture,
@@ -317,26 +318,33 @@ class TeacherDashboardService {
   }
 
   Future<TutorModel> _loadCurrentTutor() async {
-    final User? currentUser = _auth.currentUser;
+    final User? currentUser = await _auth.authStateChanges().first;
     if (currentUser == null) {
       throw Exception('You need to be signed in to open the teacher dashboard.');
     }
 
-    DocumentSnapshot<Map<String, dynamic>> tutorSnapshot =
-        await _firestore.collection('tutors').doc(currentUser.uid).get();
+    final DocumentSnapshot<Map<String, dynamic>> userSnapshot =
+        await _firestore.collection('users').doc(currentUser.uid).get();
 
-    if (!tutorSnapshot.exists || tutorSnapshot.data() == null) {
-      final QuerySnapshot<Map<String, dynamic>> fallback =
-          await _firestore.collection('tutors').limit(1).get();
-      if (fallback.docs.isEmpty) {
-        throw Exception('Teacher profile not found.');
-      }
-      tutorSnapshot = fallback.docs.first;
+    if (!userSnapshot.exists || userSnapshot.data() == null) {
+      throw Exception('User profile not found in users collection.');
     }
 
+    final Map<String, dynamic> userData = userSnapshot.data()!;
+    if (userData['role'] != 'tutor') {
+      throw Exception('This account does not have the teacher role.');
+    }
+
+    final DocumentSnapshot<Map<String, dynamic>> tutorSnapshot =
+        await _firestore.collection('tutors').doc(currentUser.uid).get();
+    final Map<String, dynamic> mergedData = <String, dynamic>{
+      ...userData,
+      if (tutorSnapshot.data() != null) ...tutorSnapshot.data()!,
+    };
+
     return TutorModel.fromMap({
-      ...tutorSnapshot.data()!,
-      'uid': tutorSnapshot.id,
+      ...mergedData,
+      'uid': userSnapshot.id,
     });
   }
 
@@ -556,10 +564,11 @@ class TeacherDashboardService {
   }
 
   String _formatQuoteDate(QuoteModel quote) {
-    if (quote.quoteId.isEmpty) {
+    final DateTime? createdAt = quote.createdAt ?? quote.updatedAt;
+    if (createdAt == null) {
       return 'Now';
     }
-    return DateFormat('hh:mm a').format(DateTime.now());
+    return DateFormat('dd MMM | HH:mm').format(createdAt);
   }
 
   String _formatSessionTime(SessionModel session) {
@@ -588,9 +597,15 @@ class TeacherDashboardService {
 
     return TeacherScheduleSession(
       id: session.sessionId,
-      title:
-          service?.name.trim().isNotEmpty == true ? service!.name : '${_capitalize(session.type)} Session',
-      subject: service?.subject.isNotEmpty == true ? service!.subject : _capitalize(session.type),
+      date: session.date,
+      startTime: session.startTime,
+      endTime: session.endTime,
+      title: service?.name.trim().isNotEmpty == true
+          ? service!.name
+          : '${_capitalize(session.type)} Session',
+      subject: service?.subject.isNotEmpty == true
+          ? service!.subject
+          : _capitalize(session.type),
       startTimeLabel: timeFormat.format(session.startTime),
       endTimeLabel: timeFormat.format(session.endTime),
       durationLabel: '$duration min',

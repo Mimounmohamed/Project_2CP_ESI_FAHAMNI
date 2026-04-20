@@ -1,0 +1,96 @@
+[debug] [2026-04-18T23:33:25.575Z] ----------------------------------------------------------------------
+[debug] [2026-04-18T23:33:25.576Z] Command:       /usr/local/bin/node /usr/local/bin/firebase login:list
+[debug] [2026-04-18T23:33:25.576Z] CLI Version:   15.9.1
+[debug] [2026-04-18T23:33:25.576Z] Platform:      darwin
+[debug] [2026-04-18T23:33:25.576Z] Node Version:  v24.14.0
+[debug] [2026-04-18T23:33:25.576Z] Time:          Sun Apr 19 2026 01:33:25 GMT+0200 (Eastern European Standard Time)
+[debug] [2026-04-18T23:33:25.576Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-18T23:33:25.577Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2026-04-18T23:33:25.644Z] Object "" in "firebase.json" has unknown property: {"additionalProperty":"flutter"}
+[info] Logged in as oa_meznaoui@esi.dz
+[debug] [2026-04-19T00:14:47.033Z] ----------------------------------------------------------------------
+[debug] [2026-04-19T00:14:47.037Z] Command:       /usr/local/bin/node /usr/local/bin/firebase deploy --only firestore:rules --project fahamni-dev
+[debug] [2026-04-19T00:14:47.037Z] CLI Version:   15.9.1
+[debug] [2026-04-19T00:14:47.037Z] Platform:      darwin
+[debug] [2026-04-19T00:14:47.038Z] Node Version:  v24.14.0
+[debug] [2026-04-19T00:14:47.038Z] Time:          Sun Apr 19 2026 02:14:47 GMT+0200 (Eastern European Standard Time)
+[debug] [2026-04-19T00:14:47.038Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-19T00:14:47.038Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2026-04-19T00:14:47.657Z] Object "" in "firebase.json" has unknown property: {"additionalProperty":"flutter"}
+[debug] [2026-04-19T00:14:47.660Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-19T00:14:47.660Z] > authorizing via signed-in user (oa_meznaoui@esi.dz)
+[debug] [2026-04-19T00:14:47.660Z] [iam] checking project fahamni-dev for permissions ["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]
+[debug] [2026-04-19T00:14:47.660Z] Checked if tokens are valid: false, expires at: 1773175781303
+[debug] [2026-04-19T00:14:47.660Z] Checked if tokens are valid: false, expires at: 1773175781303
+[debug] [2026-04-19T00:14:47.660Z] > refreshing access token with scopes: []
+[debug] [2026-04-19T00:14:47.661Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-04-19T00:14:47.661Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-04-19T00:14:47.960Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-04-19T00:14:47.960Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-04-19T00:14:47.970Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/fahamni-dev:testIamPermissions [none]
+[debug] [2026-04-19T00:14:47.970Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/fahamni-dev:testIamPermissions  x-goog-user-project=fahamni-dev
+[debug] [2026-04-19T00:14:47.970Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/fahamni-dev:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]}
+[debug] [2026-04-19T00:14:48.145Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2026-04-19T00:14:48.145Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
+[debug] [2026-04-19T00:14:48.944Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/fahamni-dev:testIamPermissions 200
+[debug] [2026-04-19T00:14:48.945Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/fahamni-dev:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get"]}
+[info] 
+[info] === Deploying to 'fahamni-dev'...
+[info] 
+[info] i  deploying firestore 
+[info] i  firestore: ensuring required API firestore.googleapis.com is enabled... 
+[debug] [2026-04-19T00:14:48.948Z] Checked if tokens are valid: true, expires at: 1776561286960
+[debug] [2026-04-19T00:14:48.948Z] Checked if tokens are valid: true, expires at: 1776561286960
+[debug] [2026-04-19T00:14:48.948Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/fahamni-dev/services/firestore.googleapis.com [none]
+[debug] [2026-04-19T00:14:48.948Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/fahamni-dev/services/firestore.googleapis.com  x-goog-user-project=fahamni-dev
+[debug] [2026-04-19T00:14:50.147Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/fahamni-dev/services/firestore.googleapis.com 200
+[debug] [2026-04-19T00:14:50.147Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/fahamni-dev/services/firestore.googleapis.com [omitted]
+[info] ✔  firestore: required API firestore.googleapis.com is enabled 
+[info] i  firestore: ensuring required API firestore.googleapis.com is enabled... 
+[debug] [2026-04-19T00:14:50.159Z] Checked if tokens are valid: true, expires at: 1776561286960
+[debug] [2026-04-19T00:14:50.160Z] Checked if tokens are valid: true, expires at: 1776561286960
+[debug] [2026-04-19T00:14:50.160Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/fahamni-dev/databases/(default) [none]
+[debug] [2026-04-19T00:14:50.567Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/fahamni-dev/databases/(default) 200
+[debug] [2026-04-19T00:14:50.567Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/fahamni-dev/databases/(default) {"name":"projects/fahamni-dev/databases/(default)","uid":"3da70568-ea98-4bc4-8c68-e42db72642a4","createTime":"2026-03-05T19:28:41.826119Z","updateTime":"2026-03-05T19:28:41.826119Z","locationId":"europe-west9","type":"FIRESTORE_NATIVE","concurrencyMode":"PESSIMISTIC","versionRetentionPeriod":"3600s","earliestVersionTime":"2026-04-18T23:14:50.573273Z","appEngineIntegrationMode":"DISABLED","pointInTimeRecoveryEnablement":"POINT_IN_TIME_RECOVERY_DISABLED","deleteProtectionState":"DELETE_PROTECTION_DISABLED","databaseEdition":"STANDARD","freeTier":true,"realtimeUpdatesMode":"REALTIME_UPDATES_MODE_ENABLED","etag":"IPaex5DR+JMDMIivvbiDwJMD"}
+[info] i  firestore: reading indexes from firestore.indexes.json... 
+[info] i  cloud.firestore: checking firestore.rules for compilation errors... 
+[debug] [2026-04-19T00:14:50.570Z] Checked if tokens are valid: true, expires at: 1776561286960
+[debug] [2026-04-19T00:14:50.570Z] Checked if tokens are valid: true, expires at: 1776561286960
+[debug] [2026-04-19T00:14:50.571Z] >>> [apiv2][query] POST https://firebaserules.googleapis.com/v1/projects/fahamni-dev:test [none]
+[debug] [2026-04-19T00:14:50.571Z] >>> [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/fahamni-dev:test [omitted]
+[debug] [2026-04-19T00:14:51.529Z] <<< [apiv2][status] POST https://firebaserules.googleapis.com/v1/projects/fahamni-dev:test 200
+[debug] [2026-04-19T00:14:51.529Z] <<< [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/fahamni-dev:test {}
+[info] ✔  cloud.firestore: rules file firestore.rules compiled successfully 
+[debug] [2026-04-19T00:14:51.530Z] Checked if tokens are valid: true, expires at: 1776561286960
+[debug] [2026-04-19T00:14:51.530Z] Checked if tokens are valid: true, expires at: 1776561286960
+[debug] [2026-04-19T00:14:51.530Z] >>> [apiv2][query] GET https://firebaserules.googleapis.com/v1/projects/fahamni-dev/releases pageSize=10&pageToken=
+[debug] [2026-04-19T00:14:52.153Z] <<< [apiv2][status] GET https://firebaserules.googleapis.com/v1/projects/fahamni-dev/releases 200
+[debug] [2026-04-19T00:14:52.154Z] <<< [apiv2][body] GET https://firebaserules.googleapis.com/v1/projects/fahamni-dev/releases {"releases":[{"name":"projects/fahamni-dev/releases/cloud.firestore","rulesetName":"projects/fahamni-dev/rulesets/cad26781-b6be-4524-b22f-714a39f1b264","createTime":"2026-03-05T19:28:45.983395Z","updateTime":"2026-04-19T00:10:39.386861Z"}]}
+[debug] [2026-04-19T00:14:52.154Z] Checked if tokens are valid: true, expires at: 1776561286960
+[debug] [2026-04-19T00:14:52.155Z] Checked if tokens are valid: true, expires at: 1776561286960
+[debug] [2026-04-19T00:14:52.155Z] >>> [apiv2][query] GET https://firebaserules.googleapis.com/v1/projects/fahamni-dev/rulesets/cad26781-b6be-4524-b22f-714a39f1b264 [none]
+[debug] [2026-04-19T00:14:53.077Z] <<< [apiv2][status] GET https://firebaserules.googleapis.com/v1/projects/fahamni-dev/rulesets/cad26781-b6be-4524-b22f-714a39f1b264 200
+[debug] [2026-04-19T00:14:53.077Z] <<< [apiv2][body] GET https://firebaserules.googleapis.com/v1/projects/fahamni-dev/rulesets/cad26781-b6be-4524-b22f-714a39f1b264 [omitted]
+[info] i  firestore: uploading rules firestore.rules... 
+[debug] [2026-04-19T00:14:53.078Z] Checked if tokens are valid: true, expires at: 1776561286960
+[debug] [2026-04-19T00:14:53.079Z] Checked if tokens are valid: true, expires at: 1776561286960
+[debug] [2026-04-19T00:14:53.079Z] >>> [apiv2][query] POST https://firebaserules.googleapis.com/v1/projects/fahamni-dev/rulesets [none]
+[debug] [2026-04-19T00:14:53.079Z] >>> [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/fahamni-dev/rulesets [omitted]
+[debug] [2026-04-19T00:14:53.984Z] <<< [apiv2][status] POST https://firebaserules.googleapis.com/v1/projects/fahamni-dev/rulesets 200
+[debug] [2026-04-19T00:14:53.984Z] <<< [apiv2][body] POST https://firebaserules.googleapis.com/v1/projects/fahamni-dev/rulesets {"name":"projects/fahamni-dev/rulesets/c95b8269-ca49-49ec-ae7e-9790fb273ab0","source":{"files":[{"content":"rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    function signedIn() {\n      return request.auth != null;\n    }\n\n    function isSelf(userId) {\n      return signedIn() && request.auth.uid == userId;\n    }\n\n    function conversationData(conversationId) {\n      return get(/databases/$(database)/documents/conversations/$(conversationId)).data;\n    }\n\n    function isConversationParticipant(conversationId) {\n      return signedIn() &&\n        request.auth.uid in conversationData(conversationId).participants;\n    }\n\n    function requestHasParticipant() {\n      return signedIn() &&\n        request.resource.data.participants is list &&\n        request.auth.uid in request.resource.data.participants;\n    }\n\n    function isTutorResourceOwner() {\n      return signedIn() &&\n        resource.data.tutor_id is string &&\n        resource.data.tutor_id == request.auth.uid;\n    }\n\n    function isTutorWriteOwner() {\n      return signedIn() &&\n        request.resource.data.tutor_id is string &&\n        request.resource.data.tutor_id == request.auth.uid;\n    }\n\n    match /users/{userId} {\n      allow read: if signedIn();\n      allow write: if isSelf(userId);\n    }\n\n    match /students/{userId} {\n      allow read: if signedIn();\n      allow write: if isSelf(userId);\n    }\n\n    match /tutors/{userId} {\n      allow read: if signedIn();\n      allow write: if isSelf(userId);\n    }\n\n    match /parents/{userId} {\n      allow read: if signedIn();\n      allow write: if isSelf(userId);\n    }\n\n    match /conversations/{conversationId} {\n      allow read: if isConversationParticipant(conversationId);\n      allow create: if requestHasParticipant();\n      allow update: if isConversationParticipant(conversationId);\n      allow delete: if false;\n\n      match /messages/{messageId} {\n        allow read: if isConversationParticipant(conversationId);\n        allow create: if isConversationParticipant(conversationId) &&\n          request.resource.data.senderId == request.auth.uid;\n        allow update, delete: if false;\n      }\n    }\n\n    match /notifications/{notificationId} {\n      allow read: if signedIn() &&\n        resource.data.receiver_id == request.auth.uid;\n      allow create: if signedIn() &&\n        request.resource.data.receiver_id is string;\n      allow update, delete: if signedIn() &&\n        resource.data.receiver_id == request.auth.uid;\n    }\n\n    match /reviews/{reviewId} {\n      allow read: if signedIn();\n      allow create: if signedIn();\n      allow update: if signedIn();\n      allow delete: if false;\n    }\n\n    match /quotes/{quoteId} {\n      allow read: if signedIn();\n      allow create: if signedIn();\n      allow update: if signedIn();\n      allow delete: if false;\n    }\n\n    match /quote_requests/{quoteId} {\n      allow read: if signedIn();\n      allow create: if signedIn();\n      allow update: if signedIn();\n      allow delete: if false;\n    }\n\n    match /services/{serviceId} {\n      allow read: if signedIn();\n      allow create: if isTutorWriteOwner();\n      allow update, delete: if isTutorResourceOwner();\n    }\n\n    match /sessions/{sessionId} {\n      allow read: if signedIn();\n      allow create: if isTutorWriteOwner();\n      allow update, delete: if isTutorResourceOwner();\n    }\n\n    match /resources/{resourceId} {\n      allow read: if signedIn();\n      allow create: if isTutorWriteOwner();\n      allow update, delete: if isTutorResourceOwner();\n    }\n  }\n}\n","name":"firestore.rules"}]},"createTime":"2026-04-19T00:14:53.912271Z","metadata":{"services":["cloud.firestore"]}}
+[debug] [2026-04-19T00:14:53.985Z] [rules] created ruleset projects/fahamni-dev/rulesets/c95b8269-ca49-49ec-ae7e-9790fb273ab0
+[debug] [2026-04-19T00:14:53.985Z] [rules] releasing cloud.firestore/(default) with ruleset projects/fahamni-dev/rulesets/c95b8269-ca49-49ec-ae7e-9790fb273ab0
+[debug] [2026-04-19T00:14:53.986Z] Checked if tokens are valid: true, expires at: 1776561286960
+[debug] [2026-04-19T00:14:53.987Z] Checked if tokens are valid: true, expires at: 1776561286960
+[debug] [2026-04-19T00:14:53.987Z] >>> [apiv2][query] PATCH https://firebaserules.googleapis.com/v1/projects/fahamni-dev/releases/cloud.firestore/(default) [none]
+[debug] [2026-04-19T00:14:53.988Z] >>> [apiv2][body] PATCH https://firebaserules.googleapis.com/v1/projects/fahamni-dev/releases/cloud.firestore/(default) {"release":{"name":"projects/fahamni-dev/releases/cloud.firestore/(default)","rulesetName":"projects/fahamni-dev/rulesets/c95b8269-ca49-49ec-ae7e-9790fb273ab0"}}
+[debug] [2026-04-19T00:14:54.964Z] <<< [apiv2][status] PATCH https://firebaserules.googleapis.com/v1/projects/fahamni-dev/releases/cloud.firestore/(default) 200
+[debug] [2026-04-19T00:14:54.964Z] <<< [apiv2][body] PATCH https://firebaserules.googleapis.com/v1/projects/fahamni-dev/releases/cloud.firestore/(default) {"name":"projects/fahamni-dev/releases/cloud.firestore","rulesetName":"projects/fahamni-dev/rulesets/c95b8269-ca49-49ec-ae7e-9790fb273ab0","createTime":"2026-03-05T19:28:45.983395Z","updateTime":"2026-04-19T00:14:54.875125Z"}
+[debug] [2026-04-19T00:14:54.964Z] [rules] updated release projects/fahamni-dev/releases/cloud.firestore
+[info] ✔  firestore: released rules firestore.rules to cloud.firestore 
+[info] 
+[info] ✔  Deploy complete! 
+[info] 
+[info] Project Console: https://console.firebase.google.com/project/fahamni-dev/overview

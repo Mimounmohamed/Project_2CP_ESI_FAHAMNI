@@ -304,6 +304,7 @@ exports.sendPasswordChangedEmail = onCall(
     }
   }
 );
+<<<<<<< HEAD
 
 function normalizePath(path = "") {
   return path.replace(/^\/+/, "").replace(/\/+$/, "");
@@ -506,4 +507,256 @@ exports.teacherApi = onRequest(async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message || "Internal error." });
   }
+=======
+);
+
+function requireAuth(request) {
+  if (!request.auth || !request.auth.uid) {
+    throw new HttpsError("unauthenticated", "Authentication is required.");
+  }
+  return request.auth.uid;
+}
+
+function assertString(value, field, { min = 1 } = {}) {
+  if (typeof value !== "string" || value.trim().length < min) {
+    throw new HttpsError("invalid-argument", `${field} is invalid.`);
+  }
+  return value.trim();
+}
+
+function assertNumber(value, field, { min = 0 } = {}) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < min) {
+    throw new HttpsError("invalid-argument", `${field} is invalid.`);
+  }
+  return parsed;
+}
+
+function assertEnum(value, field, accepted) {
+  if (!accepted.includes(value)) {
+    throw new HttpsError("invalid-argument", `${field} is invalid.`);
+  }
+  return value;
+}
+
+async function verifyTutor(uid) {
+  const tutorRef = admin.firestore().collection("tutors").doc(uid);
+  const tutorSnap = await tutorRef.get();
+  if (!tutorSnap.exists) {
+    throw new HttpsError("permission-denied", "Teacher profile not found.");
+  }
+  return tutorRef;
+}
+
+exports.createTeacherService = onCall(async (request) => {
+  const tutorId = requireAuth(request);
+  await verifyTutor(tutorId);
+
+  const payload = request.data || {};
+  const now = admin.firestore.FieldValue.serverTimestamp();
+  const serviceRef = admin.firestore().collection("services").doc();
+
+  const service = {
+    service_id: serviceRef.id,
+    tutor_id: tutorId,
+    name: assertString(payload.name, "name"),
+    description: assertString(payload.description, "description"),
+    area: assertString(payload.domain, "domain"),
+    level: assertString(payload.grade, "grade"),
+    subject: assertString(payload.subject || payload.domain, "subject"),
+    mode: assertEnum(payload.mode, "mode", ["Online", "Onsite", "Hybrid"]),
+    price: assertNumber(payload.price, "price", { min: 0 }),
+    duration: assertNumber(payload.duration, "duration", { min: 15 }),
+    sessions_num: assertNumber(payload.sessionsCount, "sessionsCount", { min: 1 }),
+    maxstudents: assertNumber(payload.membersCount, "membersCount", { min: 1 }),
+    enrolled_num: 0,
+    is_active: payload.isActive !== false,
+    picture: typeof payload.picture === "string" ? payload.picture : "",
+    created_at: now,
+    updated_at: now,
+  };
+
+  await serviceRef.set(service);
+  return { success: true, serviceId: serviceRef.id, service };
+});
+
+exports.getTeacherRequests = onCall(async (request) => {
+  const tutorId = requireAuth(request);
+  await verifyTutor(tutorId);
+
+  const collections = ["quote_requests", "quotes"];
+  const results = [];
+
+  for (const collectionName of collections) {
+    const snap = await admin.firestore()
+      .collection(collectionName)
+      .where("tutor_id", "==", tutorId)
+      .get();
+
+    snap.forEach((doc) => {
+      const data = doc.data();
+      if ((data.status || "pending") === "pending") {
+        results.push({
+          id: doc.id,
+          source: collectionName,
+          ...data,
+        });
+      }
+    });
+  }
+
+  results.sort((a, b) => {
+    const aTime = a.created_at && a.created_at.toMillis ? a.created_at.toMillis() : 0;
+    const bTime = b.created_at && b.created_at.toMillis ? b.created_at.toMillis() : 0;
+    return bTime - aTime;
+  });
+
+  return { success: true, requests: results };
+});
+
+exports.respondToQuoteRequest = onCall(async (request) => {
+  const tutorId = requireAuth(request);
+  await verifyTutor(tutorId);
+
+  const payload = request.data || {};
+  const quoteId = assertString(payload.quoteId, "quoteId");
+  const status = assertEnum(payload.status, "status", ["accepted", "rejected"]);
+  const collections = ["quote_requests", "quotes"];
+
+  let targetRef = null;
+  let quoteData = null;
+
+  for (const collectionName of collections) {
+    const ref = admin.firestore().collection(collectionName).doc(quoteId);
+    const snap = await ref.get();
+    if (snap.exists) {
+      targetRef = ref;
+      quoteData = snap.data();
+      break;
+    }
+  }
+
+  if (!targetRef || !quoteData) {
+    throw new HttpsError("not-found", "Quote request not found.");
+  }
+  if (quoteData.tutor_id !== tutorId) {
+    throw new HttpsError("permission-denied", "You cannot manage this request.");
+  }
+
+  const update = {
+    status,
+    updated_at: admin.firestore.FieldValue.serverTimestamp(),
+  };
+
+  if (status === "accepted") {
+    update.response_price = assertString(payload.priceLabel || "", "priceLabel");
+    update.response_sessions_count = assertNumber(
+      payload.sessionsCount,
+      "sessionsCount",
+      { min: 1 },
+    );
+  }
+
+  await targetRef.update(update);
+  return { success: true, quoteId, status };
+});
+
+exports.createTeacherSession = onCall(async (request) => {
+  const tutorId = requireAuth(request);
+  await verifyTutor(tutorId);
+
+  const payload = request.data || {};
+  const sessionRef = admin.firestore().collection("sessions").doc();
+  const date = new Date(assertString(payload.date, "date"));
+  const startTime = new Date(assertString(payload.startTime, "startTime"));
+  const duration = assertNumber(payload.durationMinutes, "durationMinutes", { min: 15 });
+  const endTime = new Date(startTime.getTime() + duration * 60000);
+
+  const session = {
+    session_id: sessionRef.id,
+    service_id: typeof payload.serviceId === "string" ? payload.serviceId : "",
+    tutor_id: tutorId,
+    student_ids: Array.isArray(payload.studentIds) ? payload.studentIds : [],
+    status: "Planned",
+    type: typeof payload.type === "string" ? payload.type : "Session",
+    modality: assertEnum(payload.sessionType, "sessionType", ["Online", "Onsite", "Hybrid"]),
+    meeting_link: typeof payload.meetingLink === "string" ? payload.meetingLink : "",
+    notes: typeof payload.notes === "string" ? payload.notes : "",
+    date: admin.firestore.Timestamp.fromDate(date),
+    start_time: admin.firestore.Timestamp.fromDate(startTime),
+    end_time: admin.firestore.Timestamp.fromDate(endTime),
+    created_at: admin.firestore.FieldValue.serverTimestamp(),
+    updated_at: admin.firestore.FieldValue.serverTimestamp(),
+  };
+
+  await sessionRef.set(session);
+  return { success: true, sessionId: sessionRef.id, session };
+});
+
+exports.rescheduleTeacherSession = onCall(async (request) => {
+  const tutorId = requireAuth(request);
+  await verifyTutor(tutorId);
+
+  const payload = request.data || {};
+  const sessionId = assertString(payload.sessionId, "sessionId");
+  const sessionRef = admin.firestore().collection("sessions").doc(sessionId);
+  const sessionSnap = await sessionRef.get();
+
+  if (!sessionSnap.exists) {
+    throw new HttpsError("not-found", "Session not found.");
+  }
+  if (sessionSnap.data().tutor_id !== tutorId) {
+    throw new HttpsError("permission-denied", "You cannot update this session.");
+  }
+
+  const date = new Date(assertString(payload.date, "date"));
+  const startTime = new Date(assertString(payload.startTime, "startTime"));
+  const duration = assertNumber(payload.durationMinutes, "durationMinutes", { min: 15 });
+  const endTime = new Date(startTime.getTime() + duration * 60000);
+
+  await sessionRef.update({
+    date: admin.firestore.Timestamp.fromDate(date),
+    start_time: admin.firestore.Timestamp.fromDate(startTime),
+    end_time: admin.firestore.Timestamp.fromDate(endTime),
+    modality: assertEnum(payload.sessionType, "sessionType", ["Online", "Onsite", "Hybrid"]),
+    meeting_link: typeof payload.meetingLink === "string" ? payload.meetingLink : "",
+    updated_at: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  return { success: true, sessionId };
+});
+
+exports.addTeacherResource = onCall(async (request) => {
+  const tutorId = requireAuth(request);
+  await verifyTutor(tutorId);
+
+  const payload = request.data || {};
+  const resourceRef = admin.firestore().collection("resources").doc();
+  const type = assertEnum(payload.type, "type", ["document", "link"]);
+
+  const resource = {
+    resource_id: resourceRef.id,
+    tutor_id: tutorId,
+    session_id: typeof payload.sessionId === "string" ? payload.sessionId : "",
+    service_id: typeof payload.serviceId === "string" ? payload.serviceId : "",
+    student_id: typeof payload.studentId === "string" ? payload.studentId : "",
+    title: assertString(payload.name, "name"),
+    subject: typeof payload.subject === "string" ? payload.subject : "",
+    level: typeof payload.level === "string" ? payload.level : "",
+    description: typeof payload.description === "string" ? payload.description : "",
+    content_type: type,
+    access_level: "request",
+    allowed_users: Array.isArray(payload.allowedUsers) ? payload.allowedUsers : [],
+    is_public: false,
+    file_url: type === "document" ? assertString(payload.filePath || "", "filePath") : "",
+    file_name: type === "document" && typeof payload.filePath === "string"
+      ? payload.filePath.split("/").pop()
+      : "",
+    link_url: type === "link" ? assertString(payload.link || "", "link") : "",
+    added_at: admin.firestore.FieldValue.serverTimestamp(),
+  };
+
+  await resourceRef.set(resource);
+  return { success: true, resourceId: resourceRef.id, resource };
+>>>>>>> be0ed21aea0d900aeea9d4f403a4833d1461789e
 });

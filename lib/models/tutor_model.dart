@@ -81,26 +81,76 @@ class TutorModel extends UserModel {
   );
 
   factory TutorModel.fromMap(Map<String, dynamic> map) {
+    DateTime parseDate(dynamic value) {
+      if (value is Timestamp) {
+        return value.toDate();
+      }
+      if (value is DateTime) {
+        return value;
+      }
+      if (value is String && value.trim().isNotEmpty) {
+        return DateTime.tryParse(value.trim()) ?? DateTime(2000, 1, 1);
+      }
+      return DateTime(2000, 1, 1);
+    }
+
+    Gender parseGender(dynamic value) {
+      final String normalized = (value ?? 'male').toString().trim().toLowerCase();
+      for (final Gender gender in Gender.values) {
+        if (gender.name == normalized) {
+          return gender;
+        }
+      }
+      return Gender.male;
+    }
+
+    AccountStatus parseAccountStatus(dynamic value) {
+      final String normalized = (value ?? 'pending').toString().trim().toLowerCase();
+      for (final AccountStatus status in AccountStatus.values) {
+        if (status.name == normalized) {
+          return status;
+        }
+      }
+      return AccountStatus.pending;
+    }
+
+    double parseDouble(dynamic value) {
+      if (value is num) {
+        return value.toDouble();
+      }
+      return double.tryParse(value?.toString() ?? '') ?? 0.0;
+    }
+
+    int parseInt(dynamic value) {
+      if (value is num) {
+        return value.toInt();
+      }
+      return int.tryParse(value?.toString() ?? '') ?? 0;
+    }
+
     return TutorModel(
-      uid:          map['uid']        ?? '',
-      firstName:    map['first_name'] ?? '',
-      lastName:     map['last_name']  ?? '',
-      email:        map['email']      ?? '',
-      phone:        map['phone']      ?? '',
-      location:     map['location']   ?? '',
-      gender:       Gender.values.byName(map['gender'] ?? 'male'),
-      birthday:     (map['birthday'] as Timestamp).toDate(), 
-      picture:      map['picture'],
-      accountStatus: AccountStatus.values.byName(map['account_status'] ?? 'pending'),
-      expertiseDomain:        map['expertise_domain']        ?? '',
-      levelsTaught:           List<String>.from(map['levels_taught'] ?? []),
-      teachingMode:           map['teaching_mode']           ?? '',
-      isAvailable:            map['is_available']            ?? false,
-      Certified:              map['certified']               ?? false,
-      pedagogicalDescription: map['pedagogical_description'] ?? '',
-      averageRating:          (map['average_rating']         ?? 0.0).toDouble(),
-      yearsOfExperience:      map['years_of_experience']     ?? 0,
-      academicDescription:    map['academic_description']    ?? '',
+      uid: map['uid'] ?? '',
+      firstName: map['first_name'] ?? map['firstName'] ?? '',
+      lastName: map['last_name'] ?? map['lastName'] ?? '',
+      email: map['email'] ?? '',
+      phone: map['phone'] ?? '',
+      location: map['location'] ?? map['city'] ?? '',
+      gender: parseGender(map['gender']),
+      birthday: parseDate(map['birthday']),
+      picture: (map['picture'] ?? map['avatar'] ?? '').toString(),
+      accountStatus: parseAccountStatus(map['account_status']),
+      expertiseDomain:
+          (map['expertise_domain'] ?? map['expertiseDomain'] ?? '').toString(),
+      levelsTaught: List<String>.from(map['levels_taught'] ?? const <String>[]),
+      teachingMode:
+          (map['teaching_mode'] ?? map['teachingMode'] ?? '').toString(),
+      isAvailable: map['is_available'] ?? false,
+      Certified: map['certified'] ?? false,
+      pedagogicalDescription:
+          (map['pedagogical_description'] ?? '').toString(),
+      averageRating: parseDouble(map['average_rating']),
+      yearsOfExperience: parseInt(map['years_of_experience']),
+      academicDescription: (map['academic_description'] ?? '').toString(),
     );
   }
 }

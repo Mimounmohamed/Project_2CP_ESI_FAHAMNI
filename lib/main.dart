@@ -1,13 +1,11 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'firebase_options.dart';
-import 'Splash_Screen/splash.dart';
-import 'TeacherDashboard/teacher_dashboard.dart';
-import 'navigation/app_navigation.dart';
+import 'package:fahamni/Login_Screen/LoginScreen.dart';
 
-const bool kSkipSplash = true;
+import 'firebase_options.dart';
+import 'navigation/app_navigation.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,12 +15,10 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
   } catch (_) {}
-   
-   await FirebaseAppCheck.instance.activate(
-  androidProvider: AndroidProvider.debug,
-);
 
-
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: AndroidProvider.debug,
+  );
 
   try {
     await dotenv.load(fileName: '.env');
@@ -41,8 +37,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       navigatorKey: NavigationService.instance.navigatorKey,
-      home: kSkipSplash ? const TeacherDashboardScreen() : const SplashScreen(),
-
+      home: const LoginScreen(),
     );
   }
 }

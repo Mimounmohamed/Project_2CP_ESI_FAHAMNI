@@ -24,6 +24,18 @@ service cloud.firestore {
         request.auth.uid in request.resource.data.participants;
     }
 
+    function isTutorResourceOwner() {
+      return signedIn() &&
+        resource.data.tutor_id is string &&
+        resource.data.tutor_id == request.auth.uid;
+    }
+
+    function isTutorWriteOwner() {
+      return signedIn() &&
+        request.resource.data.tutor_id is string &&
+        request.resource.data.tutor_id == request.auth.uid;
+    }
+
     match /users/{userId} {
       allow read: if signedIn();
       allow write: if isSelf(userId);
@@ -79,6 +91,31 @@ service cloud.firestore {
       allow create: if signedIn();
       allow update: if signedIn();
       allow delete: if false;
+    }
+
+    match /quote_requests/{quoteId} {
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow update: if signedIn();
+      allow delete: if false;
+    }
+
+    match /services/{serviceId} {
+      allow read: if signedIn();
+      allow create: if isTutorWriteOwner();
+      allow update, delete: if isTutorResourceOwner();
+    }
+
+    match /sessions/{sessionId} {
+      allow read: if signedIn();
+      allow create: if isTutorWriteOwner();
+      allow update, delete: if isTutorResourceOwner();
+    }
+
+    match /resources/{resourceId} {
+      allow read: if signedIn();
+      allow create: if isTutorWriteOwner();
+      allow update, delete: if isTutorResourceOwner();
     }
   }
 }

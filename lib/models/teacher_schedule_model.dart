@@ -27,6 +27,9 @@ class TeacherScheduleDay {
 class TeacherScheduleSession {
   const TeacherScheduleSession({
     required this.id,
+    required this.date,
+    required this.startTime,
+    required this.endTime,
     required this.title,
     required this.subject,
     required this.startTimeLabel,
@@ -38,6 +41,9 @@ class TeacherScheduleSession {
   });
 
   final String id;
+  final DateTime date;
+  final DateTime startTime;
+  final DateTime endTime;
   final String title;
   final String subject;
   final String startTimeLabel;

@@ -47,8 +47,7 @@ class _UpdateEmailScreenState extends State<UpdateEmailScreen> {
     );
   }
 
-  Widget _inputField(String label, TextEditingController controller,
-      {bool isEmail = true}) {
+  Widget _inputField(String label, TextEditingController controller) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

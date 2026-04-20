@@ -7,7 +7,6 @@ import 'package:fahamni/Account_Settings_Student/helpsupport_screen.dart';
 import 'package:fahamni/Account_Settings_Student/personalinfo_screen.dart';
 import 'package:fahamni/Explore_map_pages/explorepage.dart';
 import 'package:fahamni/Courses/courses_page.dart';
-import 'package:fahamni/Courses/schedule_page.dart';
 import 'package:fahamni/messaging/chat_page.dart';
 import 'package:fahamni/models/student_model.dart';
 import 'package:fahamni/StudentHomePage/studenthome_service.dart';
