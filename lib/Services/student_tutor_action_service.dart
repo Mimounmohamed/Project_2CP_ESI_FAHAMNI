@@ -71,6 +71,33 @@ class StudentTutorActionService {
     ServiceModel? service,
   }) async {
     final StudentModel student = await getCurrentStudent();
+
+    if (service != null) {
+      final DocumentReference<Map<String, dynamic>> serviceRef =
+          _firestore.collection('services').doc(service.serviceId);
+
+      await _firestore.runTransaction((transaction) async {
+        final DocumentSnapshot<Map<String, dynamic>> serviceSnap =
+            await transaction.get(serviceRef);
+        if (!serviceSnap.exists) return;
+
+        final List<String> pendingIds =
+            List<String>.from(serviceSnap.data()?['pending_ids'] ?? []);
+        final List<String> studentIds =
+            List<String>.from(serviceSnap.data()?['student_ids'] ?? []);
+
+        if (!pendingIds.contains(student.uid) && !studentIds.contains(student.uid)) {
+          pendingIds.add(student.uid);
+          final int enrolledNum = (serviceSnap.data()?['enrolled_num'] ?? 0) + 1;
+
+          transaction.update(serviceRef, {
+            'pending_ids': pendingIds,
+            'enrolled_num': enrolledNum,
+          });
+        }
+      });
+    }
+
     final DocumentReference<Map<String, dynamic>> quoteRef =
         _firestore.collection('quotes').doc();
 
@@ -78,6 +105,7 @@ class StudentTutorActionService {
       'quote_id': quoteRef.id,
       'student_id': student.uid,
       'tutor_id': tutor.uid,
+      'service_id': service?.serviceId ?? '',
       'subject': service?.subject ?? tutor.expertiseDomain,
       'level': service?.level ?? student.schoolLevel,
       'objective': service?.name.isNotEmpty == true
@@ -93,7 +121,8 @@ class StudentTutorActionService {
     await _notificationService.sendNotification(
       NotificationModel(
         title: 'New booking request',
-        content: '${student.firstName} sent a booking request${service != null ? ' for ${service.name}' : ''}.',
+        content:
+            '${student.firstName} sent a booking request${service != null ? ' for ${service.name}' : ''}.',
         dateTime: DateTime.now(),
         isRead: false,
         notificationId: '',

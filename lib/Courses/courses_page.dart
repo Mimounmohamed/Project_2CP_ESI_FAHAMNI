@@ -10,7 +10,7 @@ import 'package:fahamni/Account_Settings_Student/account_screen.dart';
 import 'package:fahamni/widgets/customnavbar.dart';
 import 'package:flutter/material.dart';
 
-import '../widgets/servicedetails.dart';
+import 'student_course_details_page.dart';
 
 class CoursesPage extends StatefulWidget {
   const CoursesPage({super.key});
@@ -276,7 +276,7 @@ class _CoursesPageState extends State<CoursesPage> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => Servicedetails(
+                                    builder: (_) => StudentCourseDetailsPage(
                                       tutor: course.tutor,
                                       service: course.service!,
                                     ),
@@ -342,130 +342,133 @@ class _CourseCard extends StatelessWidget {
     final String durationLabel =
         '${service?.duration ?? session.endTime.difference(session.startTime).inMinutes} min session';
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFD8DFF0)),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF000080).withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-            child: SizedBox(
-              height: 135,
-              width: double.infinity,
-              child: Image(
-                image: _courseCoverImage(service),
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: const Color(0xFF1F5A4E),
-                  alignment: Alignment.center,
-                  child: const Icon(
-                    Icons.menu_book_rounded,
-                    color: Colors.white,
-                    size: 42,
+    return GestureDetector(
+      onTap: onOpenService,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFD8DFF0)),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF000080).withValues(alpha: 0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+              child: SizedBox(
+                height: 135,
+                width: double.infinity,
+                child: Image(
+                  image: _courseCoverImage(service),
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: const Color(0xFF1F5A4E),
+                    alignment: Alignment.center,
+                    child: const Icon(
+                      Icons.menu_book_rounded,
+                      color: Colors.white,
+                      size: 42,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEDEBFF),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    subjectLabel,
-                    style: const TextStyle(
-                      color: Color(0xFF000080),
-                      fontWeight: FontWeight.w800,
-                      fontSize: 12,
-                      letterSpacing: 0.3,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEDEBFF),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      subjectLabel,
+                      style: const TextStyle(
+                        color: Color(0xFF000080),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12,
+                        letterSpacing: 0.3,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF1F2937),
-                  ),
-                ),
-                if (subtitle.isNotEmpty) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 14),
                   Text(
-                    subtitle,
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: Color(0xFF64748B),
-                      fontWeight: FontWeight.w500,
-                      fontSize: 13,
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF1F2937),
                     ),
                   ),
-                ],
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 12,
-                      backgroundImage:
-                          tutor.picture.isNotEmpty ? _imageProvider(tutor.picture) : null,
-                      child: tutor.picture.isEmpty
-                          ? Text(
-                              tutor.firstName.isNotEmpty
-                                  ? tutor.firstName[0].toUpperCase()
-                                  : 'T',
-                              style: const TextStyle(fontSize: 10),
-                            )
-                          : null,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        tutorLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFF7B8BA7),
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                        ),
+                  if (subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        color: Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 10),
-                _CourseStatRow(
-                  icon: Icons.access_time_rounded,
-                  label: durationLabel,
-                ),
-                const SizedBox(height: 8),
-                _CourseStatRow(
-                  icon: Icons.calendar_month_outlined,
-                  label: sessionsLabel,
-                ),
-              ],
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 12,
+                        backgroundImage:
+                            tutor.picture.isNotEmpty ? _imageProvider(tutor.picture) : null,
+                        child: tutor.picture.isEmpty
+                            ? Text(
+                                tutor.firstName.isNotEmpty
+                                    ? tutor.firstName[0].toUpperCase()
+                                    : 'T',
+                                style: const TextStyle(fontSize: 10),
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          tutorLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF7B8BA7),
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  _CourseStatRow(
+                    icon: Icons.access_time_rounded,
+                    label: durationLabel,
+                  ),
+                  const SizedBox(height: 8),
+                  _CourseStatRow(
+                    icon: Icons.calendar_month_outlined,
+                    label: sessionsLabel,
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

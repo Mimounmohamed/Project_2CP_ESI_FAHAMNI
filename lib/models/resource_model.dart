@@ -1,3 +1,5 @@
+enum ResourceType { pdf, docx, image, link }
+
 abstract class ResourceModel {
   final String resourceId;
   final String tutorId;
@@ -11,6 +13,7 @@ abstract class ResourceModel {
   final List<String> allowedUsers;
   final bool isPublic;
   final DateTime addedAt;
+
 
 
   ResourceModel({
