@@ -553,6 +553,7 @@ class TeacherDashboardService {
     final String level = student?.schoolLevel.isNotEmpty == true ? student!.schoolLevel : quote.level;
 
     return TeacherDashboardQuoteRequest(
+      quote: quote,
       id: quote.quoteId,
       studentId: quote.studentId,
       studentName: studentName,

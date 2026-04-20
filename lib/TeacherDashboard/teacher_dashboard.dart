@@ -1,11 +1,12 @@
 import 'package:fahamni/Notification_page/notification_page.dart';
+import 'package:fahamni/TeacherDashboard/models/teacher_portal_models.dart';
 import 'package:fahamni/TeacherDashboard/teacher_dashboard_service.dart';
+import 'package:fahamni/TeacherDashboard/teacher_quote_request_detail_page.dart';
 import 'package:fahamni/TeacherDashboard/teacher_schedule_page.dart';
 import 'package:fahamni/TeacherDashboard/teacher_services_dashboard.dart';
 import 'package:fahamni/TeacherDashboard/widgets/teacher_navbar.dart';
 import 'package:fahamni/messaging/chat_page.dart';
 import 'package:fahamni/models/teacher_dashboard_model.dart';
-import 'package:fahamni/navigation/app_navigation.dart';
 import 'package:fahamni/otp_verification_Screen/primarybutton.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -674,8 +675,34 @@ class _QuoteRequestTile extends StatelessWidget {
           PrimaryButton(
             text: request.actionLabel,
             onPressed: () {
-              NavigationService.instance.push(
-                _QuoteRequestDetailsPage(request: request),
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => TeacherQuoteRequestDetailPage(
+                    request: TeacherJoinRequestDetail(
+                      quote: request.quote,
+                      studentName: request.studentName,
+                      studentLevel: request.studentLevel,
+                      studentAvatar: request.avatarPath,
+                      serviceTitle: request.subtitle,
+                      description: request.quote.description.isNotEmpty
+                          ? request.quote.description
+                          : request.quote.objective,
+                      subject: request.subject,
+                      teachingMode: request.quote.teachingMode.isNotEmpty
+                          ? request.quote.teachingMode
+                          : 'Hybrid',
+                      sessionsCount: request.quote.sessionsCount > 0
+                          ? request.quote.sessionsCount
+                          : (int.tryParse(RegExp(r'(\d+)')
+                                      .firstMatch(request.quote.frequency)
+                                      ?.group(1) ??
+                                  '') ??
+                              12),
+                      sessionDurationLabel: request.duration,
+                      createdAtLabel: request.createdAtLabel,
+                    ),
+                  ),
+                ),
               );
             },
             minimumSize: const Size(112, 40),
@@ -837,85 +864,6 @@ class _DashboardImage extends StatelessWidget {
         image: DecorationImage(
           image: imageProvider,
           fit: BoxFit.cover,
-        ),
-      ),
-    );
-  }
-}
-
-class _QuoteRequestDetailsPage extends StatelessWidget {
-  const _QuoteRequestDetailsPage({
-    required this.request,
-  });
-
-  final TeacherDashboardQuoteRequest request;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        title: const Text(
-          'Quote Request',
-          style: TextStyle(
-            color: Color(0xFF1F2937),
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        backgroundColor: const Color(0xFFF5F5F5),
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF1F2937)),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                request.studentName,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1F2937),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                request.studentLevel,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF64748B),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                request.subtitle,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF1A237E),
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'This placeholder page is ready for your full quote-request details flow.',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF475569),
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );

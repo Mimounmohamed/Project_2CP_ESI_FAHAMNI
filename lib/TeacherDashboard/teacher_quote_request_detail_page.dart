@@ -1,8 +1,9 @@
 import 'package:fahamni/TeacherDashboard/models/teacher_portal_models.dart';
 import 'package:fahamni/TeacherDashboard/teacher_portal_service.dart';
-import 'package:fahamni/TeacherDashboard/widgets/teacher_portal_modals.dart';
+import 'package:fahamni/TeacherDashboard/widgets/teacher_portal_modals.dart' as portal_modals;
 import 'package:fahamni/models/quote_model.dart';
 import 'package:flutter/material.dart';
+import 'teacher_modals.dart';
 
 const Color _pageBackground = Color(0xFFF7F8FC);
 const Color _primaryBlue = Color(0xFF0D138B);
@@ -32,7 +33,7 @@ class _TeacherQuoteRequestDetailPageState
 
   Future<void> _accept() async {
     final TeacherQuoteResponseDraft? response =
-        await QuoteResponseModal.show(context);
+        await portal_modals.QuoteResponseModal.show(context, widget.request);
     if (response == null) {
       return;
     }
@@ -105,10 +106,24 @@ class _TeacherQuoteRequestDetailPageState
   }
 
   Future<void> _createSession() async {
-    final TeacherSessionDraft? draft = await SessionModal.showCreate(context);
-    if (draft == null) {
+    final SessionModalResult? draftResult = await SessionModal.showCreate(context);
+    if (draftResult == null) {
       return;
     }
+
+    final draft = TeacherSessionDraft(
+      date: draftResult.date,
+      startTime: DateTime(
+        draftResult.date.year,
+        draftResult.date.month,
+        draftResult.date.day,
+        draftResult.startTime.hour,
+        draftResult.startTime.minute,
+      ),
+      durationMinutes: draftResult.durationMinutes,
+      sessionType: draftResult.modality,
+      meetingLink: draftResult.onlineLink,
+    );
 
     setState(() {
       _busy = true;
@@ -138,11 +153,30 @@ class _TeacherQuoteRequestDetailPageState
   }
 
   Future<void> _rescheduleSession() async {
-    final TeacherSessionDraft? draft =
-        await SessionModal.showReschedule(context);
-    if (draft == null) {
+    final SessionModalResult? draftResult =
+        await SessionModal.showReschedule(
+          context,
+          date: DateTime.now(),
+          startTime: TimeOfDay.now(),
+          duration: 60,
+        );
+    if (draftResult == null) {
       return;
     }
+
+    final draft = TeacherSessionDraft(
+      date: draftResult.date,
+      startTime: DateTime(
+        draftResult.date.year,
+        draftResult.date.month,
+        draftResult.date.day,
+        draftResult.startTime.hour,
+        draftResult.startTime.minute,
+      ),
+      durationMinutes: draftResult.durationMinutes,
+      sessionType: draftResult.modality,
+      meetingLink: draftResult.onlineLink,
+    );
 
     setState(() {
       _busy = true;
@@ -185,10 +219,19 @@ class _TeacherQuoteRequestDetailPageState
   }
 
   Future<void> _addResource() async {
-    final TeacherResourceDraft? draft = await AddResourceModal.show(context);
-    if (draft == null) {
+    final AddResourceModalResult? draftResult = await AddResourceModal.show(context);
+    if (draftResult == null) {
       return;
     }
+
+    final draft = TeacherResourceDraft(
+      name: draftResult.name,
+      type: draftResult.resourceType == 'Link'
+          ? TeacherResourceType.link
+          : TeacherResourceType.document,
+      link: draftResult.resourceValue,
+      filePath: draftResult.resourceType == 'Link' ? '' : draftResult.resourceValue,
+    );
 
     setState(() {
       _busy = true;
