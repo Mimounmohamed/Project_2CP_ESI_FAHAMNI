@@ -294,7 +294,7 @@ class _ServiceHeaderImage extends StatelessWidget {
   Widget build(BuildContext context) {
     final ImageProvider<Object>? imageProvider = _resolveImageProvider(imagePath);
     return SizedBox(
-      height: 120,
+      height: 111,
       width: double.infinity,
       child: imageProvider == null
           ? Image.asset(

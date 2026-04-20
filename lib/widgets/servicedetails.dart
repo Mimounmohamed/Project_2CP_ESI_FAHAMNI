@@ -461,6 +461,7 @@ class _ServicedetailsState extends State<Servicedetails> {
                                   ),
                                 ],
                               ),
+                              SizedBox(width: 70,),
                               ElevatedButton(
                                 onPressed:(){},
                                 style: ElevatedButton.styleFrom(
