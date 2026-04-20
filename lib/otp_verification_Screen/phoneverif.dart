@@ -198,10 +198,13 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
     final data = widget.data;
     final role = data['role'] as UserRole;
     if (role == UserRole.student) {
+      final commune = data['commune'] as String? ?? '';
+      final city = data['location'] as String? ?? '';
+      final location = commune.isNotEmpty ? '$commune, $city' : city;
       return StudentModel(
         uid: '', firstName: data['firstName'], lastName: data['lastName'],
         email: data['email'], phone: data['phone'],
-        location: data['location'], gender: data['gender'],
+        location: location, gender: data['gender'],
         birthday: data['birthday'], accountStatus: AccountStatus.validated,
         schoolLevel:        data['schoolLevel']        ?? '',
         learningObjectives: data['learningObjectives'] ?? '',
@@ -209,6 +212,8 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
         favoriteTeachers:   List<String>.from(data['favoriteTeachers'] ?? []),
         Courses:            List<String>.from(data['courses'] ?? []),
         picture: data['picture'] ?? _defaultPicture(),
+        grade: data['grade'] ?? '',
+        speciality: data['speciality'] ?? '',
       );
     } else if (role == UserRole.tutor) {
       return TutorModel(

@@ -52,6 +52,8 @@ class _studentinfoState extends State<studentinfo> {
               final s = _studentKey.currentState!;
               data['role'] = UserRole.student;
               data['schoolLevel'] = s.levels[s.selectedIndex];
+              data['grade'] = s.selectedGrade;
+              data['speciality'] = s.selectedSpeciality ?? '';
               data['learningObjectives'] = s.schoolController.text.trim();
               data['preferredSubjects'] = s.selectedSubjectsList;
             }

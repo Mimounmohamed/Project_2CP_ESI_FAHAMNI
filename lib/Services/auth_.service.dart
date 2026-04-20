@@ -8,6 +8,8 @@ import '../models/student_model.dart';
 import '../models/parent_model.dart'; 
 import 'phone_auth_service.dart';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
 
 
 class AuthService {
@@ -133,6 +135,124 @@ Future<void> sendOtp({
       // auto-verified on Android — handle if needed
     },
   );
+}
+
+Future<void> updatePersonalInfo({
+  required String uid,
+  required String firstName,
+  required String lastName,
+  required String location,
+  required DateTime birthday,
+}) async {
+  final userDoc = await _db.collection('users').doc(uid).get();
+  final role = UserRole.values.firstWhere(
+    (r) => r.name == (userDoc['role'] ?? 'student'),
+    orElse: () => UserRole.student,
+  );
+  await _db.collection(_collectionForRole(role)).doc(uid).update({
+    'first_name': firstName,
+    'last_name':  lastName,
+    'location':   location,
+    'birthday':   Timestamp.fromDate(birthday),
+  });
+}
+
+Future<String> updateProfilePicture({
+  required String uid,
+  required File imageFile,
+}) async {
+  final ref = FirebaseStorage.instance
+      .ref()
+      .child('profile_pictures/$uid.jpg');
+
+  await ref.putFile(imageFile);
+  final url = await ref.getDownloadURL();
+
+  final userDoc = await _db.collection('users').doc(uid).get();
+  final role = UserRole.values.firstWhere(
+    (r) => r.name == (userDoc['role'] ?? 'student'),
+    orElse: () => UserRole.student,
+  );
+  final collection = _collectionForRole(role);
+  await _db.collection(collection).doc(uid).update({'picture': url});
+
+  return url;
+}
+
+
+Future<void> updateStudyInfo({
+  required String uid,
+  required String schoolLevel,
+  required String grade,
+  required String speciality,
+  required String school,
+  required List<String> preferredSubjects,
+}) async {
+  final userDoc = await _db.collection('users').doc(uid).get();
+  final role = UserRole.values.firstWhere(
+    (r) => r.name == (userDoc['role'] ?? 'student'),
+    orElse: () => UserRole.student,
+  );
+  await _db.collection(_collectionForRole(role)).doc(uid).update({
+    'school_level':        schoolLevel,
+    'grade':               grade,
+    'speciality':          speciality,
+    'learning_objectives': school,
+    'preferred_subjects':  preferredSubjects,
+  });
+}
+
+Future<void> changePassword({
+  required String currentPassword,
+  required String newPassword,
+}) async {
+  final user = _auth.currentUser;
+  if (user == null) throw 'Not logged in.';
+  final cred = EmailAuthProvider.credential(
+    email: user.email!,
+    password: currentPassword,
+  );
+  try {
+    await user.reauthenticateWithCredential(cred);
+    await user.updatePassword(newPassword);
+  } on FirebaseAuthException catch (e) {
+    throw _handleAuthError(e);
+  }
+}
+
+Future<void> deleteAccount({required String password}) async {
+  final user = _auth.currentUser;
+  if (user == null) throw 'Not logged in.';
+  final cred = EmailAuthProvider.credential(
+    email: user.email!,
+    password: password,
+  );
+  try {
+    await user.reauthenticateWithCredential(cred);
+    final uid = user.uid;
+    final userDoc = await _db.collection('users').doc(uid).get();
+    final role = UserRole.values.firstWhere(
+      (r) => r.name == (userDoc['role'] ?? 'student'),
+      orElse: () => UserRole.student,
+    );
+    await _db.collection(_collectionForRole(role)).doc(uid).delete();
+    await _db.collection('users').doc(uid).delete();
+    await user.delete();
+  } on FirebaseAuthException catch (e) {
+    throw _handleAuthError(e);
+  }
+}
+
+Future<UserModel?> getCurrentUserProfile() async {
+  final user = _auth.currentUser;
+  if (user == null) return null;
+  final userDoc = await _db.collection('users').doc(user.uid).get();
+  if (!userDoc.exists) return null;
+  final role = UserRole.values.firstWhere(
+    (r) => r.name == (userDoc['role'] ?? 'student'),
+    orElse: () => UserRole.student,
+  );
+  return _fetchUserProfile(user.uid, role);
 }
 
 Future<UserModel> verifyOtpAndRegister({

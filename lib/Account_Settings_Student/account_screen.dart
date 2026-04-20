@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../widgets/customnavbar.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fahamni/Login_Screen/LoginScreen.dart';
+import 'package:fahamni/widgets/customnavbar.dart';
 import 'package:fahamni/Account_Settings_Student/studyinfo_screen.dart';
 import 'package:fahamni/Account_Settings_Student/profilesettings.dart';
 import 'package:fahamni/Account_Settings_Student/notification_screen.dart';
@@ -7,14 +9,13 @@ import 'package:fahamni/Account_Settings_Student/helpsupport_screen.dart';
 import 'package:fahamni/Account_Settings_Student/personalinfo_screen.dart';
 import 'package:fahamni/Explore_map_pages/explorepage.dart';
 import 'package:fahamni/Courses/courses_page.dart';
-import 'package:fahamni/Courses/schedule_page.dart';
 import 'package:fahamni/messaging/chat_page.dart';
 import 'package:fahamni/models/student_model.dart';
+import 'package:fahamni/models/user_model.dart';
 import 'package:fahamni/StudentHomePage/studenthome_service.dart';
 import 'package:fahamni/StudentHomePage/Student_homepage.dart';
 
-
-class AccountScreen extends StatefulWidget {        
+class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
 
   @override
@@ -22,53 +23,119 @@ class AccountScreen extends StatefulWidget {
 }
 
 class _AccountScreenState extends State<AccountScreen> {
-  int _selectedIndex = 4;                          
+  int _selectedIndex = 4;
   StudentModel? student;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    loadStudent();
+    _loadStudent();
   }
 
-  Future<void> loadStudent() async {
+  Future<void> _loadStudent() async {
+    setState(() => _isLoading = true);
     try {
       final data = await studenthomepage_service().getStudentData();
       if (!mounted) return;
       setState(() => student = data);
     } catch (e) {
       debugPrint('AccountScreen loadStudent error: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Widget buildMenuItem(
+  Future<void> _logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Logout',
+          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w700),
+        ),
+        content: const Text(
+          'Are you sure you want to logout from Fahamni?',
+          style: TextStyle(fontFamily: 'Inter', color: Color(0xFF6B7280)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel',
+                style: TextStyle(color: Color(0xFF6B7280))),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Logout',
+                style: TextStyle(
+                    color: Color(0xFFEF4444),
+                    fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await FirebaseAuth.instance.signOut();
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (_) => false,
+        );
+      }
+    }
+  }
+
+  // ── Subtitle under name: "Grade · Level · Speciality" ───────────────────
+  String _studySubtitle() {
+    final grade      = student?.grade ?? '';
+    final level      = student?.schoolLevel ?? '';
+    final speciality = student?.speciality ?? '';
+    final base = [grade, level].where((s) => s.isNotEmpty).join(' · ');
+    if (base.isNotEmpty && speciality.isNotEmpty) return '$base · $speciality';
+    return base;
+  }
+
+  ImageProvider _avatarImage() {
+    if (student == null) {
+      return const AssetImage("assets/images/studentmale.png");
+    }
+    final pic = student!.picture;
+    if (pic.startsWith('http'))    return NetworkImage(pic);
+    if (pic.startsWith('assets/')) return AssetImage(pic);
+    return student!.gender == Gender.female
+        ? const AssetImage("assets/images/studentfemale.png")
+        : const AssetImage("assets/images/studentmale.png");
+  }
+
+  Widget _buildMenuItem(
     BuildContext context,
     IconData icon,
     String title,
     Widget page,
   ) {
     return InkWell(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        await Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => page),
         );
+        _loadStudent();
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
         decoration: const BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: Color(0xFFE5E7EB)),
-          ),
+          border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB))),
         ),
         child: Row(
           children: [
             Container(
-              width: 24,
-              height: 24,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
                 color: const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, size: 20, color: const Color(0xFF000080)),
             ),
@@ -84,7 +151,8 @@ class _AccountScreenState extends State<AccountScreen> {
                 ),
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFF9CA3AF)),
+            const Icon(Icons.arrow_forward_ios,
+                size: 16, color: Color(0xFF9CA3AF)),
           ],
         ),
       ),
@@ -95,133 +163,157 @@ class _AccountScreenState extends State<AccountScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
-
-          
-
       bottomNavigationBar: CustomBottomNavbar(
         selectedIndex: _selectedIndex,
         onTap: (int index) {
           if (index == 0) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const Studenthomepage()),
-            );
+            Navigator.pushReplacement(context,
+                MaterialPageRoute(builder: (_) => const Studenthomepage()));
           } else if (index == 1 && student != null) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => Explorepage(student: student!)),
-            );
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => Explorepage(student: student!)));
           } else if (index == 2) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CoursesPage()),
-            );
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const CoursesPage()));
           } else if (index == 3) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => ChatPage()),
-            );
-          }  else {
-            setState(() {
-              _selectedIndex = index;
-            });
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => ChatPage()));
+          } else {
+            setState(() => _selectedIndex = index);
           }
         },
-      ),                                
-
+      ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            children: [
-              const SizedBox(height: 16),
-              const Text(
-                "Account",
-                style: TextStyle(
-                  fontFamily: "Inter",
-                  fontSize: 32,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1F2937),
-                ),
-              ),
-              const SizedBox(height: 24),
-              const CircleAvatar(
-                radius: 46,
-                backgroundImage: AssetImage("assets/images/studentmale.png"),
-              ),
-              const Text(
-                "Ahmed Mansour",
-                style: TextStyle(
-                  fontFamily: "Inter",
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1F2937),
-                ),
-              ),
-              const Text(
-                "Grade 12 - Science",
-                style: TextStyle(
-                  fontFamily: "Inter",
-                  fontSize: 16,
-                  color: Color(0xFF6B7280),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE5E7EB)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    buildMenuItem(context, Icons.person_outline, "Personal Information", const PersonalInfoScreen()),
-                    buildMenuItem(context, Icons.school_outlined, "Study Information", const StudyInfoScreen()),
-                    buildMenuItem(context, Icons.settings_outlined, "Profile Settings", const ProfileSettingsScreen()),
-                    buildMenuItem(context, Icons.notifications_none, "Notifications", const NotificationScreen()),
-                    buildMenuItem(context, Icons.help_outline, "Help & Support", const HelpSupportScreen()),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 34),
-              Container(
-                width: double.infinity,
-                height: 54,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFFCA5A5)),
-                ),
-                child: TextButton(
-                  onPressed: () {},
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+        child: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(color: Color(0xFF000080)))
+            : RefreshIndicator(
+                color: const Color(0xFF000080),
+                onRefresh: _loadStudent,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
                     children: [
-                      Icon(Icons.logout, color: Color(0xFFEF4444)),
-                      SizedBox(width: 8),
-                      Text(
-                        "Logout from Fahamni",
+                      const SizedBox(height: 16),
+
+                      // ── Title ────────────────────────────────────────
+                      const Text(
+                        "Account",
                         style: TextStyle(
                           fontFamily: "Inter",
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFFEF4444),
+                          fontSize: 32,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1F2937),
                         ),
                       ),
+
+                      const SizedBox(height: 24),
+
+                      // ── Avatar ───────────────────────────────────────
+                      CircleAvatar(
+                        radius: 46,
+                        backgroundColor: Colors.grey.shade200,
+                        backgroundImage: _avatarImage(),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      // ── Name ─────────────────────────────────────────
+                      Text(
+                        student != null
+                            ? '${student!.firstName} ${student!.lastName}'
+                            : '—',
+                        style: const TextStyle(
+                          fontFamily: "Inter",
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1F2937),
+                        ),
+                      ),
+
+                      const SizedBox(height: 4),
+
+                      // ── Grade · Level ─────────────────────────────────
+                      if (_studySubtitle().isNotEmpty)
+                        Text(
+                          _studySubtitle(),
+                          style: const TextStyle(
+                            fontFamily: "Inter",
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+
+                      const SizedBox(height: 20),
+
+                      // ── Menu card ─────────────────────────────────────
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFE5E7EB)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.03),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            _buildMenuItem(context, Icons.person_outline,
+                                "Personal Information", const PersonalInfoScreen()),
+                            _buildMenuItem(context, Icons.school_outlined,
+                                "Study Information", const StudyInfoScreen()),
+                            _buildMenuItem(context, Icons.settings_outlined,
+                                "Profile Settings", const ProfileSettingsScreen()),
+                            _buildMenuItem(context, Icons.notifications_none,
+                                "Notifications", const NotificationScreen()),
+                            _buildMenuItem(context, Icons.help_outline,
+                                "Help & Support", const HelpSupportScreen()),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 34),
+
+                      // ── Logout ────────────────────────────────────────
+                      Container(
+                        width: double.infinity,
+                        height: 54,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFFCA5A5)),
+                        ),
+                        child: TextButton(
+                          onPressed: _logout,
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.logout, color: Color(0xFFEF4444)),
+                              SizedBox(width: 8),
+                              Text(
+                                "Logout from Fahamni",
+                                style: TextStyle(
+                                  fontFamily: "Inter",
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFFEF4444),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
       ),
     );
   }

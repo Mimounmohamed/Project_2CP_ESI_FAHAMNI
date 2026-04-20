@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../Services/notification_service.dart';
 import '../models/chat_model.dart';
@@ -58,7 +59,7 @@ class ChatService {
     );
 
     await _chatRepository.sendMessage(message);
-    if (receiverId != senderId) {
+    if (receiverId != senderId && await _notifAllowed(receiverId, 'new_messages')) {
       await _notificationService.sendNotification(
         NotificationModel(
           title: 'New message',
@@ -99,5 +100,24 @@ class ChatService {
   DateTime _conversationTime(ConversationModel conversation) {
     return conversation.lastMessage?.sendingDateTime ??
         conversation.createdAt;
+  }
+
+  Future<bool> _notifAllowed(String userId, String prefKey) async {
+    try {
+      final db = FirebaseFirestore.instance;
+      final userDoc = await db.collection('users').doc(userId).get();
+      final role = userDoc.data()?['role'] as String? ?? 'student';
+      final collection = role == 'tutor'
+          ? 'tutors'
+          : role == 'parent'
+              ? 'parents'
+              : 'students';
+      final doc = await db.collection(collection).doc(userId).get();
+      final prefs =
+          doc.data()?['notification_prefs'] as Map<String, dynamic>? ?? {};
+      return prefs[prefKey] as bool? ?? true;
+    } catch (_) {
+      return true;
+    }
   }
 }

@@ -12,16 +12,7 @@ class Teacherpage extends StatelessWidget {
   const Teacherpage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: 'Inter',
-        scaffoldBackgroundColor: const Color(0xFFF5F5F5),
-      ),
-      home: const TeacherDashboardScreen(),
-    );
-  }
+  Widget build(BuildContext context) => const TeacherDashboardScreen();
 }
 
 class TeacherDashboardScreen extends StatefulWidget {

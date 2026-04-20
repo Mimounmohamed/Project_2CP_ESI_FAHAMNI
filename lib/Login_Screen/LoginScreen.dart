@@ -10,16 +10,7 @@ class LoginScreenPage extends StatelessWidget {
   const LoginScreenPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: 'Nunito',
-        scaffoldBackgroundColor: const Color(0xFFFAFAFA),
-      ),
-      home: const LoginScreen(),
-    );
-  }
+  Widget build(BuildContext context) => const LoginScreen();
 }
 
 class LoginScreen extends StatefulWidget {

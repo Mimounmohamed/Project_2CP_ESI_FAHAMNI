@@ -38,6 +38,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       navigatorKey: NavigationService.instance.navigatorKey,
+      theme: ThemeData(
+        fontFamily: 'Inter',
+        scaffoldBackgroundColor: const Color(0xFFFAFAFA),
+      ),
       home: const SplashScreen(),
     );
   }

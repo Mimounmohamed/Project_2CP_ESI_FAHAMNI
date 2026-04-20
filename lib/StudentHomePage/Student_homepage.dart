@@ -20,16 +20,7 @@ class Studentpage extends StatelessWidget {
   const Studentpage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: 'Inter',
-        scaffoldBackgroundColor: const Color(0xFFFAFAFA),
-      ),
-      home: const Studenthomepage(),
-    );
-  }
+  Widget build(BuildContext context) => const Studenthomepage();
 }
 
 class Studenthomepage extends StatefulWidget {
@@ -121,6 +112,7 @@ class _StudenthomepageState extends State<Studenthomepage> {
         accountStatus: AccountStatus.validated,
         picture: '', schoolLevel: '', learningObjectives: '',
         preferredSubjects: [], favoriteTeachers: [], Courses: [],
+        grade: '', speciality: '',
       );
     });
     debugPrint('loadStudent error: $e');

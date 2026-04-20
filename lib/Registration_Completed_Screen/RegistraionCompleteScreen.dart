@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import '../StudentHomePage/Student_homepage.dart';
 import '../TeacherDashboard/teacher_dashboard.dart';
 import '../Services/email_otp_service.dart';
-import 'package:firebase_auth/firebase_auth.dart'; 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../Account_Settings_Student/account_screen.dart';
 
 
 
@@ -166,7 +167,11 @@ class _RegistrationCompleteState extends State<RegistrationComplete> {
                   ),
                 ),
                 onPressed: () {
-
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AccountScreen()),
+                    (_) => false,
+                  );
                 },
                 child: const Text(
                   'Complete Profile',
