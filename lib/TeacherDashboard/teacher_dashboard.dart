@@ -206,28 +206,27 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                           if (dashboard.quoteRequests.isEmpty)
                             _EmptyCard(label: dashboard.emptyQuotesLabel)
                           else
-                              ...dashboard.quoteRequests.map(
-                                (request) {
-                                  final joinRequest = TeacherJoinRequestDetail(
-                                    quote: request.quote,
-                                    studentName: request.studentName,
-                                    studentLevel: request.studentLevel,
-                                    studentAvatar: request.avatarPath,
-                                    serviceTitle: request.quote.serviceName.isNotEmpty ? request.quote.serviceName : request.subtitle,
-                                    description: request.objective.isNotEmpty ? request.objective : request.quote.description,
-                                    subject: request.subject.isNotEmpty ? request.subject : request.quote.subject,
-                                    teachingMode: request.quote.teachingMode,
-                                    sessionsCount: request.quote.sessionsCount,
-                                    sessionDurationLabel: request.duration.isNotEmpty ? request.duration : request.quote.duration,
-                                    createdAtLabel: request.createdAtLabel,
-                                  );
-
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 12),
-                                    child: TeacherQuoteRequestDetailPage(request: joinRequest),
-                                  );
-                                },
-                              ),
+                            ...dashboard.quoteRequests.map(
+                              (request) {
+                                final joinRequest = TeacherJoinRequestDetail(
+                                  quote: request.quote,
+                                  studentName: request.studentName,
+                                  studentLevel: request.studentLevel,
+                                  studentAvatar: request.avatarPath,
+                                  serviceTitle: request.quote.serviceName.isNotEmpty ? request.quote.serviceName : request.subtitle,
+                                  description: request.objective.isNotEmpty ? request.objective : request.quote.description,
+                                  subject: request.subject.isNotEmpty ? request.subject : request.quote.subject,
+                                  teachingMode: request.quote.teachingMode,
+                                  sessionsCount: request.quote.sessionsCount,
+                                  sessionDurationLabel: request.duration.isNotEmpty ? request.duration : request.quote.duration,
+                                  createdAtLabel: request.createdAtLabel,
+                                );
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: _QuoteRequestTile(request: joinRequest),
+                                );
+                              },
+                            ),
                         ],
                       ),
                     ),

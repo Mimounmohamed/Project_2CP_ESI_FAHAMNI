@@ -51,9 +51,34 @@ class _CoursesPageState extends State<CoursesPage> {
       );
     }
 
+    // Deduplicate: show one card per service enrollment, not one per session.
+    // Multiple sessions from the same service look identical in the list —
+    // keep the nearest upcoming one as representative, or the latest past one.
+    final Map<String, _CourseCardData> byService = {};
+    final DateTime now = DateTime.now();
+    for (final _CourseCardData card in cards) {
+      final String key = card.session.serviceId.isNotEmpty
+          ? card.session.serviceId
+          : card.session.sessionId;
+      if (!byService.containsKey(key)) {
+        byService[key] = card;
+      } else {
+        final DateTime existing = _sessionDateTime(byService[key]!.session);
+        final DateTime candidate = _sessionDateTime(card.session);
+        final bool candidateUpcoming = candidate.isAfter(now);
+        final bool existingUpcoming = existing.isAfter(now);
+        if (candidateUpcoming && (!existingUpcoming || candidate.isBefore(existing))) {
+          byService[key] = card;
+        }
+      }
+    }
+
+    final List<_CourseCardData> deduped = byService.values.toList()
+      ..sort((a, b) => _sessionDateTime(a.session).compareTo(_sessionDateTime(b.session)));
+
     return _CoursesViewData(
       student: student,
-      courses: cards,
+      courses: deduped,
     );
   }
 

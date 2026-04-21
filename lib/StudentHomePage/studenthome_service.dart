@@ -4,6 +4,7 @@ import 'package:fahamni/models/service_model.dart';
 import 'package:fahamni/models/parent_model.dart';
 import 'package:fahamni/models/tutor_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 import '../models/student_model.dart';
 
@@ -107,15 +108,22 @@ class studenthomepage_service {
   }
 
   Future<TutorModel> getTutorData(String id) async {
-    final DocumentSnapshot<Map<String, dynamic>> doc = await _db
-        .collection('tutors')
-        .doc(id)
-        .get();
-    if (!doc.exists || doc.data() == null) {
-      throw Exception('Tutor document not found for $id');
+    if (id.isEmpty) throw Exception('Tutor id is empty');
+
+    final DocumentSnapshot<Map<String, dynamic>> tutorDoc =
+        await _db.collection('tutors').doc(id).get();
+    if (tutorDoc.exists && tutorDoc.data() != null) {
+      return TutorModel.fromMap(_withDocId(tutorDoc, idKey: 'uid', uidKey: 'uid'));
     }
 
-    return TutorModel.fromMap(_withDocId(doc, idKey: 'uid', uidKey: 'uid'));
+    // Some tutors are registered only in the users collection.
+    final DocumentSnapshot<Map<String, dynamic>> userDoc =
+        await _db.collection('users').doc(id).get();
+    if (userDoc.exists && userDoc.data() != null) {
+      return TutorModel.fromMap(_withDocId(userDoc, idKey: 'uid', uidKey: 'uid'));
+    }
+
+    throw Exception('Tutor document not found for $id');
   }
 
   Future<List<TutorModel>> getFavoriteTeachers(List<String> ids) async {
@@ -154,7 +162,7 @@ class studenthomepage_service {
         .collection('sessions')
         .where('student_ids', arrayContains: uid)
         .get();
-    for (final doc in byStudentId.docs.where((d) => d.data() != null)) {
+    for (final doc in byStudentId.docs) {
       sessionsById[doc.id] =
           SessionModel.fromMap(_withDocId(doc, idKey: 'session_id'));
     }
@@ -179,7 +187,7 @@ class studenthomepage_service {
             .collection('sessions')
             .where('service_id', whereIn: chunk)
             .get();
-        for (final doc in snap.docs.where((d) => d.data() != null)) {
+        for (final doc in snap.docs) {
           sessionsById.putIfAbsent(
             doc.id,
             () => SessionModel.fromMap(_withDocId(doc, idKey: 'session_id')),

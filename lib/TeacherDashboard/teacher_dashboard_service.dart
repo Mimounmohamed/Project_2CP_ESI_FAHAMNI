@@ -77,7 +77,7 @@ class TeacherDashboardService {
       performanceTitle: 'Performance Overview',
       todaySessionsTitle: "Today's Sessions",
       myServicesTitle: 'Services',
-      quoteRequestsTitle: 'Join Requests',
+      quoteRequestsTitle: 'Quote Requests',
       seeAllLabel: 'See All',
       emptySessionsLabel: 'No sessions planned for today.',
       emptyServicesLabel: 'No active services yet.',
