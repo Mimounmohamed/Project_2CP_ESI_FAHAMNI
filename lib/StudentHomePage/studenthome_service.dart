@@ -140,44 +140,68 @@ class studenthomepage_service {
         .toList();
   }
 
-  Future<List<SessionModel>> getCourses(List<String> ids) async {
-    final Set<String> sessionIds = ids
+  Future<List<SessionModel>> getCourses(List<String> ids, {String? studentId}) async {
+    final Set<String> cleanedIds = ids
         .map((id) => id.trim())
         .where((id) => id.isNotEmpty)
         .toSet();
 
-    if (sessionIds.isNotEmpty) {
-      final List<DocumentSnapshot<Map<String, dynamic>>> docs =
-          await Future.wait(
-            sessionIds.map((id) => _db.collection('sessions').doc(id).get()),
-          );
-
-      final List<SessionModel> sessions = docs
-          .where((doc) => doc.exists && doc.data() != null)
-          .map(
-            (doc) => SessionModel.fromMap(_withDocId(doc, idKey: 'session_id')),
-          )
-          .toList();
-
-      if (sessions.isNotEmpty) {
-        return sessions;
-      }
-    }
-
     final User? user = _auth.currentUser;
-    if (user == null) {
+    if (user == null && (studentId == null || studentId.isEmpty)) {
       return <SessionModel>[];
     }
 
+    // First, attempt to treat the provided ids as session document IDs.
+    if (cleanedIds.isNotEmpty) {
+      final List<DocumentSnapshot<Map<String, dynamic>>> docs =
+          await Future.wait(
+        cleanedIds.map((id) => _db.collection('sessions').doc(id).get()),
+      );
+
+      final List<SessionModel> sessionsFromDocs = docs
+          .where((doc) => doc.exists && doc.data() != null)
+          .map((doc) =>
+              SessionModel.fromMap(_withDocId(doc, idKey: 'session_id')))
+          .toList();
+
+      if (sessionsFromDocs.isNotEmpty) {
+        return sessionsFromDocs;
+      }
+
+      // If no session documents matched by ID, treat the ids as service IDs
+      // and query sessions created for those services where the current
+      // student is registered (student_ids contains current user).
+      // Firestore `whereIn` supports up to 10 items, so chunk if necessary.
+      final List<String> allIds = cleanedIds.toList();
+      final List<SessionModel> sessionsByService = <SessionModel>[];
+      for (var i = 0; i < allIds.length; i += 10) {
+        final int end = (i + 10 > allIds.length) ? allIds.length : i + 10;
+        final List<String> chunk = allIds.sublist(i, end);
+        final QuerySnapshot<Map<String, dynamic>> snap = await _db
+            .collection('sessions')
+            .where('service_id', whereIn: chunk)
+              .where('student_ids', arrayContains: studentId ?? user!.uid)
+            .get();
+
+        sessionsByService.addAll(snap.docs
+            .map((doc) =>
+                SessionModel.fromMap(_withDocId(doc, idKey: 'session_id')))
+            .toList());
+      }
+
+      if (sessionsByService.isNotEmpty) {
+        return sessionsByService;
+      }
+    }
+
+    // Fallback: return all sessions where the current student is listed.
     final QuerySnapshot<Map<String, dynamic>> snapshot = await _db
-        .collection('sessions')
-        .where('student_ids', arrayContains: user.uid)
-        .get();
+      .collection('sessions')
+      .where('student_ids', arrayContains: studentId ?? user!.uid)
+      .get();
 
     return snapshot.docs
-        .map(
-          (doc) => SessionModel.fromMap(_withDocId(doc, idKey: 'session_id')),
-        )
+        .map((doc) => SessionModel.fromMap(_withDocId(doc, idKey: 'session_id')))
         .toList();
   }
 

@@ -662,7 +662,7 @@ class _ParentExplorePageState extends State<ParentExplorePage> {
                 )
               else
                 SizedBox(
-                  height: 398,
+                  height: 300,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     itemCount: (tutors!.length / 3).ceil(),
@@ -693,7 +693,7 @@ class _ParentExplorePageState extends State<ParentExplorePage> {
                     },
                   ),
                 ),
-              const SizedBox(height: 5),
+              const SizedBox(height: 8),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -748,7 +748,7 @@ class _ParentExplorePageState extends State<ParentExplorePage> {
                 ],
               ),
               SizedBox(
-                height: 410,
+                height: 320,
                 width: double.infinity,
                 child: services!.isEmpty
                     ? const Center(

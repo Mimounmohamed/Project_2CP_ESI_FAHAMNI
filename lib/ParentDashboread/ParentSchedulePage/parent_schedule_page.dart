@@ -66,6 +66,7 @@ class _ParentSchedulePageState extends State<ParentSchedulePage> {
 
     final List<SessionModel> sessions = await _service.getCourses(
       selectedChild.Courses,
+      studentId: selectedChild.uid,
     );
     sessions.sort((a, b) => _sessionStart(a).compareTo(_sessionStart(b)));
 

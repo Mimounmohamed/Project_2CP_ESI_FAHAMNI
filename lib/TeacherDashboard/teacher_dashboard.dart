@@ -1,6 +1,8 @@
 import 'package:fahamni/Notification_page/notification_page.dart';
 import 'package:fahamni/Account_Settings_Teacher/account_screen.dart' as teacher_account;
+import 'package:fahamni/TeacherDashboard/models/teacher_portal_models.dart';
 import 'package:fahamni/TeacherDashboard/teacher_dashboard_service.dart';
+import 'package:fahamni/TeacherDashboard/teacher_quote_request_detail_page.dart';
 import 'package:fahamni/TeacherDashboard/teacher_schedule_page.dart';
 import 'package:fahamni/TeacherDashboard/teacher_services_dashboard.dart';
 import 'package:fahamni/TeacherDashboard/widgets/teacher_navbar.dart';
@@ -204,12 +206,28 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                           if (dashboard.quoteRequests.isEmpty)
                             _EmptyCard(label: dashboard.emptyQuotesLabel)
                           else
-                            ...dashboard.quoteRequests.map(
-                              (request) => Padding(
-                                padding: const EdgeInsets.only(bottom: 12),
-                                child: _QuoteRequestTile(request: request),
+                              ...dashboard.quoteRequests.map(
+                                (request) {
+                                  final joinRequest = TeacherJoinRequestDetail(
+                                    quote: request.quote,
+                                    studentName: request.studentName,
+                                    studentLevel: request.studentLevel,
+                                    studentAvatar: request.avatarPath,
+                                    serviceTitle: request.quote.serviceName.isNotEmpty ? request.quote.serviceName : request.subtitle,
+                                    description: request.objective.isNotEmpty ? request.objective : request.quote.description,
+                                    subject: request.subject.isNotEmpty ? request.subject : request.quote.subject,
+                                    teachingMode: request.quote.teachingMode,
+                                    sessionsCount: request.quote.sessionsCount,
+                                    sessionDurationLabel: request.duration.isNotEmpty ? request.duration : request.quote.duration,
+                                    createdAtLabel: request.createdAtLabel,
+                                  );
+
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 12),
+                                    child: TeacherQuoteRequestDetailPage(request: joinRequest),
+                                  );
+                                },
                               ),
-                            ),
                         ],
                       ),
                     ),
@@ -620,7 +638,7 @@ class _QuoteRequestTile extends StatelessWidget {
     required this.request,
   });
 
-  final TeacherDashboardQuoteRequest request;
+  final TeacherJoinRequestDetail request;
 
   @override
   Widget build(BuildContext context) {
@@ -632,7 +650,7 @@ class _QuoteRequestTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _ProfileAvatar(imagePath: request.avatarPath, radius: 24),
+          _ProfileAvatar(imagePath: request.studentAvatar, radius: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -661,7 +679,7 @@ class _QuoteRequestTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  request.subtitle,
+                  request.subject,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -675,10 +693,10 @@ class _QuoteRequestTile extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           PrimaryButton(
-            text: request.actionLabel,
+            text: "see details",
             onPressed: () {
               NavigationService.instance.push(
-                _QuoteRequestDetailsPage(request: request),
+                TeacherQuoteRequestDetailPage(request: request),
               );
             },
             minimumSize: const Size(112, 40),
