@@ -216,10 +216,15 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
         speciality: data['speciality'] ?? '',
       );
     } else if (role == UserRole.tutor) {
+      final tutorCommune = data['commune'] as String? ?? '';
+      final tutorCity    = data['location'] as String? ?? '';
+      final tutorLocation = tutorCommune.isNotEmpty
+          ? '$tutorCommune, $tutorCity'
+          : tutorCity;
       return TutorModel(
         uid: '', firstName: data['firstName'], lastName: data['lastName'],
         email: data['email'], phone: data['phone'],
-        location: data['location'], gender: data['gender'],
+        location: tutorLocation, gender: data['gender'],
         birthday: data['birthday'], accountStatus: AccountStatus.pending,
         expertiseDomain:        data['expertiseDomain']        ?? '',
         levelsTaught:           List<String>.from(data['levelsTaught'] ?? []),
@@ -233,10 +238,15 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
         picture: data['picture'] ?? _defaultPicture(),
       );
     } else {
+      final parentCommune = data['commune'] as String? ?? '';
+      final parentCity    = data['location'] as String? ?? '';
+      final parentLocation = parentCommune.isNotEmpty
+          ? '$parentCommune, $parentCity'
+          : parentCity;
       return ParentModel(
         uid: '', firstName: data['firstName'], lastName: data['lastName'],
         email: data['email'], phone: data['phone'],
-        location: data['location'], gender: data['gender'],
+        location: parentLocation, gender: data['gender'],
         birthday: data['birthday'], accountStatus: AccountStatus.validated,
         childrenUids: List<String>.from(data['childrenUids'] ?? []),
         picture: data['picture'] ?? _defaultPicture(),

@@ -90,7 +90,7 @@ class TutorModel extends UserModel {
       location:     map['location']   ?? '',
       gender:       Gender.values.byName(map['gender'] ?? 'male'),
       birthday:     (map['birthday'] as Timestamp).toDate(), 
-      picture:      map['picture'],
+      picture:      map['picture'] ?? '',
       accountStatus: AccountStatus.values.byName(map['account_status'] ?? 'pending'),
       expertiseDomain:        map['expertise_domain']        ?? '',
       levelsTaught:           List<String>.from(map['levels_taught'] ?? []),

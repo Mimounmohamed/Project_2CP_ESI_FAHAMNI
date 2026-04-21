@@ -1,3 +1,4 @@
+import 'package:fahamni/Account_Settings_Teacher/account_screen.dart';
 import 'package:fahamni/TeacherDashboard/teacher_dashboard_service.dart';
 import 'package:fahamni/TeacherDashboard/teacher_schedule_page.dart';
 import 'package:fahamni/Notification_page/notification_page.dart';
@@ -69,6 +70,11 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const ChatPage()),
         );
+        break;
+      case 4:
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const AccountScreen()),
+        ).then((_) => _refreshDashboard());
         break;
       default:
         ScaffoldMessenger.of(context).showSnackBar(

@@ -9,7 +9,8 @@
       "Bash(sed -n '15,22p' lib/student_profile/student_account_page.dart)",
       "Bash(sed -n '1610,1620p' lib/student_profile/student_account_page.dart)",
       "Bash(sed -n '1845,1855p' lib/student_profile/student_account_page.dart)",
-      "Bash(xargs grep *)"
+      "Bash(xargs grep *)",
+      "Bash(grep -E \"\\\\.dart$\")"
     ]
   }
 }
