@@ -79,6 +79,16 @@ class ServiceModel {
       return (value as dynamic).toDate();
     }
 
+    double parsePrice(dynamic value) {
+      if (value is num) {
+        return value.toDouble();
+      }
+      if (value is String) {
+        return double.tryParse(value) ?? 0.0;
+      }
+      return 0.0;
+    }
+
     return ServiceModel(
       serviceId: map['service_id'] ?? '',
       tutorId: map['tutor_id'] ?? '',
@@ -88,7 +98,7 @@ class ServiceModel {
       subject: map['subject'] ?? '',
       mode: map['mode'] ?? '',
       description: map['description'] ?? '',
-      price: (map['price'] ?? 0.0).toDouble(),
+      price: parsePrice(map['price']),
       duration: map['duration'] ?? 0,
       maxStudents: map['maxstudents'] ?? map['maxnum'] ?? 0,
       studentIds: List<String>.from(map['student_ids'] ?? []),

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fahamni/models/session_model.dart';
 import 'package:fahamni/models/service_model.dart';
+import 'package:fahamni/models/parent_model.dart';
 import 'package:fahamni/models/tutor_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -38,6 +39,71 @@ class studenthomepage_service {
     }
 
     return StudentModel.fromMap(_withDocId(doc, idKey: 'uid', uidKey: 'uid'));
+  }
+
+  Future<StudentModel?> getStudentDataById(String id) async {
+    final String studentId = id.trim();
+    if (studentId.isEmpty) {
+      return null;
+    }
+
+    final DocumentSnapshot<Map<String, dynamic>> doc = await _db
+        .collection('students')
+        .doc(studentId)
+        .get();
+    if (!doc.exists || doc.data() == null) {
+      return null;
+    }
+
+    return StudentModel.fromMap(_withDocId(doc, idKey: 'uid', uidKey: 'uid'));
+  }
+
+  Future<ParentModel> getParentData() async {
+    final User? user = _auth.currentUser;
+    if (user == null) {
+      throw Exception('User not logged in');
+    }
+
+    final DocumentSnapshot<Map<String, dynamic>> doc = await _db
+        .collection('parents')
+        .doc(user.uid)
+        .get();
+    if (!doc.exists || doc.data() == null) {
+      throw Exception('Parent document not found for ${user.uid}');
+    }
+
+    final Map<String, dynamic> parentMap =
+        _withDocId(doc, idKey: 'uid', uidKey: 'uid');
+
+    if (parentMap['children_uids'] == null && parentMap['childrenUids'] is List) {
+      parentMap['children_uids'] = List<String>.from(parentMap['childrenUids']);
+    }
+
+    return ParentModel.fromMap(parentMap);
+  }
+
+  Future<List<StudentModel>> getLinkedChildren(List<String> ids) async {
+    final List<String> childIds = ids
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+
+    if (childIds.isEmpty) {
+      return <StudentModel>[];
+    }
+
+    final List<DocumentSnapshot<Map<String, dynamic>>> docs = await Future.wait(
+      childIds.map((id) => _db.collection('students').doc(id).get()),
+    );
+
+    return docs
+        .where((doc) => doc.exists && doc.data() != null)
+        .map(
+          (doc) =>
+              StudentModel.fromMap(_withDocId(doc, idKey: 'uid', uidKey: 'uid')),
+        )
+        .toList();
   }
 
   Future<TutorModel> getTutorData(String id) async {

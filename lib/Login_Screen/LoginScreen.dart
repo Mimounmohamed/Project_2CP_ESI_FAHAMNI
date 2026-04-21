@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:fahamni/user_infos/ipersonal_info.dart';
 import '../Pass_recov_page/passRec.dart';
+import '../ParentDashboread/ParentHomePage/home_page.dart';
 import '../StudentHomePage/Student_homepage.dart';
 import '../TeacherDashboard/teacher_dashboard.dart';
 import '../Services/auth_.service.dart';
-import '../models/user_model.dart'; 
+import '../models/user_model.dart';
 
 class LoginScreenPage extends StatelessWidget {
   const LoginScreenPage({super.key});
@@ -68,21 +69,25 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       switch (result.role) {
-  case UserRole.student:
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const Studentpage()),
-    );
-    break;
-  case UserRole.tutor:
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const Teacherpage()),
-    );
-    break;
-  case UserRole.parent:
-    break;
-}
+        case UserRole.student:
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const Studentpage()),
+          );
+          break;
+        case UserRole.tutor:
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const Teacherpage()),
+          );
+          break;
+        case UserRole.parent:
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const Parentpage()),
+          );
+          break;
+      }
     } catch (e) {
       setState(() => _errorMessage = e.toString());
     } finally {
@@ -100,7 +105,9 @@ class _LoginScreenState extends State<LoginScreen> {
       final result = await _authService.loginWithGoogle();
 
       if (result == null) {
-        setState(() => _errorMessage = 'No account found for this Google account.');
+        setState(
+          () => _errorMessage = 'No account found for this Google account.',
+        );
         return;
       }
 
@@ -108,14 +115,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
       switch (result.role) {
         case UserRole.student:
-          Navigator.pushReplacement(context,
-              MaterialPageRoute(builder: (_) => const Studentpage()));
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const Studentpage()),
+          );
           break;
         case UserRole.tutor:
-          Navigator.pushReplacement(context,
-              MaterialPageRoute(builder: (_) => const Teacherpage()));
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const Teacherpage()),
+          );
           break;
         case UserRole.parent:
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const Parentpage()),
+          );
           break;
       }
     } catch (e) {
@@ -135,10 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
             Positioned(
               top: 20,
               left: 20,
-              child: Image.asset(
-                'assets/images/Container (3).png',
-                height: 20,
-              ),
+              child: Image.asset('assets/images/Container (3).png', height: 20),
             ),
 
             SingleChildScrollView(
@@ -194,7 +206,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         const SizedBox(height: 6),
                         Container(
-                          width: 32, height: 2,
+                          width: 32,
+                          height: 2,
                           decoration: BoxDecoration(
                             color: const Color(0x80000080),
                             borderRadius: BorderRadius.circular(999),
@@ -202,7 +215,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 6),
                         Container(
-                          width: 48, height: 2,
+                          width: 48,
+                          height: 2,
                           decoration: BoxDecoration(
                             color: const Color(0x80000080),
                             borderRadius: BorderRadius.circular(999),
@@ -210,7 +224,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 6),
                         Container(
-                          width: 24, height: 2,
+                          width: 24,
+                          height: 2,
                           decoration: BoxDecoration(
                             color: const Color(0x80000080),
                             borderRadius: BorderRadius.circular(999),
@@ -227,7 +242,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-
                         // Email label
                         const Text(
                           ' EMAIL OR PHONE NUMBER',
@@ -245,33 +259,55 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
-                            if (value == null || value.isEmpty) return 'Email or Phone number is required';
+                            if (value == null || value.isEmpty)
+                              return 'Email or Phone number is required';
                             final isEmail = value.contains('@');
-                            final isPhone = RegExp(r'^(0[567]\d{8}|\+213\d{9})$').hasMatch(value);
-                            if (!isEmail && !isPhone) return 'Enter a valid email or phone number';
+                            final isPhone = RegExp(
+                              r'^(0[567]\d{8}|\+213\d{9})$',
+                            ).hasMatch(value);
+                            if (!isEmail && !isPhone)
+                              return 'Enter a valid email or phone number';
                             return null;
                           },
                           decoration: InputDecoration(
                             hintText: 'name@example.com or 055XXXXXXX',
-                            hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
-                            prefixIcon: const Icon(Icons.perm_identity, color: Color(0xFF94A3B8)),
+                            hintStyle: const TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 14,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.perm_identity,
+                              color: Color(0xFF94A3B8),
+                            ),
                             filled: true,
                             fillColor: Colors.white,
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0x80F8FAFC), width: 1),
+                              borderSide: const BorderSide(
+                                color: Color(0x80F8FAFC),
+                                width: 1,
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFF64748B), width: 1.5),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF64748B),
+                                width: 1.5,
+                              ),
                             ),
                             errorBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                              borderSide: const BorderSide(
+                                color: Colors.red,
+                                width: 1.5,
+                              ),
                             ),
                             focusedErrorBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                              borderSide: const BorderSide(
+                                color: Colors.red,
+                                width: 1.5,
+                              ),
                             ),
                           ),
                         ),
@@ -294,16 +330,26 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: _passwordController,
                           obscureText: _obscurePassword,
                           validator: (value) {
-                            if (value == null || value.isEmpty) return 'Password is required';
+                            if (value == null || value.isEmpty)
+                              return 'Password is required';
                             if (value.length < 8) return 'Minimum 8 characters';
-                            if (!value.contains(RegExp(r'[A-Z]'))) return 'Must contain at least one uppercase letter';
-                            if (!value.contains(RegExp(r'[0-9]'))) return 'Must contain at least one number';
+                            if (!value.contains(RegExp(r'[A-Z]')))
+                              return 'Must contain at least one uppercase letter';
+                            if (!value.contains(RegExp(r'[0-9]')))
+                              return 'Must contain at least one number';
                             return null;
                           },
                           decoration: InputDecoration(
                             hintText: 'Enter password',
-                            hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
-                            prefixIcon: const Icon(Icons.lock_outline, size: 20, color: Color(0xFF94A3B8)),
+                            hintStyle: const TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 14,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.lock_outline,
+                              size: 20,
+                              color: Color(0xFF94A3B8),
+                            ),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _obscurePassword
@@ -311,25 +357,38 @@ class _LoginScreenState extends State<LoginScreen> {
                                     : Icons.visibility_outlined,
                                 color: const Color(0xFF94A3B8),
                               ),
-                              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                              onPressed: () => setState(
+                                () => _obscurePassword = !_obscurePassword,
+                              ),
                             ),
                             filled: true,
                             fillColor: Colors.white,
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0x80F8FAFC)),
+                              borderSide: const BorderSide(
+                                color: Color(0x80F8FAFC),
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFF64748B), width: 1.5),
+                              borderSide: const BorderSide(
+                                color: Color(0xFF64748B),
+                                width: 1.5,
+                              ),
                             ),
                             errorBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                              borderSide: const BorderSide(
+                                color: Colors.red,
+                                width: 1.5,
+                              ),
                             ),
                             focusedErrorBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                              borderSide: const BorderSide(
+                                color: Colors.red,
+                                width: 1.5,
+                              ),
                             ),
                           ),
                         ),
@@ -342,7 +401,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             onPressed: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const passRec()),
+                                MaterialPageRoute(
+                                  builder: (context) => const passRec(),
+                                ),
                               );
                             },
                             child: const Text(
@@ -361,7 +422,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           const SizedBox(height: 8),
                           Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFFEF2F2),
                               borderRadius: BorderRadius.circular(8),
@@ -430,16 +494,14 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
-                        // ── END SIGN IN BUTTON ──────────────
 
+                        // ── END SIGN IN BUTTON ──────────────
                       ],
                     ),
                   ),
-    
 
                   const SizedBox(height: 24),
 
-                 
                   Row(
                     children: [
                       Expanded(
@@ -453,7 +515,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               border: Border.all(color: Colors.grey.shade300),
                             ),
                             child: Center(
-                              child: Image.asset('assets/images/SVG.png', height: 22),
+                              child: Image.asset(
+                                'assets/images/SVG.png',
+                                height: 22,
+                              ),
                             ),
                           ),
                         ),
@@ -463,7 +528,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   Row(
                     children: [
-                      Expanded(child: Container(height: 1, color: const Color(0xFFFAFAFA))),
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          color: const Color(0xFFFAFAFA),
+                        ),
+                      ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Text(
@@ -475,7 +545,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-                      Expanded(child: Container(height: 1, color: const Color(0xFFFAFAFA))),
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          color: const Color(0xFFFAFAFA),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -485,7 +560,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const IpersonalInfo()),
+                        MaterialPageRoute(
+                          builder: (context) => const IpersonalInfo(),
+                        ),
                       );
                     },
                     child: Text.rich(

@@ -28,11 +28,21 @@ class ReviewModel {
   }
 
   factory ReviewModel.fromMap(Map<String, dynamic> map) {
+    double parseRating(dynamic value) {
+      if (value is num) {
+        return value.toDouble();
+      }
+      if (value is String) {
+        return double.tryParse(value) ?? 0.0;
+      }
+      return 0.0;
+    }
+
     return ReviewModel(
       reviewId: map['review_id'] ?? '',
       reviewerId: map['reviewer_id'] ?? map['student_id'] ?? '',
       tutorId: map['tutor_id'] ?? '',
-      rating: (map['rating'] ?? 0.0).toDouble(),
+      rating: parseRating(map['rating']),
       comment: map['comment'] ?? '',
       createdAt: (map['createdAt'] as dynamic).toDate(),
     );

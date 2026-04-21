@@ -2,9 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:fahamni/Account_Settings_Student/account_screen.dart';
+import 'package:fahamni/Courses/courses_page.dart';
+import 'package:fahamni/Explore_map_pages/explorepage.dart';
+import 'package:fahamni/StudentHomePage/Student_homepage.dart';
+import 'package:fahamni/StudentHomePage/studenthome_service.dart';
+import 'package:fahamni/ParentDashboread/ParentHomePage/home_page.dart';
+import 'package:fahamni/ParentDashboread/ParentExplorePage/parent_explore_page.dart';
+import 'package:fahamni/ParentDashboread/ParentSchedulePage/parent_schedule_page.dart';
+import 'package:fahamni/widgets/customnavbar.dart';
 
 import '../Services/chat_service.dart';
 import '../models/user_model.dart';
+import '../models/student_model.dart';
 import 'chat_buttons.dart';
 import 'ConversationBox.dart';
 import '../models/chat_model.dart';
@@ -23,8 +33,11 @@ class _ChatPageState extends State<ChatPage> {
       ChatService(FirestoreChatRepository());
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final studenthomepage_service _studentService = studenthomepage_service();
   int _selectedTabIndex = 0;
   bool _didResolveInitialTab = false;
+  UserRole? _currentRole;
+  StudentModel? _student;
 
   String? get _currentUserId => _auth.currentUser?.uid;
 
@@ -32,6 +45,23 @@ class _ChatPageState extends State<ChatPage> {
   void initState() {
     super.initState();
     _resolveInitialTab();
+  }
+
+  Future<void> _loadUserDataForNavigation() async {
+    try {
+      if (_currentRole == UserRole.student) {
+        final StudentModel student = await _studentService.getStudentData();
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _student = student;
+        });
+      }
+      // Parent users don't need additional data loading for navigation
+    } catch (_) {
+      // Non-student users can still use chat without bottom navbar navigation.
+    }
   }
 
   Object? get _conversationFilter {
@@ -85,8 +115,82 @@ class _ChatPageState extends State<ChatPage> {
     if (!mounted) return;
     setState(() {
       _didResolveInitialTab = true;
+      _currentRole = currentRole;
       _selectedTabIndex = currentRole == UserRole.tutor ? 1 : 0;
     });
+    
+    // Load user data after role is resolved
+    await _loadUserDataForNavigation();
+  }
+
+  void _handleBottomNavigation(int index) {
+    // Don't handle navigation on the Chat tab itself
+    if (index == 3) {
+      return;
+    }
+
+    if (_currentRole == UserRole.student) {
+      if (index == 0) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const Studenthomepage()),
+        );
+        return;
+      }
+
+      if (index == 1 && _student != null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => Explorepage(student: _student!)),
+        );
+        return;
+      }
+
+      if (index == 2) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const CoursesPage()),
+        );
+        return;
+      }
+
+      if (index == 4) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AccountScreen()),
+        );
+      }
+    } else if (_currentRole == UserRole.parent) {
+      if (index == 0) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const Parenthomepage()),
+        );
+        return;
+      }
+
+      if (index == 1) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ParentExplorePage()),
+        );
+        return;
+      }
+
+      if (index == 2) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ParentSchedulePage()),
+        );
+        return;
+      }
+
+      if (index == 4) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile page is coming soon.')),
+        );
+      }
+    }
   }
 
   String _conversationName(ConversationModel conversation) {
@@ -286,6 +390,12 @@ class _ChatPageState extends State<ChatPage> {
                 ),
               ),
             ),
+      bottomNavigationBar: _currentRole == UserRole.student || _currentRole == UserRole.parent
+          ? CustomBottomNavbar(
+              selectedIndex: 3,
+              onTap: _handleBottomNavigation,
+            )
+          : null,
     );
   }
 }

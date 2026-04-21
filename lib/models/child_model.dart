@@ -1,46 +1,66 @@
-enum Gender { male, female }
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class ChildModel {
   final String id;
-  final String firstName;
-  final String lastName;
-  final DateTime birthday;
-  final String schoolLevel;
+  final String name;
+  final String gender;
+  final String level;
+  final String grade;
+  final String speciality;
+  final List<String> subjects;
   final String picture;
-  final Gender gender;
-  
-  
+  final String parentUid;
+
   ChildModel({
     required this.id,
-    required this.firstName,
-    required this.lastName,
-    required this.birthday,
-    required this.schoolLevel,
-    required this.picture,
+    required this.name,
     required this.gender,
+    required this.level,
+    required this.grade,
+    required this.speciality,
+    required this.subjects,
+    required this.picture,
+    required this.parentUid,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
-      'first_name': firstName,
-      'last_name': lastName,
-      'birthday': birthday,
-      'school_level': schoolLevel,
-      'picture':      picture,
-      'gender':       gender.name,
-      
+      'id':         id,
+      'name':       name,
+      'gender':     gender,
+      'level':      level,
+      'grade':      grade,
+      'speciality': speciality,
+      'subjects':   subjects,
+      'picture':    picture,
+      'parentUid':  parentUid,
     };
   }
 
   factory ChildModel.fromMap(Map<String, dynamic> map) {
     return ChildModel(
-      id: map['id'] ?? '',
-      firstName: map['first_name'] ?? '',
-      lastName: map['last_name'] ?? '',
-      birthday: (map['birthday'] as dynamic).toDate(),
-      schoolLevel: map['school_level'] ?? '',
-      picture: map['picture'] ?? '',
-      gender:            Gender.values.byName(map['gender'] ?? 'male'),
+      id:         map['id']         ?? '',
+      name:       map['name']       ?? '',
+      gender:     map['gender']     ?? 'male',
+      level:      map['level']      ?? '',
+      grade:      map['grade']      ?? '',
+      speciality: map['speciality'] ?? '',
+      subjects:   List<String>.from(map['subjects'] ?? []),
+      picture:    map['picture']    ?? '',
+      parentUid:  map['parentUid']  ?? '',
     );
   }
+
+  // Convenience getters used by the dashboard UI
+  String get displayName => name;
+
+  String get subtitle {
+    if (level.isNotEmpty && speciality.isNotEmpty) return '$level - $speciality';
+    if (level.isNotEmpty) return level;
+    if (speciality.isNotEmpty) return speciality;
+    if (grade.isNotEmpty) return grade;
+    return 'Child profile';
+  }
+
+  bool get isFemale => gender == 'female';
 }

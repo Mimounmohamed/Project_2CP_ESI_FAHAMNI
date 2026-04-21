@@ -100,25 +100,28 @@ class _AccountScreenState extends State<AccountScreen> {
       bottomNavigationBar: CustomBottomNavbar(
         selectedIndex: _selectedIndex,
         onTap: (int index) {
+          if (index == _selectedIndex) {
+            return;
+          }
           if (index == 0) {
-            Navigator.push(
+            Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => const Studenthomepage()),
             );
           } else if (index == 1 && student != null) {
-            Navigator.push(
+            Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (_) => Explorepage(student: student!)),
             );
           } else if (index == 2) {
-            Navigator.push(
+            Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => const CoursesPage()),
             );
           } else if (index == 3) {
-            Navigator.push(
+            Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => ChatPage()),
+              MaterialPageRoute(builder: (context) => const ChatPage()),
             );
           }  else {
             setState(() {

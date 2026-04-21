@@ -623,24 +623,27 @@ class _StudenthomepageState extends State<Studenthomepage> {
       bottomNavigationBar: CustomBottomNavbar(
           selectedIndex: _selectedIndex,
           onTap: (index){
+            if (index == _selectedIndex) {
+              return;
+            }
             if (index == 1) {
-              Navigator.push(context,
+              Navigator.pushReplacement(context,
                   MaterialPageRoute(builder: (context) => Explorepage(student: student!) ),
               );
             }
             else if (index == 2) {
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => const CoursesPage()),
               );
             }
             else if (index == 3) {
-              Navigator.push(context,
-                MaterialPageRoute(builder: (context) => ChatPage() ),
+              Navigator.pushReplacement(context,
+                MaterialPageRoute(builder: (context) => const ChatPage() ),
               );
             }
             else if (index == 4) {
-              Navigator.push(context,
+              Navigator.pushReplacement(context,
                 MaterialPageRoute(builder: (context) => const AccountScreen()),
               ).then((_) => loadStudent());
             }

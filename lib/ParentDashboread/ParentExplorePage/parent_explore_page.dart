@@ -1,70 +1,71 @@
 import 'dart:math' as math;
 
-import 'package:fahamni/messaging/chat_page.dart';
-import 'package:fahamni/feedback/feedback_pages.dart';
-import 'package:fahamni/Courses/courses_page.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fahamni/Explore_map_pages/map.dart';
+import 'package:fahamni/ParentDashboread/ParentHomePage/home_page.dart';
+import 'package:fahamni/ParentDashboread/ParentSchedulePage/parent_schedule_page.dart';
 import 'package:fahamni/StudentHomePage/studenthome_service.dart';
+import 'package:fahamni/feedback/feedback_pages.dart';
+import 'package:fahamni/messaging/chat_page.dart';
+import 'package:fahamni/models/child_model.dart';
+import 'package:fahamni/models/parent_model.dart';
+import 'package:fahamni/models/service_model.dart';
+import 'package:fahamni/models/tutor_model.dart';
+import 'package:fahamni/widgets/customnavbar.dart';
+import 'package:fahamni/widgets/explore_service.dart';
+import 'package:fahamni/widgets/servicecard.dart';
+import 'package:fahamni/widgets/servicedetails.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:fahamni/widgets/customnavbar.dart';
-import 'package:fahamni/models/service_model.dart';
-import 'package:fahamni/models/session_model.dart';
-import 'package:fahamni/models/student_model.dart';
-import 'package:fahamni/models/tutor_model.dart';
-import 'package:fahamni/widgets/servicecard.dart';
-import 'package:fahamni/StudentHomePage/Student_homepage.dart';
-import 'package:fahamni/Account_Settings_Student/account_screen.dart';
-import 'package:fahamni/widgets/explore_service.dart';
-import 'package:fahamni/widgets/servicedetails.dart';
-import 'map.dart';
 
 const String _mapLocationConsentKey = 'map_location_consent_granted';
 
-class Explorepage extends StatefulWidget {
-  final StudentModel student;
-  const Explorepage({super.key, required this.student});
+class ParentExplorePage extends StatefulWidget {
+  const ParentExplorePage({super.key});
 
   @override
-  State<Explorepage> createState() => _ExplorepageState();
+  State<ParentExplorePage> createState() => _ParentExplorePageState();
 }
 
-class _ExplorepageState extends State<Explorepage> {
-  final TextEditingController _searchController = TextEditingController();
-  final studenthomepage_service _studentService = studenthomepage_service();
-  Position? _currentPosition;
-  GoogleMapController? _controller;
-
-  String? selectedSubject;
-  String? selectedMode;
-  String? selectedRating;
-  String? selectedPrice;
-
-  List<String> op = ['Subject', 'Price', 'Rating', 'Mode'];
-  List<List<String>> options = [
-    ['Mathematics', 'Physics', 'English'],
-    ['<1000', '<2000', '<2500'],
-    ['3.5', '4', '4.5'],
-    ['online', 'onSite'],
-  ];
-
-  int _selectedIndex = 1;
-  int _selectedIndex2 = 0;
-  int nearbyTutorsCount = 0;
+class _ParentExplorePageState extends State<ParentExplorePage> {
+  ParentModel? _parent;
+  List<ChildModel> _children = <ChildModel>[];
+  ChildModel? _selectedChild;
 
   List<_RecommendedTutorEntry>? tutors;
   List<_RecommendedServiceEntry>? services;
   List<_RecommendedTutorEntry> _allTutors = <_RecommendedTutorEntry>[];
   List<_RecommendedServiceEntry> _allServices = <_RecommendedServiceEntry>[];
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
+  String? selectedSubject;
+  String? selectedMode;
+  String? selectedRating;
+  String? selectedPrice;
+  int _selectedIndex2 = 0;
+
+  Position? _currentPosition;
+  GoogleMapController? _controller;
+  int nearbyTutorsCount = 0;
+
+  int _selectedIndex = 1;
+
+  // ignore: unused_field
+  final studenthomepage_service _studentService = studenthomepage_service();
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final TextEditingController _searchController = TextEditingController();
+
+  final List<String> op = <String>['Subject', 'Price', 'Rating', 'Mode'];
+  final List<List<String>> options = <List<String>>[
+    <String>['Mathematics', 'Physics', 'English'],
+    <String>['<1000', '<2000', '<2500'],
+    <String>['3.5', '4', '4.5'],
+    <String>['online', 'onSite'],
+  ];
 
   @override
   void initState() {
@@ -72,22 +73,139 @@ class _ExplorepageState extends State<Explorepage> {
     _initializeData();
   }
 
-  Future<void> _initializeData() async {
-    // 1. Wait for location & tutors to load concurrently
-    await Future.wait([
-      _getCurrentLocation(),
-      loadTutorsServices(),
-    ]);
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
-    // 2. Only calculate distances AFTER both are loaded
+  Future<void> _initializeData() async {
+    await _loadParentAndChildren();
+    await _loadTutorsAndServices();
+    await _getCurrentLocation();
     await _getDistances();
   }
 
+  Future<void> _loadParentAndChildren() async {
+    final String uid = FirebaseAuth.instance.currentUser!.uid;
+
+    final DocumentSnapshot<Map<String, dynamic>> parentDoc =
+        await _db.collection('parents').doc(uid).get();
+    final QuerySnapshot<Map<String, dynamic>> childrenQuery =
+        await _db.collection('children').where('parentUid', isEqualTo: uid).get();
+
+    if (!parentDoc.exists || parentDoc.data() == null) {
+      throw Exception('Parent profile not found.');
+    }
+
+    final ParentModel parent = ParentModel.fromMap(parentDoc.data()!);
+    final List<ChildModel> children = childrenQuery.docs
+        .map((doc) => ChildModel.fromMap(doc.data()))
+        .toList();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _parent = parent;
+      _children = children;
+
+      if (_selectedChild != null &&
+          !_children.any((child) => child.id == _selectedChild!.id)) {
+        _selectedChild = null;
+      }
+    });
+  }
+
+  Future<void> _loadTutorsAndServices({ChildModel? child}) async {
+    final List<TutorModel> teachers = await Explore_service().getAllTutors();
+    final List<ServiceModel> fetchedServices =
+        await Explore_service().getAllServices();
+
+    final Map<String, TutorModel> tutorById = {
+      for (final t in teachers) t.uid: t,
+    };
+
+    final _RecommendationContext ctx = child != null
+        ? _buildChildRecommendationContext(child)
+        : _buildNeutralRecommendationContext();
+
+    final List<_RecommendedTutorEntry> rankedTutors = teachers
+        .map((t) => _RecommendedTutorEntry(tutor: t, score: _scoreTutor(t, ctx)))
+        .toList()
+      ..sort(_compareTutorEntries);
+
+    final List<_RecommendedServiceEntry> rankedServices = fetchedServices
+        .map((s) {
+          final TutorModel? tutor = tutorById[s.tutorId];
+          if (tutor == null) return null;
+          return _RecommendedServiceEntry(
+            service: s,
+            tutor: tutor,
+            score: _scoreService(s, tutor, ctx),
+          );
+        })
+        .whereType<_RecommendedServiceEntry>()
+        .toList()
+      ..sort(_compareServiceEntries);
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _allTutors = rankedTutors;
+      _allServices = rankedServices;
+      tutors = rankedTutors;
+      services = rankedServices;
+    });
+
+    applyFilters();
+    await _getDistances();
+  }
+
+  _RecommendationContext _buildChildRecommendationContext(ChildModel child) {
+    final Set<String> preferredSubjects = child.subjects
+        .map(_normalize)
+        .where((value) => value.isNotEmpty)
+        .toSet();
+    final Set<String> objectiveKeywords =
+        _extractKeywords('${child.speciality} ${child.grade}');
+
+    return _RecommendationContext(
+      preferredSubjects: preferredSubjects,
+      previousSubjects: <String>{},
+      previousTutorIds: <String>{},
+      previousModes: <String>{},
+      favoriteTutorIds: <String>{},
+      schoolLevel: _normalize(child.level),
+      objectiveKeywords: objectiveKeywords,
+    );
+  }
+
+  _RecommendationContext _buildNeutralRecommendationContext() {
+    return const _RecommendationContext(
+      preferredSubjects: <String>{},
+      previousSubjects: <String>{},
+      previousTutorIds: <String>{},
+      previousModes: <String>{},
+      favoriteTutorIds: <String>{},
+      schoolLevel: '',
+      objectiveKeywords: <String>{},
+    );
+  }
+
+  void _onChildChanged(ChildModel? child) {
+    setState(() => _selectedChild = child);
+    _loadTutorsAndServices(child: child);
+  }
+
   Future<void> _getCurrentLocation() async {
-    LocationPermission permission = await Geolocator.requestPermission();
+    final LocationPermission permission = await Geolocator.requestPermission();
     if (permission == LocationPermission.denied) return;
 
-    final position = await Geolocator.getCurrentPosition();
+    final Position position = await Geolocator.getCurrentPosition();
     setState(() {
       _currentPosition = position;
     });
@@ -113,7 +231,7 @@ class _ExplorepageState extends State<Explorepage> {
       return;
     }
 
-    final position = await Geolocator.getCurrentPosition();
+    final Position position = await Geolocator.getCurrentPosition();
     if (!mounted) {
       return;
     }
@@ -137,6 +255,7 @@ class _ExplorepageState extends State<Explorepage> {
     }
 
     await _loadLocationPreview();
+    await _getDistances();
   }
 
   Future<void> _getDistances() async {
@@ -153,18 +272,19 @@ class _ExplorepageState extends State<Explorepage> {
 
           if (locations.isNotEmpty) {
             final double distance = Geolocator.distanceBetween(
-              _currentPosition!.latitude,
-              _currentPosition!.longitude,
-              locations[0].latitude,
-              locations[0].longitude,
-            ) / 1000;
+                  _currentPosition!.latitude,
+                  _currentPosition!.longitude,
+                  locations[0].latitude,
+                  locations[0].longitude,
+                ) /
+                1000;
 
             if (distance < 20.0) {
               count++;
             }
           }
         } catch (e) {
-          print("Geocoding failed for ${tutor.firstName}: $e");
+          print('Geocoding failed for ${tutor.firstName}: $e');
         }
       }
     }
@@ -173,65 +293,39 @@ class _ExplorepageState extends State<Explorepage> {
     });
   }
 
-  Future<void> loadTutorsServices() async {
-    final teachers = await Explore_service().getAllTutors();
-    final fetchedServices = await Explore_service().getAllServices();
-    final sessions = await _studentService.getCourses(widget.student.Courses);
-    final Map<String, TutorModel> tutorById = <String, TutorModel>{
-      for (final TutorModel tutor in teachers) tutor.uid: tutor,
-    };
-
-    final List<ServiceModel> previousServices = (await Future.wait<ServiceModel?>(
-      sessions.map((session) => _studentService.getServiceData(session.serviceId)),
-    ))
-        .whereType<ServiceModel>()
-        .toList();
-
-    final _RecommendationContext recommendationContext = _buildRecommendationContext(
-      student: widget.student,
-      sessions: sessions,
-      previousServices: previousServices,
-    );
-
-    final List<_RecommendedTutorEntry> rankedTutors = teachers
-        .map(
-          (teacher) => _RecommendedTutorEntry(
-            tutor: teacher,
-            score: _scoreTutor(teacher, recommendationContext),
-          ),
-        )
-        .toList()
-      ..sort(_compareTutorEntries);
-
-    final List<_RecommendedServiceEntry> rankedServices = fetchedServices
-        .map((service) {
-          final TutorModel? tutor = tutorById[service.tutorId];
-          if (tutor == null) {
-            return null;
-          }
-          return _RecommendedServiceEntry(
-            service: service,
-            tutor: tutor,
-            score: _scoreService(service, tutor, recommendationContext),
-          );
-        })
-        .whereType<_RecommendedServiceEntry>()
-        .toList()
-      ..sort(_compareServiceEntries);
-
-    setState(() {
-      tutors = rankedTutors;
-      _allTutors = rankedTutors;
-      services = rankedServices;
-      _allServices = rankedServices;
-    });
+  void _handleNavigation(int index) {
+    if (index == 1) return;
+    if (index == 0) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const Parenthomepage()),
+      );
+    }
+    if (index == 2) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const ParentSchedulePage()),
+      );
+    }
+    if (index == 3) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const ChatPage()),
+      );
+    }
+    if (index == 4) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile page coming soon.')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (services == null || tutors == null) {
+    if (tutors == null || services == null || _parent == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xfff9f9f9),
@@ -241,9 +335,9 @@ class _ExplorepageState extends State<Explorepage> {
           icon: const Icon(Icons.arrow_back_ios_new_outlined),
         ),
         title: const Text(
-          "Explore",
+          'Explore',
           style: TextStyle(
-            fontFamily: "Inter",
+            fontFamily: 'Inter',
             fontSize: 20,
             fontWeight: FontWeight.w700,
             color: Color(0xff0f172a),
@@ -259,7 +353,8 @@ class _ExplorepageState extends State<Explorepage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Search TextField
+              _buildChildSelector(),
+              const SizedBox(height: 16),
               Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
@@ -281,7 +376,7 @@ class _ExplorepageState extends State<Explorepage> {
                     hintText: 'Search subjects or teachers',
                     hintStyle: const TextStyle(
                       fontSize: 18,
-                      fontFamily: "Lexend",
+                      fontFamily: 'Lexend',
                       fontWeight: FontWeight.w400,
                       color: Color(0xFF94A3B8),
                     ),
@@ -304,7 +399,6 @@ class _ExplorepageState extends State<Explorepage> {
                 ),
               ),
               const SizedBox(height: 15),
-              // Filter dropdowns
               SizedBox(
                 height: 50,
                 child: ListView.builder(
@@ -339,7 +433,7 @@ class _ExplorepageState extends State<Explorepage> {
                                         color: _selectedIndex2 == index
                                             ? Colors.white
                                             : Colors.black,
-                                        fontFamily: "Nunito",
+                                        fontFamily: 'Nunito',
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
@@ -354,7 +448,7 @@ class _ExplorepageState extends State<Explorepage> {
                                 color: _selectedIndex2 == index
                                     ? Colors.white
                                     : Colors.black,
-                                fontFamily: "Nunito",
+                                fontFamily: 'Nunito',
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -377,8 +471,7 @@ class _ExplorepageState extends State<Explorepage> {
                           ),
                           items: options[index]
                               .map(
-                                (e) =>
-                                    DropdownMenuItem(value: e, child: Text(e)),
+                                (e) => DropdownMenuItem(value: e, child: Text(e)),
                               )
                               .toList(),
                           onChanged: (value) {
@@ -401,7 +494,6 @@ class _ExplorepageState extends State<Explorepage> {
                 ),
               ),
               const SizedBox(height: 16),
-              // Map
               Container(
                 clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
@@ -424,7 +516,6 @@ class _ExplorepageState extends State<Explorepage> {
                         child: GoogleMap(
                           onMapCreated: (controller) async {
                             _controller = controller;
-                            // Custom map style if needed
                           },
                           initialCameraPosition: CameraPosition(
                             target: LatLng(
@@ -440,7 +531,7 @@ class _ExplorepageState extends State<Explorepage> {
                       )
                     else
                       Image.asset(
-                        "assets/images/map.png",
+                        'assets/images/map.png',
                         height: 200,
                         width: double.infinity,
                         fit: BoxFit.cover,
@@ -459,7 +550,7 @@ class _ExplorepageState extends State<Explorepage> {
                         child: Row(
                           children: [
                             SvgPicture.asset(
-                              "assets/images/position.svg",
+                              'assets/images/position.svg',
                               height: 25,
                               width: 25,
                             ),
@@ -471,7 +562,7 @@ class _ExplorepageState extends State<Explorepage> {
                                     : 'Discover Tutors found near you',
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
-                                  fontFamily: "Lexend",
+                                  fontFamily: 'Lexend',
                                   fontWeight: FontWeight.w600,
                                   fontSize: 12,
                                   color: Color(0xFF0F172A),
@@ -485,7 +576,7 @@ class _ExplorepageState extends State<Explorepage> {
                               child: const Text(
                                 'VIEW FULL MAP',
                                 style: TextStyle(
-                                  fontFamily: "Lexend",
+                                  fontFamily: 'Lexend',
                                   fontWeight: FontWeight.w700,
                                   fontSize: 12,
                                   color: Color(0xFF000080),
@@ -501,7 +592,6 @@ class _ExplorepageState extends State<Explorepage> {
                 ),
               ),
               const SizedBox(height: 10),
-              // Recommended Teachers
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -515,17 +605,43 @@ class _ExplorepageState extends State<Explorepage> {
                       ),
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () {},
-                    child: const Text(
-                      'See All',
-                      style: TextStyle(
-                        fontFamily: "Nunito",
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF000080),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_selectedChild != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF000080).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'For ${_selectedChild!.name}',
+                            style: const TextStyle(
+                              fontFamily: 'Nunito',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF000080),
+                            ),
+                          ),
+                        ),
+                      if (_selectedChild != null) const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () {},
+                        child: const Text(
+                          'See All',
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF000080),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -578,7 +694,6 @@ class _ExplorepageState extends State<Explorepage> {
                   ),
                 ),
               const SizedBox(height: 5),
-              // Recommended Services
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -592,17 +707,43 @@ class _ExplorepageState extends State<Explorepage> {
                       ),
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () {},
-                    child: const Text(
-                      'See All',
-                      style: TextStyle(
-                        fontFamily: "Nunito",
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF000080),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_selectedChild != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF000080).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'For ${_selectedChild!.name}',
+                            style: const TextStyle(
+                              fontFamily: 'Nunito',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF000080),
+                            ),
+                          ),
+                        ),
+                      if (_selectedChild != null) const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () {},
+                        child: const Text(
+                          'See All',
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF000080),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -658,55 +799,81 @@ class _ExplorepageState extends State<Explorepage> {
       ),
       bottomNavigationBar: CustomBottomNavbar(
         selectedIndex: _selectedIndex,
-        onTap: (int index) {
-          if (index == _selectedIndex) {
-            return;
-          }
-          if (index == 0) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const Studenthomepage()),
-            );
-          } else if (index == 2) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const CoursesPage()),
-            );
-          } else if (index == 3) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const ChatPage()),
-            );
-          } else if (index == 4) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const AccountScreen()),
-            );
-          } else {
-            setState(() {
-              _selectedIndex = index;
-            });
-          }
-        },
+        onTap: _handleNavigation,
+      ),
+    );
+  }
+
+  Widget _buildChildSelector() {
+    final bool hasChildren = _children.isNotEmpty;
+    return Container(
+      height: 52,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFD1D5DB)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF000080).withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<ChildModel>(
+          value: hasChildren ? _selectedChild : null,
+          isExpanded: true,
+          hint: Text(
+            hasChildren ? 'Select a Child' : 'No children linked',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF6B7280),
+            ),
+          ),
+          icon: const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: Color(0xFF6B7280),
+          ),
+          items: _children
+              .map(
+                (child) => DropdownMenuItem<ChildModel>(
+                  value: child,
+                  child: Text(
+                    child.name,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF1F2937),
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+          onChanged: hasChildren ? _onChildChanged : null,
+        ),
       ),
     );
   }
 
   void applyFilters() {
-    final query = _searchController.text.toLowerCase();
+    final String query = _searchController.text.toLowerCase();
 
     setState(() {
       services = _allServices.where((entry) {
         final ServiceModel s = entry.service;
         final TutorModel tutor = entry.tutor;
-        final matchSubject =
+        final bool matchSubject =
             selectedSubject == null ||
             s.subject.toLowerCase() == selectedSubject!.toLowerCase() ||
             tutor.expertiseDomain.toLowerCase() == selectedSubject!.toLowerCase();
-        final matchPrice =
+        final bool matchPrice =
             selectedPrice == null ||
             s.price <= double.parse(selectedPrice!.replaceAll('<', ''));
-        final matchSearch =
+        final bool matchSearch =
             query.isEmpty ||
             s.name.toLowerCase().contains(query) ||
             s.subject.toLowerCase().contains(query) ||
@@ -714,9 +881,9 @@ class _ExplorepageState extends State<Explorepage> {
             tutor.firstName.toLowerCase().contains(query) ||
             tutor.lastName.toLowerCase().contains(query) ||
             s.price.toString().toLowerCase().contains(query);
-        final matchMode =
+        final bool matchMode =
             selectedMode == null || tutor.teachingMode == selectedMode;
-        final matchRating =
+        final bool matchRating =
             selectedRating == null ||
             tutor.averageRating >=
                 double.parse(selectedRating!.replaceAll(',', '.'));
@@ -730,16 +897,16 @@ class _ExplorepageState extends State<Explorepage> {
 
       tutors = _allTutors.where((entry) {
         final TutorModel t = entry.tutor;
-        final matchMode =
+        final bool matchMode =
             selectedMode == null || t.teachingMode == selectedMode;
-        final matchSubject =
+        final bool matchSubject =
             selectedSubject == null ||
             t.expertiseDomain.toLowerCase() == selectedSubject!.toLowerCase();
-        final matchRating =
+        final bool matchRating =
             selectedRating == null ||
             t.averageRating >=
                 double.parse(selectedRating!.replaceAll(',', '.'));
-        final matchSearch =
+        final bool matchSearch =
             query.isEmpty ||
             t.firstName.toLowerCase().contains(query) ||
             t.lastName.toLowerCase().contains(query) ||
@@ -748,44 +915,6 @@ class _ExplorepageState extends State<Explorepage> {
         return matchMode && matchRating && matchSubject && matchSearch;
       }).toList();
     });
-  }
-
-  _RecommendationContext _buildRecommendationContext({
-    required StudentModel student,
-    required List<SessionModel> sessions,
-    required List<ServiceModel> previousServices,
-  }) {
-    final Set<String> preferredSubjects = student.preferredSubjects
-        .map(_normalize)
-        .where((value) => value.isNotEmpty)
-        .toSet();
-    final Set<String> previousSubjects = previousServices
-        .map((service) => _normalize(service.subject))
-        .where((value) => value.isNotEmpty)
-        .toSet();
-    final Set<String> previousTutorIds = sessions
-        .map((session) => session.tutorId.trim())
-        .where((value) => value.isNotEmpty)
-        .toSet();
-    final Set<String> previousModes = <String>{
-      ...previousServices.map((service) => _normalize(service.area)),
-      ...sessions.map((session) => _normalize(session.modality)),
-    }.where((value) => value.isNotEmpty).toSet();
-    final Set<String> favoriteTutorIds = widget.student.favoriteTeachers
-        .map((id) => id.trim())
-        .where((value) => value.isNotEmpty)
-        .toSet();
-    final Set<String> objectiveKeywords = _extractKeywords(student.learningObjectives);
-
-    return _RecommendationContext(
-      preferredSubjects: preferredSubjects,
-      previousSubjects: previousSubjects,
-      previousTutorIds: previousTutorIds,
-      previousModes: previousModes,
-      favoriteTutorIds: favoriteTutorIds,
-      schoolLevel: _normalize(student.schoolLevel),
-      objectiveKeywords: objectiveKeywords,
-    );
   }
 
   double _scoreTutor(TutorModel tutor, _RecommendationContext context) {
@@ -999,7 +1128,7 @@ class _RecommendedTeacherTile extends StatelessWidget {
                   Text(
                     '${tutor.firstName} ${tutor.lastName}',
                     style: const TextStyle(
-                      fontFamily: "Lexend",
+                      fontFamily: 'Lexend',
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
                     ),
@@ -1008,7 +1137,7 @@ class _RecommendedTeacherTile extends StatelessWidget {
                   Text(
                     tutor.expertiseDomain,
                     style: const TextStyle(
-                      fontFamily: "Lexend",
+                      fontFamily: 'Lexend',
                       fontWeight: FontWeight.w400,
                       fontSize: 12,
                       color: Color(0xFF64748B),
@@ -1024,7 +1153,7 @@ class _RecommendedTeacherTile extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           SvgPicture.asset(
-                            "assets/images/position.svg",
+                            'assets/images/position.svg',
                             height: 12,
                             width: 12,
                             colorFilter: const ColorFilter.mode(
@@ -1036,7 +1165,7 @@ class _RecommendedTeacherTile extends StatelessWidget {
                           Text(
                             tutor.location,
                             style: const TextStyle(
-                              fontFamily: "Lexend",
+                              fontFamily: 'Lexend',
                               fontWeight: FontWeight.w500,
                               fontSize: 10,
                               color: Color(0xFF64748B),
@@ -1047,7 +1176,7 @@ class _RecommendedTeacherTile extends StatelessWidget {
                       Text(
                         tutor.isAvailable ? 'Available' : 'Busy',
                         style: TextStyle(
-                          fontFamily: "Lexend",
+                          fontFamily: 'Lexend',
                           fontWeight: FontWeight.w600,
                           fontSize: 10,
                           color: tutor.isAvailable
@@ -1075,7 +1204,7 @@ class _RecommendedTeacherTile extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SvgPicture.asset(
-                    "assets/images/star.svg",
+                    'assets/images/star.svg',
                     height: 12,
                     width: 12,
                   ),
