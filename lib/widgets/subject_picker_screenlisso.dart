@@ -3,8 +3,10 @@ import 'package:dotted_border/dotted_border.dart';
 
 class SubjectPickerlissoWidget extends StatefulWidget {
   final int i;
+  final List<String> initialSelected;
+  final ValueChanged<List<String>>? onChanged;
 
-  const SubjectPickerlissoWidget(this.i, {super.key});
+  const SubjectPickerlissoWidget(this.i, {super.key, this.initialSelected = const [], this.onChanged});
 
   @override
   State<SubjectPickerlissoWidget> createState() => _SubjectPickerlissoWidgetState();
@@ -245,6 +247,20 @@ class _SubjectPickerlissoWidgetState extends State<SubjectPickerlissoWidget> {
 
   List<String> selectedSubjects = [];
 
+  @override
+  void initState() {
+    super.initState();
+    selectedSubjects = List.from(widget.initialSelected);
+  }
+
+  @override
+  void didUpdateWidget(SubjectPickerlissoWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.i != widget.i) {
+      setState(() => selectedSubjects = List.from(widget.initialSelected));
+    }
+  }
+
   void _showSubjectPicker(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -265,6 +281,7 @@ class _SubjectPickerlissoWidgetState extends State<SubjectPickerlissoWidget> {
                         selectedSubjects.add(subject);
                       }
                     });
+                    widget.onChanged?.call(List.from(selectedSubjects));
                     setModalState(() {});
                   },
                 ),
@@ -325,8 +342,10 @@ Widget build(BuildContext context) {
                     ),
                     const SizedBox(width: 6),
                     GestureDetector(
-                      onTap: () =>
-                          setState(() => selectedSubjects.remove(subject)),
+                      onTap: () {
+                        setState(() => selectedSubjects.remove(subject));
+                        widget.onChanged?.call(List.from(selectedSubjects));
+                      },
                       child: const Icon(
                         Icons.close,
                         size: 16,

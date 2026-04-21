@@ -15,16 +15,7 @@ class Teacherpage extends StatelessWidget {
   const Teacherpage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: 'Inter',
-        scaffoldBackgroundColor: const Color(0xFFF5F5F5),
-      ),
-      home: const TeacherDashboardScreen(),
-    );
-  }
+  Widget build(BuildContext context) => const TeacherDashboardScreen();
 }
 
 class TeacherDashboardScreen extends StatefulWidget {
@@ -84,6 +75,11 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Teacher profile is coming soon.')),
         );
+        break;
+      case 4:
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const AccountScreen()),
+        ).then((_) => _refreshDashboard());
         break;
       default:
         ScaffoldMessenger.of(context).showSnackBar(

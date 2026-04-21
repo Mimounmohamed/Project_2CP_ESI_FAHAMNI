@@ -27,6 +27,7 @@ class _IpersonalInfoState extends State<IpersonalInfo> {
   Gender?   _selectedGender;
   DateTime? _selectedBirthday;
   String?   _selectedCity;
+  String?   _selectedCommune;
 
   bool _genderError   = false;
   bool _birthdayError = false;
@@ -105,6 +106,7 @@ class _IpersonalInfoState extends State<IpersonalInfo> {
               'gender'    : _selectedGender,
               'birthday'  : _selectedBirthday,
               'location'  : _selectedCity,
+              'commune'   : _selectedCommune ?? '',
             };
 
             Navigator.push(
@@ -336,10 +338,17 @@ class _IpersonalInfoState extends State<IpersonalInfo> {
                 const SizedBox(height: 8),
                 Container(
                   margin: const EdgeInsets.only(left: 24, right: 24),
-                  child: ROW2(onCityChanged: (city) => setState(() {
-                    _selectedCity = city;
-                    _cityError = false;
-                  }), showCityError: _cityError,),
+                  child: ROW2(
+                    onCityChanged: (city) => setState(() {
+                      _selectedCity = city;
+                      _selectedCommune = null;
+                      _cityError = false;
+                    }),
+                    onCommuneChanged: (commune) => setState(() {
+                      _selectedCommune = commune;
+                    }),
+                    showCityError: _cityError,
+                  ),
                 ),
 
                 const SizedBox(height: 8),
@@ -711,8 +720,9 @@ Widget build(BuildContext context) {
 
 class ROW2 extends StatefulWidget {
   final Function(String) onCityChanged;
+  final Function(String)? onCommuneChanged;
   final bool showCityError;
-  const ROW2({super.key, required this.onCityChanged, this.showCityError = false});
+  const ROW2({super.key, required this.onCityChanged, this.onCommuneChanged, this.showCityError = false});
 
   @override
   State<ROW2> createState() => _ROW2State();
@@ -1233,6 +1243,7 @@ class _ROW2State extends State<ROW2> {
                   ? null
                   : (value) {
                       setState(() => selectedCommune = value);
+                      if (value != null) widget.onCommuneChanged?.call(value);
                     },
               decoration: InputDecoration(
                 enabledBorder: OutlineInputBorder(

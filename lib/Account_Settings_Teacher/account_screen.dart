@@ -1,19 +1,17 @@
-import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:fahamni/Login_Screen/LoginScreen.dart';
-import 'package:fahamni/widgets/customnavbar.dart';
-import 'package:fahamni/Account_Settings_Student/studyinfo_screen.dart';
-import 'package:fahamni/Account_Settings_Student/profilesettings.dart';
-import 'package:fahamni/Account_Settings_Student/notification_screen.dart';
-import 'package:fahamni/Account_Settings_Student/helpsupport_screen.dart';
-import 'package:fahamni/Account_Settings_Student/personalinfo_screen.dart';
-import 'package:fahamni/Explore_map_pages/explorepage.dart';
-import 'package:fahamni/Courses/courses_page.dart';
+import 'package:fahamni/TeacherDashboard/teacher_dashboard.dart';
 import 'package:fahamni/messaging/chat_page.dart';
-import 'package:fahamni/models/student_model.dart';
+import 'package:fahamni/models/tutor_model.dart';
 import 'package:fahamni/models/user_model.dart';
-import 'package:fahamni/StudentHomePage/studenthome_service.dart';
-import 'package:fahamni/StudentHomePage/Student_homepage.dart';
+import 'package:fahamni/widgets/customnavbar.dart';
+import 'personalinfo_screen.dart';
+import 'academic_info_screen.dart';
+import 'profilesettings.dart';
+import 'notification_screen.dart';
+import 'helpsupport_screen.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -24,23 +22,30 @@ class AccountScreen extends StatefulWidget {
 
 class _AccountScreenState extends State<AccountScreen> {
   int _selectedIndex = 4;
-  StudentModel? student;
+  TutorModel? tutor;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadStudent();
+    _loadTutor();
   }
 
-  Future<void> _loadStudent() async {
+  Future<void> _loadTutor() async {
     setState(() => _isLoading = true);
     try {
-      final data = await studenthomepage_service().getStudentData();
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      final snap = await FirebaseFirestore.instance
+          .collection('tutors')
+          .doc(user.uid)
+          .get();
       if (!mounted) return;
-      setState(() => student = data);
+      if (snap.exists && snap.data() != null) {
+        setState(() => tutor = TutorModel.fromMap({...snap.data()!, 'uid': snap.id}));
+      }
     } catch (e) {
-      debugPrint('AccountScreen loadStudent error: $e');
+      debugPrint('AccountScreen loadTutor error: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -87,24 +92,12 @@ class _AccountScreenState extends State<AccountScreen> {
     }
   }
 
-  // ── Subtitle under name: "Grade · Level · Speciality" ───────────────────
-  String _studySubtitle() {
-    final grade      = student?.grade ?? '';
-    final level      = student?.schoolLevel ?? '';
-    final speciality = student?.speciality ?? '';
-    final base = [grade, level].where((s) => s.isNotEmpty).join(' · ');
-    if (base.isNotEmpty && speciality.isNotEmpty) return '$base · $speciality';
-    return base;
-  }
-
   ImageProvider _avatarImage() {
-    if (student == null) {
-      return const AssetImage("assets/images/studentmale.png");
-    }
-    final pic = student!.picture;
-    if (pic.startsWith('http'))    return NetworkImage(pic);
+    if (tutor == null) return const AssetImage("assets/images/studentmale.png");
+    final pic = tutor!.picture;
+    if (pic.startsWith('http')) return NetworkImage(pic);
     if (pic.startsWith('assets/')) return AssetImage(pic);
-    return student!.gender == Gender.female
+    return tutor!.gender == Gender.female
         ? const AssetImage("assets/images/studentfemale.png")
         : const AssetImage("assets/images/studentmale.png");
   }
@@ -117,11 +110,8 @@ class _AccountScreenState extends State<AccountScreen> {
   ) {
     return InkWell(
       onTap: () async {
-        await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => page),
-        );
-        _loadStudent();
+        await Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+        _loadTutor();
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
@@ -166,33 +156,16 @@ class _AccountScreenState extends State<AccountScreen> {
       bottomNavigationBar: CustomBottomNavbar(
         selectedIndex: _selectedIndex,
         onTap: (int index) {
-          if (index == _selectedIndex) {
-            return;
-          }
           if (index == 0) {
             Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const Studenthomepage()),
-            );
-          } else if (index == 1 && student != null) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => Explorepage(student: student!)),
-            );
-          } else if (index == 2) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const CoursesPage()),
-            );
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const TeacherDashboardScreen()));
           } else if (index == 3) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => const ChatPage()),
-            );
-          }  else {
-            setState(() {
-              _selectedIndex = index;
-            });
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => ChatPage()));
+          } else {
+            setState(() => _selectedIndex = index);
           }
         },
       ),
@@ -202,15 +175,13 @@ class _AccountScreenState extends State<AccountScreen> {
                 child: CircularProgressIndicator(color: Color(0xFF000080)))
             : RefreshIndicator(
                 color: const Color(0xFF000080),
-                onRefresh: _loadStudent,
+                onRefresh: _loadTutor,
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
                     children: [
                       const SizedBox(height: 16),
-
-                      // ── Title ────────────────────────────────────────
                       const Text(
                         "Account",
                         style: TextStyle(
@@ -220,22 +191,16 @@ class _AccountScreenState extends State<AccountScreen> {
                           color: Color(0xFF1F2937),
                         ),
                       ),
-
                       const SizedBox(height: 24),
-
-                      // ── Avatar ───────────────────────────────────────
                       CircleAvatar(
                         radius: 46,
                         backgroundColor: Colors.grey.shade200,
                         backgroundImage: _avatarImage(),
                       ),
-
                       const SizedBox(height: 10),
-
-                      // ── Name ─────────────────────────────────────────
                       Text(
-                        student != null
-                            ? '${student!.firstName} ${student!.lastName}'
+                        tutor != null
+                            ? '${tutor!.firstName} ${tutor!.lastName}'
                             : '—',
                         style: const TextStyle(
                           fontFamily: "Inter",
@@ -244,13 +209,11 @@ class _AccountScreenState extends State<AccountScreen> {
                           color: Color(0xFF1F2937),
                         ),
                       ),
-
                       const SizedBox(height: 4),
-
-                      // ── Grade · Level ─────────────────────────────────
-                      if (_studySubtitle().isNotEmpty)
+                      if (tutor != null &&
+                          tutor!.expertiseDomain.isNotEmpty)
                         Text(
-                          _studySubtitle(),
+                          tutor!.expertiseDomain,
                           style: const TextStyle(
                             fontFamily: "Inter",
                             fontSize: 15,
@@ -258,10 +221,7 @@ class _AccountScreenState extends State<AccountScreen> {
                             color: Color(0xFF6B7280),
                           ),
                         ),
-
                       const SizedBox(height: 20),
-
-                      // ── Menu card ─────────────────────────────────────
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -278,11 +238,14 @@ class _AccountScreenState extends State<AccountScreen> {
                         child: Column(
                           children: [
                             _buildMenuItem(context, Icons.person_outline,
-                                "Personal Information", const PersonalInfoScreen()),
+                                "Personal Information",
+                                const PersonalInfoScreen()),
                             _buildMenuItem(context, Icons.school_outlined,
-                                "Study Information", const StudyInfoScreen()),
+                                "Academic Information",
+                                const AcademicInfoScreen()),
                             _buildMenuItem(context, Icons.settings_outlined,
-                                "Profile Settings", const ProfileSettingsScreen()),
+                                "Profile Settings",
+                                const ProfileSettingsScreen()),
                             _buildMenuItem(context, Icons.notifications_none,
                                 "Notifications", const NotificationScreen()),
                             _buildMenuItem(context, Icons.help_outline,
@@ -290,16 +253,14 @@ class _AccountScreenState extends State<AccountScreen> {
                           ],
                         ),
                       ),
-
                       const SizedBox(height: 34),
-
-                      // ── Logout ────────────────────────────────────────
                       Container(
                         width: double.infinity,
                         height: 54,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFFCA5A5)),
+                          border:
+                              Border.all(color: const Color(0xFFFCA5A5)),
                         ),
                         child: TextButton(
                           onPressed: _logout,
@@ -321,7 +282,6 @@ class _AccountScreenState extends State<AccountScreen> {
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 20),
                     ],
                   ),

@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:fahamni/Services/auth_.service.dart';
 import 'package:fahamni/models/user_model.dart';
 
 // ── Wilaya → Communes map (same as registration) ─────────────────────────────
@@ -65,10 +65,9 @@ class PersonalInfoScreen extends StatefulWidget {
 }
 
 class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
-  final _authService = AuthService();
-
   final _firstNameController = TextEditingController();
   final _lastNameController  = TextEditingController();
+  final _descController      = TextEditingController();
 
   File?     _image;
   DateTime? _birthday;
@@ -88,6 +87,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   String?   _origCity;
   String?   _origCommune;
   DateTime? _origBirthday;
+  String?   _origDesc;
 
   bool    _isLoading = true;
   bool    _isSaving  = false;
@@ -97,6 +97,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
       _image != null ||
       _firstNameController.text.trim() != (_origFirstName ?? '') ||
       _lastNameController.text.trim()  != (_origLastName  ?? '') ||
+      _descController.text.trim()      != (_origDesc      ?? '') ||
       _selectedCity    != _origCity    ||
       _selectedCommune != _origCommune ||
       (_birthday != null && _origBirthday != null &&
@@ -117,6 +118,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   void dispose() {
     _firstNameController.dispose();
     _lastNameController.dispose();
+    _descController.dispose();
     super.dispose();
   }
 
@@ -164,8 +166,11 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
         _selectedCity    = _wilayaBaladiyat.containsKey(parsedCity) ? parsedCity : null;
         _selectedCommune = parsedCommune.isNotEmpty ? parsedCommune : null;
 
+        _descController.text = data['pedagogical_description'] ?? '';
+
         _origFirstName = _firstNameController.text;
         _origLastName  = _lastNameController.text;
+        _origDesc      = _descController.text;
         _origCity      = _selectedCity;
         _origCommune   = _selectedCommune;
         _origBirthday  = _birthday;
@@ -173,6 +178,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
 
       _firstNameController.addListener(() => setState(() {}));
       _lastNameController.addListener(()  => setState(() {}));
+      _descController.addListener(()      => setState(() {}));
     } catch (e) {
       setState(() => _errorMessage = e.toString());
     } finally {
@@ -229,7 +235,6 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
       return;
     }
 
-    // Build location string "Commune, City"
     final location = (_selectedCommune != null && _selectedCity != null)
         ? '$_selectedCommune, $_selectedCity'
         : (_selectedCity ?? '');
@@ -237,30 +242,38 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     setState(() { _isSaving = true; _errorMessage = null; });
 
     try {
+      String? pictureUrl = _currentPictureUrl;
       if (_image != null) {
         final ref = FirebaseStorage.instance
             .ref().child('profile_pictures/$_uid.jpg');
         await ref.putFile(_image!);
-        final url = await ref.getDownloadURL();
-        _currentPictureUrl = url;
-        final userDoc = await FirebaseFirestore.instance
-            .collection('users').doc(_uid).get();
-        final role = UserRole.values.firstWhere(
-          (r) => r.name == (userDoc['role'] ?? 'student'),
-          orElse: () => UserRole.student,
-        );
-        await FirebaseFirestore.instance
-            .collection(_collectionForRole(role)).doc(_uid)
-            .update({'picture': url});
+        pictureUrl = await ref.getDownloadURL();
+        _currentPictureUrl = pictureUrl;
       }
 
-      await _authService.updatePersonalInfo(
-        uid:       _uid!,
-        firstName: firstName,
-        lastName:  lastName,
-        location:  location,
-        birthday:  _birthday ?? DateTime(2000),
-      );
+      final Map<String, dynamic> updates = {
+        'first_name':               firstName,
+        'last_name':                lastName,
+        'location':                 location,
+        'birthday':                 Timestamp.fromDate(_birthday ?? DateTime(2000)),
+        'pedagogical_description':  _descController.text.trim(),
+        'picture':                  pictureUrl ?? _currentPictureUrl ?? '',
+      };
+
+      await FirebaseFirestore.instance
+          .collection('tutors')
+          .doc(_uid)
+          .update(updates);
+
+      setState(() {
+        _origFirstName = firstName;
+        _origLastName  = lastName;
+        _origDesc      = _descController.text.trim();
+        _origCity      = _selectedCity;
+        _origCommune   = _selectedCommune;
+        _origBirthday  = _birthday;
+        _image         = null;
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -269,7 +282,6 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
             backgroundColor: Color(0xFF000080),
           ),
         );
-        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) setState(() => _errorMessage = e.toString());
@@ -283,6 +295,56 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
+      bottomNavigationBar: _isDirty
+          ? SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_errorMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(
+                              color: Color(0xFFE53935),
+                              fontSize: 13,
+                              fontFamily: "Inter"),
+                        ),
+                      ),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 54,
+                      child: ElevatedButton(
+                        onPressed: _isSaving ? null : _save,
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          backgroundColor: const Color(0xFF000080),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30)),
+                        ),
+                        child: _isSaving
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                    color: Colors.white, strokeWidth: 2.5))
+                            : const Text(
+                                "Confirm Changes",
+                                style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : null,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -422,53 +484,14 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                             ),
                             const SizedBox(height: 16),
 
+                            // ── Personal Description ──────────────────
+                            _descriptionField(),
+                            const SizedBox(height: 16),
+
                             _readOnlyField("Email Address", _email ?? ''),
                             const SizedBox(height: 16),
                             _readOnlyField("Phone Number", _phone ?? ''),
-                            const SizedBox(height: 16),
-
-                            // ── Save button ───────────────────────────
-                            AnimatedSize(
-                              duration: const Duration(milliseconds: 250),
-                              curve: Curves.easeInOut,
-                              child: _isDirty
-                                  ? Column(
-                                      children: [
-                                        if (_errorMessage != null)
-                                          Padding(
-                                            padding: const EdgeInsets.only(bottom: 12),
-                                            child: Text(_errorMessage!,
-                                              style: const TextStyle(
-                                                color: Color(0xFFE53935),
-                                                fontSize: 13, fontFamily: "Inter")),
-                                          ),
-                                        SizedBox(
-                                          width: double.infinity,
-                                          height: 56,
-                                          child: ElevatedButton(
-                                            onPressed: _isSaving ? null : _save,
-                                            style: ElevatedButton.styleFrom(
-                                              elevation: 0,
-                                              backgroundColor: const Color(0xFF000080),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(30)),
-                                            ),
-                                            child: _isSaving
-                                                ? const SizedBox(width: 22, height: 22,
-                                                    child: CircularProgressIndicator(
-                                                      color: Colors.white, strokeWidth: 2.5))
-                                                : const Text("Save Changes",
-                                                    style: TextStyle(
-                                                      fontFamily: 'Inter', fontSize: 16,
-                                                      fontWeight: FontWeight.w700,
-                                                      color: Colors.white)),
-                                          ),
-                                        ),
-                                        const SizedBox(height: 24),
-                                      ],
-                                    )
-                                  : const SizedBox.shrink(),
-                            ),
+                            const SizedBox(height: 24),
                           ],
                         ),
                       ),
@@ -565,6 +588,59 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                 child: Text(item),
               )).toList(),
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _descriptionField() {
+    const int maxChars = 200;
+    final int count = _descController.text.length;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Personal Description",
+            style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1F2937))),
+        const SizedBox(height: 6),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+            boxShadow: const [
+              BoxShadow(
+                  color: Color.fromRGBO(0, 0, 0, 0.05),
+                  offset: Offset(0, 1),
+                  blurRadius: 2)
+            ],
+          ),
+          child: TextField(
+            controller: _descController,
+            maxLines: 4,
+            maxLength: maxChars,
+            maxLengthEnforcement:
+                MaxLengthEnforcement.enforced,
+            buildCounter: (_, {required currentLength, required isFocused, maxLength}) =>
+                const SizedBox.shrink(),
+            decoration: const InputDecoration(
+              hintText: 'Write something about you...',
+              hintStyle: TextStyle(color: Color(0xFF9CA3AF)),
+              border: InputBorder.none,
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Align(
+          alignment: Alignment.centerRight,
+          child: Text(
+            '$count/$maxChars',
+            style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
           ),
         ),
       ],

@@ -8,6 +8,8 @@ class StudentModel extends UserModel {
   final List<String> preferredSubjects;
   final List<String> favoriteTeachers;
   final List<String> Courses;
+  final String grade;
+  final String speciality;
 
   StudentModel({
     required super.uid,
@@ -25,6 +27,8 @@ class StudentModel extends UserModel {
     required this.preferredSubjects,
     required this.favoriteTeachers,
     required this.Courses,
+    required this.grade,
+    required this.speciality,
   }) : super(role: UserRole.student);
 
   @override
@@ -46,6 +50,8 @@ class StudentModel extends UserModel {
       'preferred_subjects':  preferredSubjects,
       'favorite_teachers': favoriteTeachers,
       'courses': Courses,
+      'grade': grade,
+      'speciality': speciality,
     };
   }
 
@@ -62,6 +68,8 @@ class StudentModel extends UserModel {
     preferredSubjects: preferredSubjects,
     favoriteTeachers: favoriteTeachers,
     Courses: Courses,
+    grade: grade,
+    speciality: speciality,
   );
 
   factory StudentModel.fromMap(Map<String, dynamic> map) {
@@ -81,6 +89,8 @@ class StudentModel extends UserModel {
       preferredSubjects: List<String>.from(map['preferred_subjects'] ?? []),
       favoriteTeachers: List<String>.from(map['favorite_teachers'] ?? []),
       Courses: List<String>.from(map['courses'] ?? []),
+      grade: map['grade'] ?? '',
+      speciality: map['speciality'] ?? '',
     );
   }
 }

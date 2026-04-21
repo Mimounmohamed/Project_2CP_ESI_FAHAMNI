@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fahamni/Services/auth_.service.dart';
+import 'package:fahamni/models/user_model.dart';
+import 'package:fahamni/StudentHomePage/Student_homepage.dart';
+import 'package:fahamni/TeacherDashboard/teacher_dashboard.dart';
 import '../Onboarding/onboarding.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -69,13 +74,28 @@ class _SplashScreenState extends State<SplashScreen>
     // Use WidgetsBinding to ensure navigation happens after build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       print('SPLASH: Post frame callback - scheduling navigation');
-      Future.delayed(const Duration(milliseconds: 4000), () {
-        print('SPLASH: 4000ms elapsed, navigating...');
+      Future.delayed(const Duration(milliseconds: 4000), () async {
+        if (!mounted) return;
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          try {
+            final profile = await AuthService().getCurrentUserProfile();
+            if (!mounted) return;
+            if (profile?.role == UserRole.tutor) {
+              Navigator.pushReplacement(context,
+                  MaterialPageRoute(builder: (_) => const Teacherpage()));
+              return;
+            }
+            if (profile != null) {
+              Navigator.pushReplacement(context,
+                  MaterialPageRoute(builder: (_) => const Studentpage()));
+              return;
+            }
+          } catch (_) {}
+        }
         if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-          );
+          Navigator.pushReplacement(context,
+              MaterialPageRoute(builder: (_) => const OnboardingScreen()));
         }
       });
     });

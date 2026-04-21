@@ -52,6 +52,8 @@ class _studentinfoState extends State<studentinfo> {
               final s = _studentKey.currentState!;
               data['role'] = UserRole.student;
               data['schoolLevel'] = s.levels[s.selectedIndex];
+              data['grade'] = s.selectedGrade;
+              data['speciality'] = s.selectedSpeciality ?? '';
               data['learningObjectives'] = s.schoolController.text.trim();
               data['preferredSubjects'] = s.selectedSubjectsList;
             }
@@ -67,8 +69,8 @@ class _studentinfoState extends State<studentinfo> {
               data['yearsOfExperience']      = int.tryParse(t.expController.text.trim()) ?? 0;
               data['pedagogicalDescription'] = t.bioController.text.trim();
               data['certified']              = (t.fileKey.currentState?.uploadedFiles.isNotEmpty) ?? false;
-              data['expertiseDomain']        = '';
-              data['levelsTaught']           = <String>[];
+              data['expertiseDomain']        = t.selectedDomains.join(', ');
+              data['levelsTaught']           = t.selectedLevels;
               data['teachingMode']           = '';
               data['isAvailable']            = false;
               data['averageRating']          = 0.0;
