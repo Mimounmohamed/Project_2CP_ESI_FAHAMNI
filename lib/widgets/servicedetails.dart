@@ -4,6 +4,7 @@ import 'package:fahamni/Services/student_tutor_action_service.dart';
 import 'package:fahamni/Courses/courses_page.dart';
 import 'package:fahamni/feedback/feedback_pages.dart';
 import 'package:fahamni/widgets/customnavbar.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import '../StudentHomePage/Student_homepage.dart';
@@ -31,6 +32,13 @@ class _ServicedetailsState extends State<Servicedetails> {
   final StudentTutorActionService _studentTutorActionService =
       StudentTutorActionService();
   bool _isActionLoading = false;
+  String? _currentUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentUserId = FirebaseAuth.instance.currentUser?.uid;
+  }
 
   Future<void> _openConversation() async {
     setState(() {
@@ -88,6 +96,14 @@ class _ServicedetailsState extends State<Servicedetails> {
       if (!mounted) {
         return;
       }
+      
+      // Update local UI state for immediate feedback
+      setState(() {
+        if (_currentUserId != null && !widget.service.pendingIds.contains(_currentUserId)) {
+          widget.service.pendingIds.add(_currentUserId!);
+        }
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Join request sent for ${widget.service.name}.'),
@@ -111,6 +127,19 @@ class _ServicedetailsState extends State<Servicedetails> {
 
   @override
   Widget build(BuildContext context) {
+    String buttonText = 'Join Request';
+    bool isActionDisabled = _isActionLoading;
+
+    if (_currentUserId != null) {
+      if (widget.service.studentIds.contains(_currentUserId)) {
+        buttonText = 'Joined';
+        isActionDisabled = true;
+      } else if (widget.service.pendingIds.contains(_currentUserId)) {
+        buttonText = 'Pending';
+        isActionDisabled = true;
+      }
+    }
+
     return Scaffold(
       appBar:AppBar(
         backgroundColor: const Color(0xfff9f9f9),
@@ -156,7 +185,7 @@ class _ServicedetailsState extends State<Servicedetails> {
                 ),
               SizedBox(height: 5,),
               Container(
-                padding: EdgeInsetsGeometry.all(16),
+                padding: EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -174,11 +203,10 @@ class _ServicedetailsState extends State<Servicedetails> {
                     SizedBox(height: 5,),
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        final double cardWidth = (constraints.maxWidth - 16) / 2;
-                        return Wrap(
-                          alignment: WrapAlignment.center,
-                          spacing: 16,
-                          runSpacing: 16,
+                        final double cardWidth = (constraints.maxWidth - 146) / 2;
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             _buildStatCard('STUDENTS', widget.service.enrollednum.toString(), cardWidth),
                             _buildStatCard('SESSIONS', widget.service.sessionsnum.toString(), cardWidth),
@@ -212,7 +240,7 @@ class _ServicedetailsState extends State<Servicedetails> {
                       ),
                     SizedBox(height: 15,),
                     Container(
-                      padding: EdgeInsetsGeometry.all(15),
+                      padding: EdgeInsets.all(15),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
@@ -250,14 +278,12 @@ class _ServicedetailsState extends State<Servicedetails> {
                            ],
                          ),
                           SizedBox(height: 15,),
-                          Wrap(
-                            spacing: 12,
-                            runSpacing: 12,
-                            alignment: WrapAlignment.start,
-                            crossAxisAlignment: WrapCrossAlignment.start,
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.start,
                             children: [
                               Container(
-                                padding: EdgeInsetsGeometry.all(8),
+                                padding: EdgeInsets.all(8),
                                 decoration : BoxDecoration(
                                   color: Color(0xFF000080).withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(10),
@@ -300,7 +326,7 @@ class _ServicedetailsState extends State<Servicedetails> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Container(
-                                padding: EdgeInsetsGeometry.all(8),
+                                padding: EdgeInsets.all(8),
                                 decoration : BoxDecoration(
                                   color: Color(0xFF000080).withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(10),
@@ -342,7 +368,7 @@ class _ServicedetailsState extends State<Servicedetails> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Container(
-                                padding: EdgeInsetsGeometry.all(8),
+                                padding: EdgeInsets.all(8),
                                 decoration : BoxDecoration(
                                   color: Color(0xFF000080).withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(10),
@@ -384,7 +410,7 @@ class _ServicedetailsState extends State<Servicedetails> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Container(
-                                padding: EdgeInsetsGeometry.all(8),
+                                padding: EdgeInsets.all(8),
                                 decoration : BoxDecoration(
                                   color: Color(0xFF000080).withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(10),
@@ -427,7 +453,7 @@ class _ServicedetailsState extends State<Servicedetails> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Container(
-                                padding: EdgeInsetsGeometry.all(8),
+                                padding: EdgeInsets.all(8),
                                 decoration : BoxDecoration(
                                   color: Color(0xFF000080).withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(10),
@@ -461,13 +487,14 @@ class _ServicedetailsState extends State<Servicedetails> {
                                   ),
                                 ],
                               ),
+                              SizedBox(width: 70,),
                               ElevatedButton(
                                 onPressed:(){},
                                 style: ElevatedButton.styleFrom(
-                                  padding: EdgeInsetsGeometry.fromLTRB(15,10,15,10),
+                                  padding: EdgeInsets.fromLTRB(15,10,15,10),
                                   backgroundColor: Color(0xFF000080),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadiusGeometry.circular(15),
+                                    borderRadius: BorderRadius.circular(15),
                                   )
                                 ),
                                 child: Center(
@@ -489,7 +516,7 @@ class _ServicedetailsState extends State<Servicedetails> {
                     ),
                     SizedBox(height: 10,),
                     Container(
-                      padding: EdgeInsetsGeometry.all(15),
+                      padding: EdgeInsets.all(15),
                       decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
@@ -533,7 +560,7 @@ class _ServicedetailsState extends State<Servicedetails> {
                     ),
                     SizedBox(height: 10,),
                     Container(
-                      padding: EdgeInsetsGeometry.all(15),
+                      padding: EdgeInsets.all(15),
                       decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
@@ -646,10 +673,10 @@ class _ServicedetailsState extends State<Servicedetails> {
                                             side: BorderSide(
                                                 color: Color(0xFF000080).withOpacity(0.2)
                                             ),
-                                            padding: EdgeInsetsGeometry.all(10),
+                                            padding: EdgeInsets.all(10),
                                             backgroundColor: Colors.white,
                                             shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadiusGeometry.circular(30),
+                                              borderRadius: BorderRadius.circular(30),
                                             ),
                                           ),
                                             child: Center(
@@ -686,11 +713,11 @@ class _ServicedetailsState extends State<Servicedetails> {
                               Icons.message_outlined
                             ),
                             style: ElevatedButton.styleFrom(
-                                padding: EdgeInsetsGeometry.fromLTRB(20,15,20,15),
+                                padding: EdgeInsets.fromLTRB(20,15,20,15),
                                 backgroundColor: Color(0xFFD2D2D2),
                                 iconColor: Colors.black,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadiusGeometry.circular(30),
+                                  borderRadius: BorderRadius.circular(30),
                                 )
                             ),
                             label: Center(
@@ -707,21 +734,21 @@ class _ServicedetailsState extends State<Servicedetails> {
 
                         ),
                         SizedBox(width: 10,),
-                        ElevatedButton.icon(onPressed:_isActionLoading ? null : _sendJoinRequest,
+                        ElevatedButton.icon(onPressed:isActionDisabled ? null : _sendJoinRequest,
                             icon: ImageIcon(
                               AssetImage("assets/images/schedule.png"),
                               color: Colors.white,
                             ),
                             style: ElevatedButton.styleFrom(
-                                padding: EdgeInsetsGeometry.fromLTRB(20,15,20,15),
+                                padding: EdgeInsets.fromLTRB(20,15,20,15),
                                 backgroundColor: Color(0xFF000080),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadiusGeometry.circular(30),
+                                  borderRadius: BorderRadius.circular(30),
                                 )
                             ),
                             label: Center(
                               child: Text(
-                                'Join Request',
+                                buttonText,
                                 style: TextStyle(
                                   fontFamily: "Nunito",
                                   fontWeight: FontWeight.w600,
@@ -780,7 +807,7 @@ Widget _buildStatCard(String title, String value, double width) {
   return Container(
     height: 80,
     width: width,
-    padding: EdgeInsetsGeometry.all(8),
+    padding: EdgeInsets.all(8),
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(10),

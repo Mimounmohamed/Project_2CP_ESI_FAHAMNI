@@ -15,6 +15,7 @@ class ServiceModel {
   final bool isActive;
   final String picture;
   final List<String> studentIds;
+  final List<String> pendingIds;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -35,9 +36,11 @@ class ServiceModel {
     required this.sessionsnum,
     required this.picture,
     List<String>? studentIds,
+    List<String>? pendingIds,
     this.createdAt,
     this.updatedAt,
-  }) : studentIds = studentIds ?? const [];
+  })  : studentIds = studentIds ?? const [],
+        pendingIds = pendingIds ?? const [];
 
   int get maxnum => maxStudents;
 
@@ -58,6 +61,7 @@ class ServiceModel {
       'enrolled_num': enrollednum,
       'maxstudents': maxStudents,
       'student_ids': studentIds,
+      'pending_ids': pendingIds,
       'picture': picture,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -98,6 +102,7 @@ class ServiceModel {
       duration: map['duration'] ?? 0,
       maxStudents: map['maxstudents'] ?? map['maxnum'] ?? 0,
       studentIds: List<String>.from(map['student_ids'] ?? []),
+      pendingIds: List<String>.from(map['pending_ids'] ?? []),
       enrollednum: map['enrolled_num'] ?? 0,
       sessionsnum: map['sessions_num'] ?? 0,
       isActive: map['is_active'] ?? false,

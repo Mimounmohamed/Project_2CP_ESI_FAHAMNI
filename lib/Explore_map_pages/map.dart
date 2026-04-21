@@ -13,6 +13,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../feedback/feedback_pages.dart';
+
 const String _googleMapsApiKey = 'AIzaSyAsdCXmRcjXMYaLrytaPoO7oLACGdzj65E';
 const LatLng _defaultMapCenter = LatLng(36.7538, 3.0588);
 const String _mapLocationConsentKey = 'map_location_consent_granted';
@@ -756,7 +758,15 @@ class _MappageState extends State<Mappage> {
                                     ),
                                     SizedBox(width: 10),
                                     ElevatedButton.icon(
-                                      onPressed: () {},
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => TutorProfilePage(tutorId: _selectedTutor!.uid),
+                                          ),
+                                        );
+
+                                      },
                                       icon: Icon(
                                         Icons.person_2_outlined,
                                         color: Colors.white,

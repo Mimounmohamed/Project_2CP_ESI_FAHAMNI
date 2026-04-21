@@ -1,3 +1,4 @@
+import 'quote_model.dart';
 import 'service_model.dart';
 import 'tutor_model.dart';
 
@@ -89,6 +90,7 @@ class TeacherDashboardServiceCard {
 
 class TeacherDashboardQuoteRequest {
   const TeacherDashboardQuoteRequest({
+    required this.quote,
     required this.id,
     required this.studentId,
     required this.studentName,
@@ -105,6 +107,7 @@ class TeacherDashboardQuoteRequest {
     required this.actionLabel,
   });
 
+  final QuoteModel quote;
   final String id;
   final String studentId;
   final String studentName;

@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -27,6 +28,20 @@ class ServiceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final int placesLeft = service.maxnum - service.enrollednum;
+    final String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    
+    String actionLabel = primaryActionLabel;
+    bool isActionDisabled = false;
+
+    if (currentUserId != null) {
+      if (service.studentIds.contains(currentUserId)) {
+        actionLabel = 'Joined';
+        isActionDisabled = true;
+      } else if (service.pendingIds.contains(currentUserId)) {
+        actionLabel = 'Pending';
+        isActionDisabled = true;
+      }
+    }
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -171,6 +186,8 @@ class ServiceCard extends StatelessWidget {
                           ],
                         ),
                       ],
+                      if(placesLeft > 10)
+                        const SizedBox(height: 30,),
                       const SizedBox(height: 8),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -189,9 +206,9 @@ class ServiceCard extends StatelessWidget {
                           if (trailingActions != null) trailingActions!,
                           if (showBookButton)
                             ElevatedButton(
-                              onPressed: onPrimaryAction ?? () {},
+                              onPressed: isActionDisabled ? null : (onPrimaryAction ?? () {}),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF000080),
+                                backgroundColor: Color(0xFF000080),
                                 foregroundColor: Colors.white,
                                 minimumSize: const Size(100, 40),
                                 shape: RoundedRectangleBorder(
@@ -199,7 +216,7 @@ class ServiceCard extends StatelessWidget {
                                 ),
                               ),
                               child: Text(
-                                primaryActionLabel,
+                                actionLabel,
                                 style: const TextStyle(
                                   fontFamily: 'Nunito',
                                   fontWeight: FontWeight.w700,
@@ -294,7 +311,7 @@ class _ServiceHeaderImage extends StatelessWidget {
   Widget build(BuildContext context) {
     final ImageProvider<Object>? imageProvider = _resolveImageProvider(imagePath);
     return SizedBox(
-      height: 120,
+      height: 111,
       width: double.infinity,
       child: imageProvider == null
           ? Image.asset(

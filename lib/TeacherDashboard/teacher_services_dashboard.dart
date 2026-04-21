@@ -1,9 +1,8 @@
 import 'package:fahamni/TeacherDashboard/models/teacher_portal_models.dart';
 import 'package:fahamni/TeacherDashboard/teacher_create_service_page.dart';
 import 'package:fahamni/TeacherDashboard/teacher_portal_service.dart';
-import 'package:fahamni/TeacherDashboard/teacher_quote_request_detail_page.dart';
 import 'package:fahamni/TeacherDashboard/widgets/teacher_navbar.dart';
-import 'package:fahamni/TeacherDashboard/widgets/teacher_portal_modals.dart';
+import 'package:fahamni/TeacherDashboard/widgets/teacher_portal_modals.dart' as portal_modals;
 import 'package:fahamni/Teacher_Service_Details/service_details_page.dart';
 import 'package:fahamni/messaging/chat_page.dart';
 import 'package:fahamni/models/quote_model.dart';
@@ -73,7 +72,7 @@ class _TeacherServicesDashboardScreenState
 
   Future<void> _acceptRequest(TeacherJoinRequestDetail request) async {
     final TeacherQuoteResponseDraft? response =
-        await QuoteResponseModal.show(context);
+        await portal_modals.QuoteResponseModal.show(context, request);
     if (response == null) {
       return;
     }
@@ -87,7 +86,7 @@ class _TeacherServicesDashboardScreenState
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Quote sent to ${request.studentName}.')),
+      SnackBar(content: Text('Request from ${request.studentName} accepted.')),
     );
     await _refresh();
   }
@@ -237,17 +236,7 @@ class _TeacherServicesDashboardScreenState
                                   padding: const EdgeInsets.only(bottom: 12),
                                   child: _JoinRequestCard(
                                     request: request,
-                                    onOpen: () async {
-                                      await Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) =>
-                                              TeacherQuoteRequestDetailPage(
-                                            request: request,
-                                          ),
-                                        ),
-                                      );
-                                      await _refresh();
-                                    },
+                                    onOpen: () {},
                                     onAccept: () => _acceptRequest(request),
                                     onReject: () => _rejectRequest(request),
                                   ),
@@ -597,7 +586,7 @@ class _JoinRequestCard extends StatelessWidget {
       child: Ink(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Color(0xFF0000080).withOpacity(0.05),
+          color: const Color(0xFFF1F5F9),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: const Color(0xFFE8ECF5)),
         ),

@@ -62,18 +62,11 @@ class CourseDetailsService {
 
   // ── Members ───────────────────────────────────────────────
   Future<List<StudentModel>> getMembers(String serviceId) async {
-  // Get all sessions for this service
-  final snap = await _db
-      .collection('sessions')
-      .where('service_id', isEqualTo: serviceId)
-      .get();
-
-  // Collect all unique student IDs from all sessions
-  final Set<String> studentIds = {};
-  for (var doc in snap.docs) {
-    final ids = List<String>.from(doc.data()['student_ids'] ?? []);
-    studentIds.addAll(ids);
-  }
+  // Get the service doc to get student_ids directly
+  final serviceDoc = await _db.collection('services').doc(serviceId).get();
+  if (!serviceDoc.exists) return [];
+  
+  final List<String> studentIds = List<String>.from(serviceDoc.data()?['student_ids'] ?? []);
 
   if (studentIds.isEmpty) return [];
 
@@ -86,4 +79,53 @@ class CourseDetailsService {
       .map((d) => StudentModel.fromMap(d.data()!))
       .toList();
 }
+
+  Future<List<StudentModel>> getPendingRequests(String serviceId) async {
+    final serviceDoc = await _db.collection('services').doc(serviceId).get();
+    if (!serviceDoc.exists) return [];
+    
+    final List<String> pendingIds = List<String>.from(serviceDoc.data()?['pending_ids'] ?? []);
+
+    if (pendingIds.isEmpty) return [];
+
+    final docs = await Future.wait(
+      pendingIds.map((id) => _db.collection('students').doc(id).get()),
+    );
+
+    return docs
+        .where((d) => d.data() != null)
+        .map((d) => StudentModel.fromMap(d.data()!))
+        .toList();
+  }
+
+  Future<void> handleJoinRequest(String serviceId, String studentId, bool accept) async {
+    final serviceRef = _db.collection('services').doc(serviceId);
+    
+    if (accept) {
+      await _db.runTransaction((transaction) async {
+        final snapshot = await transaction.get(serviceRef);
+        if (!snapshot.exists) return;
+
+        final List studentIds = List.from(snapshot.data()?['student_ids'] ?? []);
+        final List pendingIds = List.from(snapshot.data()?['pending_ids'] ?? []);
+        int enrolled = snapshot.data()?['enrolled_num'] ?? 0;
+
+        pendingIds.remove(studentId);
+        if (!studentIds.contains(studentId)) {
+          studentIds.add(studentId);
+          enrolled++;
+        }
+
+        transaction.update(serviceRef, {
+          'student_ids': studentIds,
+          'pending_ids': pendingIds,
+          'enrolled_num': enrolled,
+        });
+      });
+    } else {
+      await serviceRef.update({
+        'pending_ids': FieldValue.arrayRemove([studentId]),
+      });
+    }
+  }
 }

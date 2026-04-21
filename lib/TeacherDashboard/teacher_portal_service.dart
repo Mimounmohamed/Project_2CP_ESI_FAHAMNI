@@ -22,10 +22,25 @@ class TeacherPortalService {
   Future<TeacherServicesDashboardData> loadDashboard() async {
     final TutorModel tutor = await _loadCurrentTutor();
     final List<ServiceModel> services = await _loadServices(tutor.uid);
-    final List<QuoteModel> quotes = await _loadQuotes(tutor.uid);
-    final Map<String, StudentModel> students = await _loadStudents(quotes);
+    
+    // Collect all pending_ids from services
+    final Set<String> pendingStudentIds = {};
+    for (var service in services) {
+      pendingStudentIds.addAll(service.pendingIds);
+    }
 
-    final List<TeacherJoinRequestDetail> joinRequests = quotes.map((quote) {
+    final List<QuoteModel> quotes = await _loadQuotes(tutor.uid);
+    
+    // Combine student IDs to fetch
+    final Set<String> allStudentIds = {
+      ...pendingStudentIds,
+      ...quotes.map((q) => q.studentId).where((id) => id.isNotEmpty)
+    };
+    
+    final Map<String, StudentModel> students = await _loadStudentsByIds(allStudentIds);
+
+    // Create joinRequests from quotes
+    final List<TeacherJoinRequestDetail> quoteRequests = quotes.map((quote) {
       final StudentModel? student = students[quote.studentId];
       final String studentName = _studentName(student);
       final String studentLevel = student?.schoolLevel.isNotEmpty == true
@@ -50,6 +65,45 @@ class TeacherPortalService {
             : 'Now',
       );
     }).toList();
+
+    // Create joinRequests from pending_ids of services
+    final List<TeacherJoinRequestDetail> serviceRequests = [];
+    for (var service in services) {
+      for (var studentId in service.pendingIds) {
+        final student = students[studentId];
+        if (student == null) continue;
+        
+        serviceRequests.add(TeacherJoinRequestDetail(
+          quote: QuoteModel(
+            quoteId: 'pending_${studentId}_${service.serviceId}',
+            studentId: studentId,
+            tutorId: tutor.uid,
+            serviceId: service.serviceId,
+            serviceName: service.name,
+            subject: service.subject,
+            level: service.level,
+            objective: 'Join Request for ${service.name}',
+            frequency: '${service.sessionsnum} sessions',
+            duration: '${service.duration} min',
+            budget: '${service.price} DA',
+            status: QuoteStatus.pending,
+            createdAt: service.updatedAt ?? service.createdAt ?? DateTime.now(),
+          ),
+          studentName: _studentName(student),
+          studentLevel: student.schoolLevel,
+          studentAvatar: student.picture,
+          serviceTitle: service.name,
+          description: 'Student requested to join your service: ${service.name}',
+          subject: service.subject,
+          teachingMode: service.mode,
+          sessionsCount: service.sessionsnum,
+          sessionDurationLabel: '${service.duration} min',
+          createdAtLabel: 'Now',
+        ));
+      }
+    }
+
+    final List<TeacherJoinRequestDetail> joinRequests = [...quoteRequests, ...serviceRequests];
 
     joinRequests.sort((a, b) {
       final DateTime aDate = a.quote.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -87,6 +141,7 @@ class TeacherPortalService {
       sessionsnum: draft.sessionsCount,
       picture: draft.imagePath,
       studentIds: const [],
+      pendingIds: const [],
       createdAt: now.toDate(),
       updatedAt: now.toDate(),
     );
@@ -119,9 +174,89 @@ class TeacherPortalService {
     required QuoteStatus status,
     TeacherQuoteResponseDraft? response,
   }) async {
+    // If it's a join request from the pending_ids of a service
+    if (request.quote.quoteId.startsWith('pending_')) {
+      final parts = request.quote.quoteId.split('_');
+      final studentId = parts[1];
+      final serviceId = parts[2];
+      final serviceRef = _firestore.collection('services').doc(serviceId);
+      
+      if (status == QuoteStatus.accepted) {
+        await _firestore.runTransaction((transaction) async {
+          final snapshot = await transaction.get(serviceRef);
+          if (!snapshot.exists) return;
+
+          final List studentIds = List<String>.from(snapshot.data()?['student_ids'] ?? []);
+          final List pendingIds = List<String>.from(snapshot.data()?['pending_ids'] ?? []);
+          int enrolled = snapshot.data()?['enrolled_num'] ?? 0;
+
+          pendingIds.remove(studentId);
+          if (!studentIds.contains(studentId)) {
+            studentIds.add(studentId);
+            enrolled++;
+          }
+
+          transaction.update(serviceRef, {
+            'student_ids': studentIds,
+            'pending_ids': pendingIds,
+            'enrolled_num': enrolled,
+            'updated_at': Timestamp.now(),
+          });
+        });
+      } else {
+        await serviceRef.update({
+          'pending_ids': FieldValue.arrayRemove([studentId]),
+          'updated_at': Timestamp.now(),
+        });
+      }
+      return;
+    }
+
+    // Traditional Quote Request logic
     final _QuoteDocumentLocation location =
         await _locateQuoteDocument(request.quote.quoteId);
 
+    // If accepting a traditional quote that points to a specific service
+    if (status == QuoteStatus.accepted && request.quote.serviceId.isNotEmpty) {
+      final studentId = request.quote.studentId;
+      final serviceId = request.quote.serviceId;
+      final serviceRef = _firestore.collection('services').doc(serviceId);
+
+      await _firestore.runTransaction((transaction) async {
+        final serviceSnap = await transaction.get(serviceRef);
+        if (serviceSnap.exists) {
+          final List studentIds = List<String>.from(serviceSnap.data()?['student_ids'] ?? []);
+          final List pendingIds = List<String>.from(serviceSnap.data()?['pending_ids'] ?? []);
+          int enrolled = serviceSnap.data()?['enrolled_num'] ?? 0;
+
+          // Remove from pending if they were there
+          pendingIds.remove(studentId);
+          
+          if (!studentIds.contains(studentId)) {
+            studentIds.add(studentId);
+            enrolled++;
+          }
+
+          transaction.update(serviceRef, {
+            'student_ids': studentIds,
+            'pending_ids': pendingIds,
+            'enrolled_num': enrolled,
+            'updated_at': Timestamp.now(),
+          });
+        }
+        
+        // Also update the quote document
+        transaction.update(location.reference, {
+          'status': status.name,
+          'response_price': response?.priceLabel ?? '',
+          'response_sessions_count': response?.sessionsCount ?? 0,
+          'updated_at': Timestamp.now(),
+        });
+      });
+      return;
+    }
+
+    // Default update for other quote statuses or custom quotes
     await location.reference.update({
       'status': status.name,
       'response_price': response?.priceLabel ?? '',
@@ -328,10 +463,9 @@ class TeacherPortalService {
         .toList();
   }
 
-  Future<Map<String, StudentModel>> _loadStudents(List<QuoteModel> quotes) async {
-    final Set<String> studentIds =
-        quotes.map((quote) => quote.studentId).where((id) => id.isNotEmpty).toSet();
+  Future<Map<String, StudentModel>> _loadStudentsByIds(Set<String> studentIds) async {
     final Map<String, StudentModel> students = <String, StudentModel>{};
+    if (studentIds.isEmpty) return students;
 
     await Future.wait(
       studentIds.map((studentId) async {

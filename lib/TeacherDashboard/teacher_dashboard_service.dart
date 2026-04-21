@@ -200,6 +200,7 @@ class TeacherDashboardService {
         );
   }
 
+
   Future<String> createSession({
     required String serviceId,
     required DateTime date,
@@ -411,10 +412,16 @@ class TeacherDashboardService {
     }
 
     final List<QuoteModel> quotes = await fetchFrom('quotes');
-    if (quotes.isNotEmpty) {
-      return quotes;
-    }
-    return fetchFrom('quote_requests');
+    final List<QuoteModel> requests = await fetchFrom('quote_requests');
+
+    final List<QuoteModel> combined = <QuoteModel>[...quotes, ...requests];
+    combined.sort((a, b) {
+      final DateTime aDate = a.createdAt ?? a.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final DateTime bDate = b.createdAt ?? b.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return bDate.compareTo(aDate);
+    });
+
+    return combined;
   }
 
   Future<Map<String, StudentModel>> _loadStudentsForQuotes(List<QuoteModel> quotes) async {
@@ -546,6 +553,7 @@ class TeacherDashboardService {
     final String level = student?.schoolLevel.isNotEmpty == true ? student!.schoolLevel : quote.level;
 
     return TeacherDashboardQuoteRequest(
+      quote: quote,
       id: quote.quoteId,
       studentId: quote.studentId,
       studentName: studentName,
