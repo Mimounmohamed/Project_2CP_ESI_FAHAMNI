@@ -119,6 +119,15 @@ class _StudenthomepageState extends State<Studenthomepage> {
   }
 }
 
+  ImageProvider _resolveStudentAvatar(StudentModel s) {
+    final pic = s.picture;
+    if (pic.startsWith('http')) return NetworkImage(pic);
+    if (pic.startsWith('assets/')) return AssetImage(pic);
+    return s.gender == Gender.female
+        ? const AssetImage('assets/images/studentfemale.png')
+        : const AssetImage('assets/images/studentmale.png');
+  }
+
   DateTime _sessionDateTime(SessionModel session) {
     return DateTime(
       session.date.year,
@@ -148,23 +157,10 @@ class _StudenthomepageState extends State<Studenthomepage> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  if(student!.picture != "")
                   CircleAvatar(
                     radius: 25,
-                    backgroundImage: AssetImage(student!.picture),
-                  )
-                  else
-                    if (student!.gender == Gender.male)
-                    CircleAvatar(
-                      radius: 25,
-                      backgroundImage: AssetImage('assets/images/studentmale.png'),
-                     )
-                    else
-                     CircleAvatar(
-                       radius: 25,
-                       backgroundImage: AssetImage('assets/images/studentfemale.png'),
-                       backgroundColor: Colors.white,
-                     ),
+                    backgroundImage: _resolveStudentAvatar(student!),
+                  ),
                   SizedBox(width: 5),
                   Expanded( // Wrap with Expanded to take available space
                     child: Column(
