@@ -24,7 +24,7 @@ class SchedulePage extends StatefulWidget {
 class _SchedulePageState extends State<SchedulePage> {
   final studenthomepage_service _service = studenthomepage_service();
   late Future<_ScheduleViewData> _scheduleFuture;
-  DateTime _focusedDate = DateTime(2026, 12, 18);
+  DateTime _focusedDate = DateTime.now();
   _ScheduleMode _mode = _ScheduleMode.week;
   final int _selectedIndex = -1;
 
@@ -47,13 +47,27 @@ class _SchedulePageState extends State<SchedulePage> {
 
     final List<_ScheduledSession> items = <_ScheduledSession>[];
     for (final SessionModel session in sessions) {
-      final TutorModel tutor = await _service.getTutorData(session.tutorId);
+      TutorModel tutor;
+      try {
+        tutor = await _service.getTutorData(session.tutorId);
+      } catch (_) {
+        // Skip sessions whose tutor document is missing rather than crashing.
+        continue;
+      }
       final ServiceModel? service = await _service.getServiceData(session.serviceId);
       items.add(_ScheduledSession(session: session, tutor: tutor, service: service));
     }
 
-    if (items.isNotEmpty) {
-      _focusedDate = _startOfWeek(_sessionStart(items.first.session));
+    // Navigate to the nearest upcoming session's week; fall back to today.
+    final DateTime now = DateTime.now();
+    final _ScheduledSession? nearest = items.cast<_ScheduledSession?>().firstWhere(
+      (item) => item != null && _sessionStart(item.session).isAfter(now),
+      orElse: () => items.isNotEmpty ? items.first : null,
+    );
+    if (nearest != null) {
+      _focusedDate = _startOfWeek(_sessionStart(nearest.session));
+    } else {
+      _focusedDate = _startOfWeek(now);
     }
 
     return _ScheduleViewData(student: student, sessions: items);

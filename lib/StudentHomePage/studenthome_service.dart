@@ -75,9 +75,27 @@ class studenthomepage_service {
   }
 
   Future<List<SessionModel>> getCourses(List<String> ids) async {
+    final User? user = _auth.currentUser;
+    if (user == null) {
+      return <SessionModel>[];
+    }
+
+    // Always query by student_ids — the most reliable source of truth.
+    final QuerySnapshot<Map<String, dynamic>> snapshot = await _db
+        .collection('sessions')
+        .where('student_ids', arrayContains: user.uid)
+        .get();
+
+    final Map<String, SessionModel> sessionsById = {
+      for (final doc in snapshot.docs.where((d) => d.data() != null))
+        doc.id: SessionModel.fromMap(_withDocId(doc, idKey: 'session_id')),
+    };
+
+    // Also fetch any sessions explicitly listed in the student's courses field,
+    // in case student_ids wasn't populated on older documents.
     final Set<String> sessionIds = ids
         .map((id) => id.trim())
-        .where((id) => id.isNotEmpty)
+        .where((id) => id.isNotEmpty && !sessionsById.containsKey(id))
         .toSet();
 
     if (sessionIds.isNotEmpty) {
@@ -86,33 +104,13 @@ class studenthomepage_service {
             sessionIds.map((id) => _db.collection('sessions').doc(id).get()),
           );
 
-      final List<SessionModel> sessions = docs
-          .where((doc) => doc.exists && doc.data() != null)
-          .map(
-            (doc) => SessionModel.fromMap(_withDocId(doc, idKey: 'session_id')),
-          )
-          .toList();
-
-      if (sessions.isNotEmpty) {
-        return sessions;
+      for (final doc in docs.where((d) => d.exists && d.data() != null)) {
+        sessionsById[doc.id] =
+            SessionModel.fromMap(_withDocId(doc, idKey: 'session_id'));
       }
     }
 
-    final User? user = _auth.currentUser;
-    if (user == null) {
-      return <SessionModel>[];
-    }
-
-    final QuerySnapshot<Map<String, dynamic>> snapshot = await _db
-        .collection('sessions')
-        .where('student_ids', arrayContains: user.uid)
-        .get();
-
-    return snapshot.docs
-        .map(
-          (doc) => SessionModel.fromMap(_withDocId(doc, idKey: 'session_id')),
-        )
-        .toList();
+    return sessionsById.values.toList();
   }
 
   Future<ServiceModel?> getServiceData(String id) async {
