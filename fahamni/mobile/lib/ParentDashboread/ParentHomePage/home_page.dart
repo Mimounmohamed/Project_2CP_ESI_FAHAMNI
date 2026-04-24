@@ -99,6 +99,7 @@ class _ParenthomepageState extends State<Parenthomepage> {
           gender: Gender.male,
           birthday: DateTime.now(),
           accountStatus: AccountStatus.validated,
+          isSuspended: false,
           childrenUids: const <String>[],
           picture: '',
         );

@@ -106,10 +106,21 @@ service cloud.firestore {
       allow update, delete: if isTutorResourceOwner();
     }
 
+    match /admins/{adminId} {
+      allow read: if signedIn();
+      allow write: if isSelf(adminId);
+    }
+
     match /sessions/{sessionId} {
       allow read: if signedIn();
       allow create: if isTutorWriteOwner();
       allow update, delete: if isTutorResourceOwner();
+    }
+
+    match /reports/{reportId} {
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow update, delete: if false;
     }
 
     match /resources/{resourceId} {

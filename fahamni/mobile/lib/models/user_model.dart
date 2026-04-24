@@ -18,6 +18,7 @@ abstract class UserModel {
   final String picture;
   final UserRole role;
   AccountStatus accountStatus;
+  bool isSuspended;
 
   UserModel({
     required this.uid,
@@ -31,6 +32,7 @@ abstract class UserModel {
     required this.role,
     required this.picture,
     required this.accountStatus,
+    this.isSuspended = false,
   });
 
   Map<String, dynamic> toMap();

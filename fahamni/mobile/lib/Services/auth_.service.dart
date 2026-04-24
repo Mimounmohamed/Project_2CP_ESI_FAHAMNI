@@ -79,10 +79,14 @@ class AuthService {
       if (!userDoc.exists) {
         throw Exception('User profile not found');
       }
+      if ((userDoc['role'] ?? '') == 'admin') {
+        await _auth.signOut();
+        throw Exception('This is an admin account. Please use the admin dashboard to access your account.');
+      }
       final role = UserRole.values.firstWhere(
           (r) => r.name == (userDoc['role'] ?? 'student'),
           orElse: () => UserRole.student);
- 
+
       return await _fetchUserProfile(uid, role);
     } on FirebaseAuthException catch (e) {
       throw _handleAuthError(e);

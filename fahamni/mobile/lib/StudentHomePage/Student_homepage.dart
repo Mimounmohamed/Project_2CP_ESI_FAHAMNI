@@ -110,6 +110,7 @@ class _StudenthomepageState extends State<Studenthomepage> {
         email: '', phone: '', location: '',
         gender: Gender.male, birthday: DateTime.now(),
         accountStatus: AccountStatus.validated,
+        isSuspended: false,
         picture: '', schoolLevel: '', learningObjectives: '',
         preferredSubjects: [], favoriteTeachers: [], Courses: [],
         grade: '', speciality: '',

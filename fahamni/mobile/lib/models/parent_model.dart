@@ -16,6 +16,7 @@ class ParentModel extends UserModel {
     required super.birthday,
     required super.picture,
     required super.accountStatus,
+    super.isSuspended = false,
     required this.childrenUids,
   }) : super(role: UserRole.parent);
 
@@ -33,6 +34,7 @@ class ParentModel extends UserModel {
       'picture':      picture,
       'role':         role.name,
       'account_status': accountStatus.name,
+      'is_suspended':   isSuspended,
       'children_uids':  childrenUids,
     };
   }
@@ -45,6 +47,7 @@ class ParentModel extends UserModel {
     location: location, gender: gender,
     birthday: birthday, picture: picture,
     accountStatus: accountStatus,
+    isSuspended: isSuspended,
     childrenUids: childrenUids,
   );
 
@@ -60,6 +63,7 @@ class ParentModel extends UserModel {
       birthday:     (map['birthday'] as Timestamp).toDate(), // FIXED
       picture:      map['picture'],
       accountStatus: AccountStatus.values.byName(map['account_status'] ?? 'pending'),
+      isSuspended:   map['is_suspended'] ?? false,
       childrenUids:  List<String>.from(map['children_uids'] ?? []),
     );
   }

@@ -206,6 +206,7 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
         email: data['email'], phone: data['phone'],
         location: location, gender: data['gender'],
         birthday: data['birthday'], accountStatus: AccountStatus.validated,
+        isSuspended: false,
         schoolLevel:        data['schoolLevel']        ?? '',
         learningObjectives: data['learningObjectives'] ?? '',
         preferredSubjects:  List<String>.from(data['preferredSubjects'] ?? []),
@@ -226,6 +227,7 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
         email: data['email'], phone: data['phone'],
         location: tutorLocation, gender: data['gender'],
         birthday: data['birthday'], accountStatus: AccountStatus.pending,
+        isSuspended: false,
         expertiseDomain:        data['expertiseDomain']        ?? '',
         levelsTaught:           List<String>.from(data['levelsTaught'] ?? []),
         teachingMode:           data['teachingMode']           ?? '',
@@ -248,6 +250,7 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
         email: data['email'], phone: data['phone'],
         location: parentLocation, gender: data['gender'],
         birthday: data['birthday'], accountStatus: AccountStatus.validated,
+        isSuspended: false,
         childrenUids: List<String>.from(data['childrenUids'] ?? []),
         picture: data['picture'] ?? _defaultPicture(),
       );
