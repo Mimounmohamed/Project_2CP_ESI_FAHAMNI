@@ -18,6 +18,7 @@ class ParentModel extends UserModel {
     required super.accountStatus,
     super.isSuspended = false,
     required this.childrenUids,
+    super.lastLoginDate,
   }) : super(role: UserRole.parent);
 
   @override
@@ -36,6 +37,7 @@ class ParentModel extends UserModel {
       'account_status': accountStatus.name,
       'is_suspended':   isSuspended,
       'children_uids':  childrenUids,
+      'last_login_date': lastLoginDate != null ? Timestamp.fromDate(lastLoginDate!) : null,
     };
   }
 
@@ -49,6 +51,7 @@ class ParentModel extends UserModel {
     accountStatus: accountStatus,
     isSuspended: isSuspended,
     childrenUids: childrenUids,
+    lastLoginDate: lastLoginDate,
   );
 
   factory ParentModel.fromMap(Map<String, dynamic> map) {
@@ -65,6 +68,7 @@ class ParentModel extends UserModel {
       accountStatus: AccountStatus.values.byName(map['account_status'] ?? 'pending'),
       isSuspended:   map['is_suspended'] ?? false,
       childrenUids:  List<String>.from(map['children_uids'] ?? []),
+      lastLoginDate: map['last_login_date'] != null ? (map['last_login_date'] as Timestamp).toDate() : null,
     );
   }
 }

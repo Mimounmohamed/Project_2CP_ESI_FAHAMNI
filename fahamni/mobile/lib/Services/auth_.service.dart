@@ -87,12 +87,16 @@ class AuthService {
           (r) => r.name == (userDoc['role'] ?? 'student'),
           orElse: () => UserRole.student);
 
-      return await _fetchUserProfile(uid, role);
+      final userModel = await _fetchUserProfile(uid, role);
+      await _db.collection(_collectionForRole(role)).doc(uid).update({
+        'last_login_date': FieldValue.serverTimestamp(),
+      });
+      return userModel;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthError(e);
     }
   }
- 
+
   Future<String> _getEmailFromPhone(String phone) async {
     for (final collection in ['students', 'tutors', 'parents']) {
       final query = await _db
@@ -541,7 +545,11 @@ class AuthService {
       final role = UserRole.values.firstWhere(
           (r) => r.name == (userDoc['role'] ?? 'student'),
           orElse: () => UserRole.student);
-      return await _fetchUserProfile(uid, role);
+      final userModel = await _fetchUserProfile(uid, role);
+      await _db.collection(_collectionForRole(role)).doc(uid).update({
+        'last_login_date': FieldValue.serverTimestamp(),
+      });
+      return userModel;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthError(e);
     } catch (e) {

@@ -5,6 +5,7 @@ class ReviewModel {
   final double rating;
   final String comment;
   final DateTime createdAt;
+  final bool isHidden;
 
   ReviewModel({
     required this.reviewId,
@@ -13,6 +14,7 @@ class ReviewModel {
     required this.rating,
     required this.comment,
     required this.createdAt,
+    this.isHidden = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -24,6 +26,7 @@ class ReviewModel {
       'rating': rating,
       'comment': comment,
       'createdAt': createdAt,
+      'is_hidden': isHidden,
     };
   }
 
@@ -45,6 +48,7 @@ class ReviewModel {
       rating: parseRating(map['rating']),
       comment: map['comment'] ?? '',
       createdAt: (map['createdAt'] as dynamic).toDate(),
+      isHidden: map['is_hidden'] == true,
     );
   }
 }

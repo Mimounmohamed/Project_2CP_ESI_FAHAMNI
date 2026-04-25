@@ -4,6 +4,9 @@ import { db } from "./firebase";
 import TeachersPage from "./TeachersPage";
 import TeacherProfilePage from "./TeacherProfilePage";
 import UsersPage from "./UsersPage";
+import UserProfilePage from "./UserProfilePage";
+import ReportsPage from "./ReportsPage";
+
 
 const MOCK_NOTIFICATIONS = [
   { id: 1, title: "New Report", desc: "A new report has been submitted", time: "09:15AM", read: false },
@@ -61,6 +64,7 @@ export default function Dashboard({ user, onLogout }) {
   const [adminData, setAdminData] = useState(null);
   const [statValues, setStatValues] = useState([null, null, null, null]);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
   const [pendingTeachers, setPendingTeachers] = useState(null);
   const [sessionReports, setSessionReports] = useState(null);
   const [suspendedUsers, setSuspendedUsers] = useState(null);
@@ -205,7 +209,7 @@ export default function Dashboard({ user, onLogout }) {
           {NAV.map(item => (
             <button
               key={item.id}
-              onClick={() => { setActive(item.id); setShowNotif(false); setSelectedTeacher(null); }}
+              onClick={() => { setActive(item.id); setShowNotif(false); setSelectedTeacher(null); setSelectedUser(null); }}
               style={{
                 ...s.navItem,
                 ...(active === item.id ? s.navActive : {}),
@@ -251,11 +255,27 @@ export default function Dashboard({ user, onLogout }) {
                 <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>Manage all teachers on the platform</div>
               </div>
             )}
-            {active === "users" && !showNotif && (
+            {active === "users" && !showNotif && !selectedUser && (
               <div>
                 <div style={{ fontSize: 20, fontWeight: 700, color: "#000080", lineHeight: 1.2 }}>User Management</div>
                 <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>Manage all users on the platform</div>
               </div>
+            )}
+            {active === "reports" && !showNotif && (
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#000080", lineHeight: 1.2 }}>Reports Management</div>
+                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>Manage all reports on the platform</div>
+              </div>
+            )}
+            {active === "users" && !showNotif && selectedUser && (
+              <button
+                onClick={() => setSelectedUser(null)}
+                style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, padding: 0 }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F2937" strokeWidth="2">
+                  <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
+                </svg>
+              </button>
             )}
             {active === "teachers" && !showNotif && selectedTeacher && (
               <button
@@ -480,10 +500,25 @@ export default function Dashboard({ user, onLogout }) {
           </>}
 
           {/* ── Users page ── */}
-          {!showNotif && active === "users" && <UsersPage />}
+          {!showNotif && active === "users" && !selectedUser && (
+            <UsersPage onSelect={setSelectedUser} />
+          )}
+          {!showNotif && active === "users" && selectedUser && (
+            <UserProfilePage
+              user={selectedUser}
+              onBack={() => setSelectedUser(null)}
+              onSuspendChange={(id, next) => setSelectedUser(u => ({ ...u, is_suspended: next }))}
+              onViewUser={setSelectedUser}
+            />
+          )}
+
+          {/* ── Reports page ── */}
+          {!showNotif && active === "reports" && (
+            <ReportsPage />
+          )}
 
           {/* placeholder for other pages */}
-          {!showNotif && !["dashboard","teachers","users"].includes(active) && (
+          {!showNotif && !["dashboard","teachers","users","reports","messages","settings"].includes(active) && (
             <div style={{ color: "#94a3b8", fontSize: 14, paddingTop: 40, textAlign: "center" }}>
               {active.charAt(0).toUpperCase() + active.slice(1)} — coming soon.
             </div>
@@ -513,6 +548,9 @@ function MessagesIcon() {
 }
 function SettingsIcon() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>;
+}
+function SeedIcon() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>;
 }
 function PendingIcon({ color }) {
   return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;

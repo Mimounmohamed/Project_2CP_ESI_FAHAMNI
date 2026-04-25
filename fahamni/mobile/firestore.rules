@@ -36,6 +36,11 @@ service cloud.firestore {
         request.resource.data.tutor_id == request.auth.uid;
     }
 
+    function isAdmin() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
     match /users/{userId} {
       allow read: if signedIn();
       allow write: if isSelf(userId);
@@ -43,17 +48,17 @@ service cloud.firestore {
 
     match /students/{userId} {
       allow read: if signedIn();
-      allow write: if isSelf(userId);
+      allow write: if isSelf(userId) || isAdmin();
     }
 
     match /tutors/{userId} {
       allow read: if signedIn();
-      allow write: if isSelf(userId);
+      allow write: if isSelf(userId) || isAdmin();
     }
 
     match /parents/{userId} {
       allow read: if signedIn();
-      allow write: if isSelf(userId);
+      allow write: if isSelf(userId) || isAdmin();
     }
 
     match /conversations/{conversationId} {
@@ -102,8 +107,8 @@ service cloud.firestore {
 
     match /services/{serviceId} {
       allow read: if signedIn();
-      allow create: if isTutorWriteOwner();
-      allow update, delete: if isTutorResourceOwner();
+      allow create: if isTutorWriteOwner() || isAdmin();
+      allow update, delete: if isTutorResourceOwner() || isAdmin();
     }
 
     match /admins/{adminId} {
@@ -113,20 +118,40 @@ service cloud.firestore {
 
     match /sessions/{sessionId} {
       allow read: if signedIn();
-      allow create: if isTutorWriteOwner();
-      allow update, delete: if isTutorResourceOwner();
+      allow create: if isTutorWriteOwner() || isAdmin();
+      allow update, delete: if isTutorResourceOwner() || isAdmin();
+    }
+
+    match /feedbacks/{feedbackId} {
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow update: if isAdmin();
+      allow delete: if false;
     }
 
     match /reports/{reportId} {
       allow read: if signedIn();
       allow create: if signedIn();
-      allow update, delete: if false;
+      allow update: if isAdmin();
+      allow delete: if false;
     }
 
     match /resources/{resourceId} {
       allow read: if signedIn();
       allow create: if isTutorWriteOwner();
       allow update, delete: if isTutorResourceOwner();
+    }
+
+    match /children/{childId} {
+      allow read: if signedIn();
+      allow create: if isAdmin() || (signedIn() && request.resource.data.parentUid == request.auth.uid);
+      allow update, delete: if isAdmin() || (signedIn() && resource.data.parentUid == request.auth.uid);
+    }
+
+    match /rejections/{rejectionId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false;
     }
   }
 }

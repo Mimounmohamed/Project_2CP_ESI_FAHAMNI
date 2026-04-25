@@ -12,6 +12,8 @@ class TutorModel extends UserModel {
   final double averageRating;
   final int yearsOfExperience;
   final String academicDescription;
+  final int studentsCount;
+  final int coursesCount;
 
   TutorModel({
     required super.uid,
@@ -34,6 +36,9 @@ class TutorModel extends UserModel {
     required this.averageRating,
     required this.yearsOfExperience,
     required this.academicDescription,
+    this.studentsCount = 0,
+    this.coursesCount = 0,
+    super.lastLoginDate,
   }) : super(role: UserRole.tutor);
 
   @override
@@ -60,6 +65,9 @@ class TutorModel extends UserModel {
       'average_rating':          averageRating,
       'years_of_experience':     yearsOfExperience,
       'academic_description':    academicDescription,
+      'students_count':          studentsCount,
+      'courses_count':           coursesCount,
+      'last_login_date': lastLoginDate != null ? Timestamp.fromDate(lastLoginDate!) : null,
     };
   }
 
@@ -81,6 +89,9 @@ class TutorModel extends UserModel {
     averageRating: averageRating,
     yearsOfExperience: yearsOfExperience,
     academicDescription: academicDescription,
+    studentsCount: studentsCount,
+    coursesCount: coursesCount,
+    lastLoginDate: lastLoginDate,
   );
 
   factory TutorModel.fromMap(Map<String, dynamic> map) {
@@ -155,6 +166,9 @@ class TutorModel extends UserModel {
       averageRating: parseDouble(map['average_rating']),
       yearsOfExperience: parseInt(map['years_of_experience']),
       academicDescription: (map['academic_description'] ?? '').toString(),
+      studentsCount: parseInt(map['students_count']),
+      coursesCount: parseInt(map['courses_count']),
+      lastLoginDate: map['last_login_date'] != null ? parseDate(map['last_login_date']) : null,
     );
   }
 }

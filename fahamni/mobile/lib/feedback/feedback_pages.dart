@@ -1229,14 +1229,24 @@ class _RatingsSummaryCard extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              Text(
-                                '"${review.comment}"',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  height: 1.45,
-                                  color: Color(0xFF475569),
+                              if (review.isHidden)
+                                const Text(
+                                  'Comment hidden by admin.',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontStyle: FontStyle.italic,
+                                    color: Color(0xFF94A3B8),
+                                  ),
+                                )
+                              else
+                                Text(
+                                  '"${review.comment}"',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    height: 1.45,
+                                    color: Color(0xFF475569),
+                                  ),
                                 ),
-                              ),
                             ],
                           ),
                         ),
@@ -1446,14 +1456,24 @@ class _ReviewCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          Text(
-            review.comment,
-            style: const TextStyle(
-              fontSize: 15,
-              height: 1.5,
-              color: Color(0xFF475569),
+          if (review.isHidden)
+            const Text(
+              'Comment hidden by admin.',
+              style: TextStyle(
+                fontSize: 13,
+                fontStyle: FontStyle.italic,
+                color: Color(0xFF94A3B8),
+              ),
+            )
+          else
+            Text(
+              review.comment,
+              style: const TextStyle(
+                fontSize: 15,
+                height: 1.5,
+                color: Color(0xFF475569),
+              ),
             ),
-          ),
         ],
       ),
     );

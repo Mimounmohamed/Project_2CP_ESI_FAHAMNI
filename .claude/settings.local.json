@@ -18,7 +18,10 @@
       "Bash(adb -s emulator-5554 logcat -d -t 200)",
       "Bash(adb -s emulator-5554 logcat -d)",
       "Bash(git commit -m ':*)",
-      "Bash(xargs grep *)"
+      "Bash(xargs grep *)",
+      "Bash(git -C c:/Users/catal/Fahamni status --short)",
+      "Bash(npm run *)",
+      "Bash(node --input-type=module --eval \"import './src/Dashboard.jsx'\")"
     ]
   }
 }

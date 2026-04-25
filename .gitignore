@@ -1,0 +1,15 @@
+# Claude Code local settings (machine-specific, never commit)
+.claude/settings.local.json
+
+# Environment files
+.env
+*.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Root-level firebase-admin scripts (local tooling, not part of any app)
+node_modules/
+package-lock.json
+package.json

@@ -19,7 +19,7 @@ function formatJoined(val) {
   return `${MONTHS[d.getMonth()]} ${String(d.getDate()).padStart(2,"0")}, ${d.getFullYear()}`;
 }
 
-export default function UsersPage() {
+export default function UsersPage({ onSelect }) {
   const [tab, setTab]       = useState("all");
   const [search, setSearch] = useState("");
   const [users, setUsers]   = useState(null);
@@ -213,7 +213,7 @@ export default function UsersPage() {
 
                 {/* Actions */}
                 <div style={{ ...s.cell, flex: 1, justifyContent:"center", gap: 14 }}>
-                  <button style={s.eyeBtn} title="View profile">
+                  <button style={s.eyeBtn} title="View profile" onClick={() => onSelect?.(u)}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000080" strokeWidth="1.8">
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                       <circle cx="12" cy="12" r="3"/>

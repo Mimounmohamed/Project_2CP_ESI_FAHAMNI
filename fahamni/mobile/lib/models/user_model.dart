@@ -19,6 +19,7 @@ abstract class UserModel {
   final UserRole role;
   AccountStatus accountStatus;
   bool isSuspended;
+  DateTime? lastLoginDate;
 
   UserModel({
     required this.uid,
@@ -33,6 +34,7 @@ abstract class UserModel {
     required this.picture,
     required this.accountStatus,
     this.isSuspended = false,
+    this.lastLoginDate,
   });
 
   Map<String, dynamic> toMap();

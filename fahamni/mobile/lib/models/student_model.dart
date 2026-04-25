@@ -30,6 +30,7 @@ class StudentModel extends UserModel {
     required this.Courses,
     required this.grade,
     required this.speciality,
+    super.lastLoginDate,
   }) : super(role: UserRole.student);
 
   @override
@@ -54,6 +55,7 @@ class StudentModel extends UserModel {
       'courses': Courses,
       'grade': grade,
       'speciality': speciality,
+      'last_login_date': lastLoginDate != null ? Timestamp.fromDate(lastLoginDate!) : null,
     };
   }
 
@@ -73,6 +75,7 @@ class StudentModel extends UserModel {
     Courses: Courses,
     grade: grade,
     speciality: speciality,
+    lastLoginDate: lastLoginDate,
   );
 
   factory StudentModel.fromMap(Map<String, dynamic> map) {
@@ -95,6 +98,7 @@ class StudentModel extends UserModel {
       Courses: List<String>.from(map['courses'] ?? []),
       grade: map['grade'] ?? '',
       speciality: map['speciality'] ?? '',
+      lastLoginDate: map['last_login_date'] != null ? (map['last_login_date'] as Timestamp).toDate() : null,
     );
   }
 }
