@@ -21,7 +21,8 @@
       "Bash(xargs grep *)",
       "Bash(git -C c:/Users/catal/Fahamni status --short)",
       "Bash(npm run *)",
-      "Bash(node --input-type=module --eval \"import './src/Dashboard.jsx'\")"
+      "Bash(node --input-type=module --eval \"import './src/Dashboard.jsx'\")",
+      "Bash(grep -E \"\\\\.\\(jsx?|tsx?\\)$\")"
     ]
   }
 }

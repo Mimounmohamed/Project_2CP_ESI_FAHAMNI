@@ -19,8 +19,8 @@ function formatJoined(val) {
   return `${MONTHS[d.getMonth()]} ${String(d.getDate()).padStart(2,"0")}, ${d.getFullYear()}`;
 }
 
-export default function UsersPage({ onSelect }) {
-  const [tab, setTab]       = useState("all");
+export default function UsersPage({ onSelect, initialTab }) {
+  const [tab, setTab]       = useState(initialTab ?? "all");
   const [search, setSearch] = useState("");
   const [users, setUsers]   = useState(null);
   const [stats, setStats]   = useState({ total: null, teachers: null, students: null, suspended: null });

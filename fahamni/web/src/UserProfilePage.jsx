@@ -78,7 +78,7 @@ const ROLE_STYLE = {
   parent:  { label: "Parent",  color: "#db2777", bg: "#fce7f3" },
 };
 
-export default function UserProfilePage({ user, onBack, onSuspendChange, onViewUser }) {
+export default function UserProfilePage({ user, onBack, onSuspendChange, onViewUser, onContact }) {
   const [activeTab, setActiveTab] = useState("General Info");
   const [certificates, setCertificates] = useState(null);
   const [stats, setStats] = useState({
@@ -95,6 +95,7 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
   const [selectedService, setSelectedService] = useState(null);
   const [feedbacks, setFeedbacks]         = useState(null);
   const [activity, setActivity]           = useState(null);
+  const [selectedActivity, setSelectedActivity] = useState(null);
   const [children, setChildren]           = useState(null);
 
   const tutorUid = user.uid ?? user.id;
@@ -261,7 +262,12 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
           <h1 style={s.pageTitle}>User Profile</h1>
         </div>
         <div style={s.headerBtns}>
-          <button style={s.contactBtn}>
+          <button style={s.contactBtn} onClick={() => onContact?.({
+            uid: tutorUid,
+            name: fullName,
+            role: user.role,
+            picture: user.picture ?? null,
+          })}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
@@ -593,8 +599,18 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
             </div>
           )}
 
+          {/* ── Activity detail (course clicked) ── */}
+          {activeTab === "Activity" && selectedActivity && (
+            <ServiceDetailPanel
+              service={selectedActivity}
+              tutorUid={selectedActivity.tutor_id}
+              onBack={() => setSelectedActivity(null)}
+              onViewUser={onViewUser}
+            />
+          )}
+
           {/* ── Activity tab (students) ── */}
-          {activeTab === "Activity" && (
+          {activeTab === "Activity" && !selectedActivity && (
             <div style={s.tabContent}>
               <div style={{ ...s.mainCol, gap: 10 }}>
                 {activity === null ? (
@@ -642,7 +658,7 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
                         )}
                       </div>
                     </div>
-                    <button style={s.eyeBtn} title="View course">
+                    <button style={s.eyeBtn} title="View course" onClick={() => setSelectedActivity(item)}>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000080" strokeWidth="1.8">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
                         <circle cx="12" cy="12" r="3"/>

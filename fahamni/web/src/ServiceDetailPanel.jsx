@@ -169,6 +169,16 @@ export default function ServiceDetailPanel({ service: init, tutorUid, onBack, on
     <>
     <div style={s.wrap}>
 
+      {/* Back arrow */}
+      {onBack && (
+        <button style={s.backBtn} onClick={onBack}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+          Back
+        </button>
+      )}
+
       {/* Top tabs + deactivate */}
       <div style={s.topRow}>
         <div style={s.tabsRow}>
@@ -498,6 +508,11 @@ function capitalize(str) {
 
 const s = {
   wrap: { display:"flex", flexDirection:"column", gap:14 },
+  backBtn: {
+    display:"flex", alignItems:"center", gap:6, alignSelf:"flex-start",
+    background:"none", border:"none", cursor:"pointer",
+    color:"#64748b", fontSize:13, fontWeight:600, padding:"4px 0",
+  },
 
   topRow: { display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 },
   tabsRow: {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Component } from "react";
 import { collection, query, where, getDocs, getDoc, doc, setDoc, getCountFromServer } from "firebase/firestore";
 import { db } from "./firebase";
 import TeachersPage from "./TeachersPage";
@@ -6,6 +6,7 @@ import TeacherProfilePage from "./TeacherProfilePage";
 import UsersPage from "./UsersPage";
 import UserProfilePage from "./UserProfilePage";
 import ReportsPage from "./ReportsPage";
+import MessagesPage from "./MessagesPage";
 
 
 const MOCK_NOTIFICATIONS = [
@@ -56,6 +57,30 @@ const STATS_CONFIG = [
 
 
 
+class PageErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  componentDidCatch(err, info) { console.error("Page render error:", err, info.componentStack); }
+  componentDidUpdate(prev) {
+    if (prev.pageKey !== this.props.pageKey) this.setState({ error: null });
+  }
+  render() {
+    if (this.state.error) return (
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100%", gap:12 }}>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <div style={{ fontSize:15, fontWeight:600, color:"#1F2937" }}>Something went wrong</div>
+        <div style={{ fontSize:13, color:"#94a3b8" }}>{this.state.error?.message}</div>
+        <button onClick={() => this.setState({ error:null })} style={{ padding:"8px 24px", background:"#000080", color:"#fff", border:"none", borderRadius:20, cursor:"pointer", fontSize:13, fontWeight:600 }}>
+          Try again
+        </button>
+      </div>
+    );
+    return this.props.children;
+  }
+}
+
 export default function Dashboard({ user, onLogout }) {
   const [active, setActive] = useState("dashboard");
   const [showNotif, setShowNotif] = useState(false);
@@ -68,6 +93,8 @@ export default function Dashboard({ user, onLogout }) {
   const [pendingTeachers, setPendingTeachers] = useState(null);
   const [sessionReports, setSessionReports] = useState(null);
   const [suspendedUsers, setSuspendedUsers] = useState(null);
+  const [pendingContact, setPendingContact] = useState(null);
+  const [usersInitialTab, setUsersInitialTab] = useState("all");
 
   useEffect(() => {
     if (active !== "dashboard") return;
@@ -209,7 +236,7 @@ export default function Dashboard({ user, onLogout }) {
           {NAV.map(item => (
             <button
               key={item.id}
-              onClick={() => { setActive(item.id); setShowNotif(false); setSelectedTeacher(null); setSelectedUser(null); }}
+              onClick={() => { setActive(item.id); setShowNotif(false); setSelectedTeacher(null); setSelectedUser(null); setUsersInitialTab("all"); }}
               style={{
                 ...s.navItem,
                 ...(active === item.id ? s.navActive : {}),
@@ -267,6 +294,12 @@ export default function Dashboard({ user, onLogout }) {
                 <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>Manage all reports on the platform</div>
               </div>
             )}
+            {active === "messages" && !showNotif && (
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#000080", lineHeight: 1.2 }}>Messages</div>
+                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>Manage all conversations</div>
+              </div>
+            )}
             {active === "users" && !showNotif && selectedUser && (
               <button
                 onClick={() => setSelectedUser(null)}
@@ -301,6 +334,7 @@ export default function Dashboard({ user, onLogout }) {
 
         {/* Content */}
         <div style={s.content}>
+        <PageErrorBoundary pageKey={active}>
 
           {/* ── Notifications page ── */}
           {showNotif && (() => {
@@ -424,16 +458,16 @@ export default function Dashboard({ user, onLogout }) {
                   </div>
                 )}
 
-                {/* Messages — coming soon */}
-                <div style={{ ...s.taskCard, opacity: 0.45 }}>
+                {/* Messages */}
+                <div style={s.taskCard}>
                   <div style={s.taskIcon}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
                   </div>
                   <div style={s.taskText}>
                     <div style={s.taskTitle}>Messages</div>
-                    <div style={s.taskDesc}>Messaging section coming soon</div>
+                    <div style={s.taskDesc}>View and respond to user conversations</div>
                   </div>
-                  <button style={{ ...s.actionBtn, background: "#94a3b8", cursor: "default" }}>Check</button>
+                  <button style={{ ...s.actionBtn, background: "#000080" }} onClick={() => { setActive("messages"); setShowNotif(false); }}>Open</button>
                 </div>
 
                 {/* Session reports */}
@@ -453,7 +487,7 @@ export default function Dashboard({ user, onLogout }) {
                       <div style={s.taskTitle}>{sessionReports.length} urgent session report{sessionReports.length > 1 ? "s" : ""}</div>
                       <div style={s.taskDesc}>{sessionReports[0].text?.slice(0, 60) || "Reported session behavior"}{sessionReports[0].text?.length > 60 ? "…" : ""}</div>
                     </div>
-                    <button style={{ ...s.actionBtn, background: "#dc2626" }}>View</button>
+                    <button style={{ ...s.actionBtn, background: "#dc2626" }} onClick={() => { setActive("reports"); setShowNotif(false); }}>View</button>
                   </div>
                 )}
 
@@ -474,7 +508,11 @@ export default function Dashboard({ user, onLogout }) {
                 ) : (
                   <>
                     {suspendedUsers.slice(0, 3).map((u, i) => (
-                      <div key={i} style={s.suspendedRow}>
+                      <div
+                        key={i}
+                        style={{ ...s.suspendedRow, cursor: "pointer" }}
+                        onClick={() => { setActive("users"); setUsersInitialTab("suspended"); setShowNotif(false); setSelectedUser(null); }}
+                      >
                         <div style={s.suspendedAvatar}>
                           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5">
                             <circle cx="12" cy="8" r="4" />
@@ -488,7 +526,10 @@ export default function Dashboard({ user, onLogout }) {
                       </div>
                     ))}
                     {suspendedUsers.length > 3 && (
-                      <button style={s.seeAllBtn}>
+                      <button
+                        style={s.seeAllBtn}
+                        onClick={() => { setActive("users"); setUsersInitialTab("suspended"); setShowNotif(false); setSelectedUser(null); }}
+                      >
                         See Full List ({suspendedUsers.length - 3} more)
                       </button>
                     )}
@@ -501,7 +542,7 @@ export default function Dashboard({ user, onLogout }) {
 
           {/* ── Users page ── */}
           {!showNotif && active === "users" && !selectedUser && (
-            <UsersPage onSelect={setSelectedUser} />
+            <UsersPage onSelect={setSelectedUser} initialTab={usersInitialTab} />
           )}
           {!showNotif && active === "users" && selectedUser && (
             <UserProfilePage
@@ -509,12 +550,31 @@ export default function Dashboard({ user, onLogout }) {
               onBack={() => setSelectedUser(null)}
               onSuspendChange={(id, next) => setSelectedUser(u => ({ ...u, is_suspended: next }))}
               onViewUser={setSelectedUser}
+              onContact={userData => {
+                setPendingContact(userData);
+                setActive("messages");
+                setShowNotif(false);
+                setSelectedUser(null);
+              }}
             />
           )}
 
           {/* ── Reports page ── */}
           {!showNotif && active === "reports" && (
             <ReportsPage />
+          )}
+
+          {/* ── Messages page ── */}
+          {!showNotif && active === "messages" && (
+            <MessagesPage
+              adminUser={user}
+              pendingContact={pendingContact}
+              onContactHandled={() => setPendingContact(null)}
+              onViewUser={userData => {
+                setSelectedUser(userData);
+                setActive("users");
+              }}
+            />
           )}
 
           {/* placeholder for other pages */}
@@ -524,6 +584,7 @@ export default function Dashboard({ user, onLogout }) {
             </div>
           )}
 
+        </PageErrorBoundary>
         </div>
       </main>
     </div>
