@@ -2,6 +2,12 @@
 
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- --- VOICE FEATURE START --- -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <!-- --- VOICE FEATURE END --- -->
+    <!-- --- ATTACHMENT FEATURE START --- -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <!-- --- ATTACHMENT FEATURE END --- -->
 
     <application
         android:label="fahamni"

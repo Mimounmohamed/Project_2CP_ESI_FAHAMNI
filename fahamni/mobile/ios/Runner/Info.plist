@@ -30,6 +30,10 @@
 	<string>Fahamni uses your location to show nearby tutors on the map.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Fahamni uses your location to show nearby tutors on the map.</string>
+	<!-- --- VOICE FEATURE START --- -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Fahamni uses the microphone so you can record voice messages in chat.</string>
+	<!-- --- VOICE FEATURE END --- -->
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

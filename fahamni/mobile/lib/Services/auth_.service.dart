@@ -271,14 +271,11 @@ class AuthService {
     required String email,
     required String phone,
   }) async {
-    final emailQuery = await _db
-        .collection('users')
-        .where('email', isEqualTo: email)
-        .limit(1)
-        .get();
-    if (emailQuery.docs.isNotEmpty) {
+    final signInMethods = await _auth.fetchSignInMethodsForEmail(email);
+    if (signInMethods.isNotEmpty) {
       throw 'This email is already registered.';
     }
+
     for (final collection in ['students', 'tutors', 'parents']) {
       final phoneQuery = await _db
           .collection(collection)
@@ -512,12 +509,8 @@ class AuthService {
   }
  
   Future<void> checkEmailExists(String email) async {
-    final query = await _db
-        .collection('users')
-        .where('email', isEqualTo: email)
-        .limit(1)
-        .get();
-    if (query.docs.isEmpty) throw 'No account found with this email.';
+    final signInMethods = await _auth.fetchSignInMethodsForEmail(email);
+    if (signInMethods.isEmpty) throw 'No account found with this email.';
   }
  
   final GoogleSignIn _googleSignIn = GoogleSignIn();

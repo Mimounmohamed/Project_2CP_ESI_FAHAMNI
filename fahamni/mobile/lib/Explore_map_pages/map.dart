@@ -30,6 +30,7 @@ class _MappageState extends State<Mappage> {
   GoogleMapController? _controller;
   final CustomInfoWindowController _customInfoWindowController =
       CustomInfoWindowController();
+  final Map<String, Location?> _geocodeCache = <String, Location?>{};
   Position? _currentPosition;
   final Set<Marker> _markers = {};
   Set<Polyline> _polylines = {};
@@ -259,7 +260,7 @@ class _MappageState extends State<Mappage> {
           );
         });
       } catch (e) {
-        print('Could not geocode: $e');
+        debugPrint('Could not geocode tutor location.');
       }
     }
   }
@@ -270,23 +271,31 @@ class _MappageState extends State<Mappage> {
       return null;
     }
 
+    final Location? cached = _geocodeCache[trimmed];
+    if (_geocodeCache.containsKey(trimmed)) {
+      return cached;
+    }
+
     final List<String> attempts = <String>[
       trimmed,
       if (!trimmed.toLowerCase().contains('algeria')) '$trimmed, Algeria',
-      if (!trimmed.toLowerCase().contains('algeria')) '$trimmed, Alger',
+      if (!trimmed.toLowerCase().contains('alger')) '$trimmed, Alger, Algeria',
     ];
 
     for (final String query in attempts) {
       try {
         final List<Location> locations = await locationFromAddress(query);
         if (locations.isNotEmpty) {
-          return locations.first;
+          final Location resolved = locations.first;
+          _geocodeCache[trimmed] = resolved;
+          return resolved;
         }
       } catch (_) {
         continue;
       }
     }
 
+    _geocodeCache[trimmed] = null;
     return null;
   }
 

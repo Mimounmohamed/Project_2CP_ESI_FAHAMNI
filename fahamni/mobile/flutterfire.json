@@ -1,0 +1,41 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "fahamni-dev",
+          "appId": "1:235961023298:android:d17b88c2ffb15750d566db",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "fahamni-dev",
+          "appId": "1:235961023298:ios:2d3a9c45280245d9d566db",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "macos": {
+        "default": {
+          "projectId": "fahamni-dev",
+          "appId": "1:235961023298:ios:2d3a9c45280245d9d566db",
+          "uploadDebugSymbols": false,
+          "fileOutput": "macos/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "fahamni-dev",
+          "configurations": {
+            "android": "1:235961023298:android:d17b88c2ffb15750d566db",
+            "ios": "1:235961023298:ios:2d3a9c45280245d9d566db",
+            "macos": "1:235961023298:ios:2d3a9c45280245d9d566db",
+            "web": "1:235961023298:web:0cd1dbc4d6cf8b08d566db",
+            "windows": "1:235961023298:web:5bd702b26a7b13d7d566db"
+          }
+        }
+      }
+    }
+  }
+}

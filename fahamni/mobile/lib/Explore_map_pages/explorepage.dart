@@ -35,6 +35,7 @@ class Explorepage extends StatefulWidget {
 class _ExplorepageState extends State<Explorepage> {
   final TextEditingController _searchController = TextEditingController();
   final studenthomepage_service _studentService = studenthomepage_service();
+  final Map<String, Location?> _geocodeCache = <String, Location?>{};
   Position? _currentPosition;
   GoogleMapController? _controller;
 
@@ -148,29 +149,58 @@ class _ExplorepageState extends State<Explorepage> {
     for (final _RecommendedTutorEntry entry in tutors!) {
       final TutorModel tutor = entry.tutor;
       if (tutor.location.isNotEmpty) {
-        try {
-          final List<Location> locations = await locationFromAddress(tutor.location);
+        final Location? location = await _geocodeTutorLocation(tutor.location);
+        if (location != null) {
+          final double distance = Geolocator.distanceBetween(
+            _currentPosition!.latitude,
+            _currentPosition!.longitude,
+            location.latitude,
+            location.longitude,
+          ) / 1000;
 
-          if (locations.isNotEmpty) {
-            final double distance = Geolocator.distanceBetween(
-              _currentPosition!.latitude,
-              _currentPosition!.longitude,
-              locations[0].latitude,
-              locations[0].longitude,
-            ) / 1000;
-
-            if (distance < 20.0) {
-              count++;
-            }
+          if (distance < 20.0) {
+            count++;
           }
-        } catch (e) {
-          print("Geocoding failed for ${tutor.firstName}: $e");
         }
       }
     }
     setState(() {
       nearbyTutorsCount = count;
     });
+  }
+
+  Future<Location?> _geocodeTutorLocation(String rawLocation) async {
+    final String trimmed = rawLocation.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+
+    final Location? cached = _geocodeCache[trimmed];
+    if (_geocodeCache.containsKey(trimmed)) {
+      return cached;
+    }
+
+    final List<String> attempts = <String>[
+      trimmed,
+      if (!trimmed.toLowerCase().contains('algeria')) '$trimmed, Algeria',
+      if (!trimmed.toLowerCase().contains('alger')) '$trimmed, Alger, Algeria',
+    ];
+
+    for (final String query in attempts) {
+      try {
+        final List<Location> locations = await locationFromAddress(query);
+        if (locations.isNotEmpty) {
+          final Location resolved = locations.first;
+          _geocodeCache[trimmed] = resolved;
+          return resolved;
+        }
+      } catch (_) {
+        continue;
+      }
+    }
+
+    _geocodeCache[trimmed] = null;
+    return null;
   }
 
   Future<void> loadTutorsServices() async {

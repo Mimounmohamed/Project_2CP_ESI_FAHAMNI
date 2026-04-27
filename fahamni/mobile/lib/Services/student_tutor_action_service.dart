@@ -1,13 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../Services/chat_service.dart';
-import '../Services/notification_service.dart';
+import 'auth_.service.dart';
+import 'chat_service.dart';
+import 'notification_service.dart';
 import '../models/chat_model.dart';
 import '../models/notification_model.dart';
+import '../models/report_model.dart';
 import '../models/service_model.dart';
 import '../models/student_model.dart';
 import '../models/tutor_model.dart';
+import '../models/user_model.dart';
 import '../repositories/firestore_chat_repository.dart';
 
 class StudentTutorActionService {
@@ -131,6 +134,95 @@ class StudentTutorActionService {
         senderId: student.uid,
         tutorId: tutor.uid,
         serviceId: service?.serviceId ?? '',
+      ),
+    );
+  }
+
+  Future<void> createReport({
+    required String reportedId,
+    required String reportedName,
+    required ReportType type,
+    required String text,
+  }) async {
+    final User? currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('You need to be signed in first.');
+    }
+
+    final AuthService authService = AuthService();
+    final UserModel? reporter = await authService.getCurrentUserProfile();
+    if (reporter == null) {
+      throw Exception('Unable to load reporter profile.');
+    }
+
+    final DocumentReference<Map<String, dynamic>> reportRef =
+        _firestore.collection('reports').doc();
+
+    final ReportModel report = ReportModel(
+      reportId: reportRef.id,
+      reporterUid: reporter.uid,
+      reporterName: '${reporter.firstName} ${reporter.lastName}'.trim(),
+      reportedId: reportedId,
+      reportedName: reportedName,
+      type: type,
+      text: text,
+      createdAt: DateTime.now(),
+    );
+
+    await reportRef.set(report.toMap());
+  }
+
+  Future<void> createQuoteRequest({
+    required TutorModel tutor,
+    required String studentId,
+    required String subject,
+    required String description,
+    required String teachingMode,
+    required int sessionsCount,
+    required int durationMinutes,
+  }) async {
+    final User? currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('You need to be signed in first.');
+    }
+
+    if (studentId.isEmpty) {
+      throw Exception('Please select a student for the quote request.');
+    }
+
+    final DocumentReference<Map<String, dynamic>> quoteRef =
+        _firestore.collection('quote_requests').doc();
+
+    await quoteRef.set({
+      'quote_id': quoteRef.id,
+      'student_id': studentId,
+      'tutor_id': tutor.uid,
+      'service_id': '',
+      'subject': subject,
+      'level': '',
+      'objective': 'Quote request for $subject',
+      'description': description,
+      'teaching_mode': teachingMode,
+      'frequency': 'To be discussed',
+      'duration': '${durationMinutes} min',
+      'budget': 'To be discussed',
+      'sessions_count': sessionsCount,
+      'status': 'pending',
+      'created_at': Timestamp.now(),
+    });
+
+    await _notificationService.sendNotification(
+      NotificationModel(
+        title: 'New quote request',
+        content: 'A quote request has been sent to ${tutor.firstName}.',
+        dateTime: DateTime.now(),
+        isRead: false,
+        notificationId: '',
+        receiverId: tutor.uid,
+        type: 'quote_request',
+        senderId: currentUser.uid,
+        tutorId: tutor.uid,
+        serviceId: '',
       ),
     );
   }

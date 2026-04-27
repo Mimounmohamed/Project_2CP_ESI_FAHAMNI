@@ -2,12 +2,15 @@ import 'dart:math' as math;
 
 import 'package:fahamni/Services/review_service.dart';
 import 'package:fahamni/Services/student_tutor_action_service.dart';
+import 'package:fahamni/feedback/quote_request_page.dart';
+import 'package:fahamni/models/report_model.dart';
 import 'package:fahamni/models/review_model.dart';
 import 'package:fahamni/models/service_model.dart';
 import 'package:fahamni/models/student_model.dart';
 import 'package:fahamni/models/tutor_model.dart';
 import 'package:fahamni/models/tutor_review_bundle.dart';
 import 'package:fahamni/messaging/conversation_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -172,6 +175,165 @@ class _TutorProfilePageState extends State<TutorProfilePage>
     }
   }
 
+  Future<void> _showReportTutorDialog(TutorModel tutor) async {
+    final TextEditingController reportController = TextEditingController();
+    bool isSubmitting = false;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+              ),
+              insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 360),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Report',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF1F2937),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () {
+                              Navigator.of(dialogContext).pop();
+                            },
+                            icon: const Icon(Icons.close, color: Color(0xFF1F2937)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Your Report',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1F2937),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 180,
+                        child: TextFormField(
+                          controller: reportController,
+                          maxLength: 200,
+                          maxLines: 8,
+                          decoration: InputDecoration(
+                            hintText: 'Write something ...',
+                            filled: true,
+                            fillColor: const Color(0xFFF8FAFC),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                            counterText: '',
+                          ),
+                          onChanged: (_) {
+                            setState(() {});
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          '${reportController.text.length}/200',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: isSubmitting
+                              ? null
+                              : () async {
+                                  final String reportText = reportController.text.trim();
+                                  if (reportText.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Please write your report before sending.'),
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  setState(() {
+                                    isSubmitting = true;
+                                  });
+
+                                  try {
+                                    await _studentTutorActionService.createReport(
+                                      reportedId: tutor.uid,
+                                      reportedName: '${tutor.firstName} ${tutor.lastName}'.trim(),
+                                      type: ReportType.teacher,
+                                      text: reportText,
+                                    );
+                                    if (!mounted) return;
+                                    Navigator.of(dialogContext).pop();
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Report submitted successfully.'),
+                                      ),
+                                    );
+                                  } catch (error) {
+                                    if (!mounted) return;
+                                    setState(() {
+                                      isSubmitting = false;
+                                    });
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text(error.toString())),
+                                    );
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF000080),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(28),
+                            ),
+                          ),
+                          child: isSubmitting
+                              ? const CircularProgressIndicator(color: Colors.white)
+                              : const Text(
+                                  'Send',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    reportController.dispose();
+  }
+
   Future<void> _openConversation(TutorModel tutor) async {
     setState(() {
       _isActionLoading = true;
@@ -213,17 +375,6 @@ class _TutorProfilePageState extends State<TutorProfilePage>
     }
   }
 
-  Future<void> _bookSession(
-    TutorModel tutor,
-    List<ServiceModel> services,
-  ) async {
-    final ServiceModel? selectedService = services.isEmpty ? null : services.first;
-    await _bookSpecificService(
-      tutor: tutor,
-      service: selectedService,
-    );
-  }
-
   Future<void> _bookSpecificService({
     required TutorModel tutor,
     required ServiceModel? service,
@@ -237,6 +388,15 @@ class _TutorProfilePageState extends State<TutorProfilePage>
         tutor: tutor,
         service: service,
       );
+      final String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
+      if (service != null &&
+          currentUserId != null &&
+          !service.pendingIds.contains(currentUserId) &&
+          !service.studentIds.contains(currentUserId)) {
+        setState(() {
+          service.pendingIds.add(currentUserId);
+        });
+      }
       if (!mounted) {
         return;
       }
@@ -310,6 +470,7 @@ class _TutorProfilePageState extends State<TutorProfilePage>
                     isFavorite: _isFavorite,
                     isFavoriteLoading: _isFavoriteLoading,
                     onFavoriteTap: _toggleFavorite,
+                    onReportTap: () => _showReportTutorDialog(tutor),
                   ),
                   const SizedBox(height: 18),
                   _TutorHero(
@@ -424,7 +585,16 @@ class _TutorProfilePageState extends State<TutorProfilePage>
                           child: ElevatedButton.icon(
                             onPressed: _isActionLoading
                                 ? null
-                                : () => _bookSession(tutor, bundle.services),
+                                : () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => QuoteRequestPage(
+                                          tutor: tutor,
+                                          services: bundle.services,
+                                        ),
+                                      ),
+                                    );
+                                  },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF000080),
                               foregroundColor: Colors.white,
@@ -435,7 +605,7 @@ class _TutorProfilePageState extends State<TutorProfilePage>
                             ),
                             icon: const Icon(Icons.calendar_today_outlined),
                             label: const Text(
-                              'Book Session',
+                              'Quote request',
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 16,
@@ -546,12 +716,14 @@ class _ProfileTopBar extends StatelessWidget {
     required this.isFavorite,
     required this.isFavoriteLoading,
     required this.onFavoriteTap,
+    required this.onReportTap,
   });
 
   final String tutorName;
   final bool isFavorite;
   final bool isFavoriteLoading;
   final VoidCallback onFavoriteTap;
+  final VoidCallback onReportTap;
 
   @override
   Widget build(BuildContext context) {
@@ -586,6 +758,25 @@ class _ProfileTopBar extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         const _CircleIconButton(icon: Icons.share_outlined),
+        const SizedBox(width: 8),
+        PopupMenuButton<int>(
+          onSelected: (value) {
+            if (value == 0) {
+              onReportTap();
+            }
+          },
+          itemBuilder: (_) => const [
+            PopupMenuItem<int>(
+              value: 0,
+              child: Text('Report tutor'),
+            ),
+          ],
+          icon: const Icon(Icons.more_vert, color: Color(0xFF64748B)),
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
       ],
     );
   }
@@ -762,6 +953,8 @@ class _TutorServicesTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
     if (services.isEmpty) {
       return const Center(
         child: Text(
@@ -785,6 +978,16 @@ class _TutorServicesTab extends StatelessWidget {
           final ServiceModel service = services[index];
           final String serviceMode =
               service.area.isNotEmpty ? service.area : tutor.teachingMode;
+          final bool isJoined =
+              currentUserId != null && service.studentIds.contains(currentUserId);
+          final bool isPending =
+              currentUserId != null && service.pendingIds.contains(currentUserId);
+          final String actionLabel = isJoined
+              ? 'Joined'
+              : isPending
+                  ? 'Pending'
+                  : 'Book Now';
+          final bool isActionDisabled = isJoined || isPending;
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 14),
@@ -910,7 +1113,9 @@ class _TutorServicesTab extends StatelessWidget {
                                 Padding(
                                   padding: const EdgeInsets.only(right: 16),
                                   child: ElevatedButton(
-                                    onPressed: () => onBookNow(service),
+                                    onPressed: isActionDisabled
+                                        ? null
+                                        : () => onBookNow(service),
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: const Color(0xFF000080),
                                       foregroundColor: Colors.white,
@@ -919,9 +1124,9 @@ class _TutorServicesTab extends StatelessWidget {
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                     ),
-                                    child: const Center(
+                                    child: Center(
                                       child: Text(
-                                        'Book Now',
+                                        actionLabel,
                                         style: TextStyle(
                                           fontFamily: 'Nunito',
                                           fontWeight: FontWeight.w700,

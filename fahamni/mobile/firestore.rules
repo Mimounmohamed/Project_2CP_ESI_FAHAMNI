@@ -13,9 +13,43 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/conversations/$(conversationId)).data;
     }
 
+    function isConversationParticipantResource() {
+      return signedIn() &&
+        resource.data.participants is list &&
+        request.auth.uid in resource.data.participants;
+    }
+
+    function isLegacyConversationOwnerResource() {
+      return signedIn() &&
+        resource.data.user_uid is string &&
+        resource.data.user_uid == request.auth.uid;
+    }
+
     function isConversationParticipant(conversationId) {
       return signedIn() &&
+        conversationData(conversationId).participants is list &&
         request.auth.uid in conversationData(conversationId).participants;
+    }
+
+    function isLegacyConversationOwner(conversationId) {
+      return signedIn() &&
+        conversationData(conversationId).user_uid is string &&
+        conversationData(conversationId).user_uid == request.auth.uid;
+    }
+
+    function canAccessConversation(conversationId) {
+      return isConversationParticipant(conversationId) ||
+        isLegacyConversationOwner(conversationId);
+    }
+
+    function conversationDataAfter(conversationId) {
+      return getAfter(/databases/$(database)/documents/conversations/$(conversationId)).data;
+    }
+
+    function isConversationParticipantAfter(conversationId) {
+      return signedIn() &&
+        conversationDataAfter(conversationId).participants is list &&
+        request.auth.uid in conversationDataAfter(conversationId).participants;
     }
 
     function requestHasParticipant() {
@@ -41,35 +75,79 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
+    function isStudentServiceJoinRequest() {
+      return signedIn() &&
+        request.resource.data.pending_ids is list &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pending_ids', 'enrolled_num']) &&
+        (
+          !('pending_ids' in resource.data) ||
+          resource.data.pending_ids is list
+        ) &&
+        (
+          !('student_ids' in resource.data) ||
+          resource.data.student_ids is list
+        ) &&
+        request.resource.data.pending_ids.size() ==
+          (
+            ('pending_ids' in resource.data && resource.data.pending_ids is list)
+              ? resource.data.pending_ids.size()
+              : 0
+          ) + 1 &&
+        request.resource.data.pending_ids.hasAll(
+          ('pending_ids' in resource.data && resource.data.pending_ids is list)
+            ? resource.data.pending_ids
+            : []
+        ) &&
+        request.auth.uid in request.resource.data.pending_ids &&
+        !(
+          ('pending_ids' in resource.data && resource.data.pending_ids is list) &&
+          request.auth.uid in resource.data.pending_ids
+        ) &&
+        !(
+          ('student_ids' in resource.data && resource.data.student_ids is list) &&
+          request.auth.uid in resource.data.student_ids
+        ) &&
+        request.resource.data.enrolled_num ==
+          (
+            ('enrolled_num' in resource.data && resource.data.enrolled_num is int)
+              ? resource.data.enrolled_num
+              : 0
+          ) + 1;
+    }
+
+    // Public lookups are required for registration and phone-based login.
+    // These collections are queried by email or phone before the client user
+    // has signed in, so read access is allowed for unauthenticated users.
     match /users/{userId} {
-      allow read: if signedIn();
+      allow read: if true;
       allow write: if isSelf(userId);
     }
 
     match /students/{userId} {
-      allow read: if signedIn();
+      allow read: if true;
       allow write: if isSelf(userId) || isAdmin();
     }
 
     match /tutors/{userId} {
-      allow read: if signedIn();
+      allow read: if true;
       allow write: if isSelf(userId) || isAdmin();
     }
 
     match /parents/{userId} {
-      allow read: if signedIn();
+      allow read: if true;
       allow write: if isSelf(userId) || isAdmin();
     }
 
     match /conversations/{conversationId} {
-      allow read: if isConversationParticipant(conversationId);
+      allow read: if isConversationParticipantResource() ||
+        isLegacyConversationOwnerResource();
       allow create: if requestHasParticipant();
-      allow update: if isConversationParticipant(conversationId);
+      allow update: if canAccessConversation(conversationId);
       allow delete: if false;
 
       match /messages/{messageId} {
-        allow read: if isConversationParticipant(conversationId);
-        allow create: if isConversationParticipant(conversationId) &&
+        allow read: if canAccessConversation(conversationId);
+        allow create: if isConversationParticipantAfter(conversationId) &&
           request.resource.data.senderId == request.auth.uid;
         allow update, delete: if false;
       }
@@ -108,7 +186,8 @@ service cloud.firestore {
     match /services/{serviceId} {
       allow read: if signedIn();
       allow create: if isTutorWriteOwner() || isAdmin();
-      allow update, delete: if isTutorResourceOwner() || isAdmin();
+      allow update: if isTutorResourceOwner() || isAdmin() || isStudentServiceJoinRequest();
+      allow delete: if isTutorResourceOwner() || isAdmin();
     }
 
     match /admins/{adminId} {
