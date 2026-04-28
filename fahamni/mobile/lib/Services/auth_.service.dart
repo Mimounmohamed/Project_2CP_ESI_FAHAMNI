@@ -75,25 +75,48 @@ class AuthService {
       final credential = await _auth.signInWithEmailAndPassword(
           email: email, password: password);
       final uid = credential.user!.uid;
-      final userDoc = await _db.collection('users').doc(uid).get();
+
+      late DocumentSnapshot<Map<String, dynamic>> userDoc;
+      try {
+        userDoc = await _db.collection('users').doc(uid).get();
+      } catch (e) {
+        throw Exception('Failed to load user record: $e');
+      }
+
       if (!userDoc.exists) {
-        throw Exception('User profile not found');
+        throw Exception('No account profile found. Please sign up first.');
       }
       if ((userDoc['role'] ?? '') == 'admin') {
         await _auth.signOut();
-        throw Exception('This is an admin account. Please use the admin dashboard to access your account.');
+        throw Exception('Admin accounts must use the web dashboard.');
       }
       final role = UserRole.values.firstWhere(
           (r) => r.name == (userDoc['role'] ?? 'student'),
           orElse: () => UserRole.student);
 
-      final userModel = await _fetchUserProfile(uid, role);
-      await _db.collection(_collectionForRole(role)).doc(uid).update({
-        'last_login_date': FieldValue.serverTimestamp(),
-      });
+      late UserModel? userModel;
+      try {
+        userModel = await _fetchUserProfile(uid, role);
+      } catch (e) {
+        throw Exception('Failed to load profile data: $e');
+      }
+
+      if (userModel == null) {
+        await _auth.signOut();
+        throw Exception('Your registration was not completed. Please delete your account or contact support to sign up again.');
+      }
+
+      try {
+        await _db.collection(_collectionForRole(role)).doc(uid).set({
+          'last_login_date': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } catch (_) {}
+
       return userModel;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthError(e);
+    } catch (e) {
+      rethrow;
     }
   }
 
@@ -546,9 +569,9 @@ class AuthService {
           (r) => r.name == (userDoc['role'] ?? 'student'),
           orElse: () => UserRole.student);
       final userModel = await _fetchUserProfile(uid, role);
-      await _db.collection(_collectionForRole(role)).doc(uid).update({
+      await _db.collection(_collectionForRole(role)).doc(uid).set({
         'last_login_date': FieldValue.serverTimestamp(),
-      });
+      }, SetOptions(merge: true));
       return userModel;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthError(e);

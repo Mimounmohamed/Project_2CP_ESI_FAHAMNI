@@ -7,6 +7,7 @@ import UsersPage from "./UsersPage";
 import UserProfilePage from "./UserProfilePage";
 import ReportsPage from "./ReportsPage";
 import MessagesPage from "./MessagesPage";
+import SettingsPage from "./SettingsPage";
 
 
 const MOCK_NOTIFICATIONS = [
@@ -185,7 +186,6 @@ export default function Dashboard({ user, onLogout }) {
         if (snap.empty) return;
         const data = snap.docs[0].data();
         setAdminData(data);
-        // Ensure a doc at admins/{uid} exists so isAdmin() rule works
         const uidRef = doc(db, "admins", user.uid);
         const uidSnap = await getDoc(uidRef).catch(() => null);
         if (uidSnap && !uidSnap.exists()) {
@@ -194,6 +194,16 @@ export default function Dashboard({ user, onLogout }) {
       })
       .catch(err => console.error("Firestore error:", err));
   }, [user?.uid, user?.email]);
+
+  // ── Shared nav handler ──
+  function navigateTo(pageId) {
+    if (pageId !== "messages") setPendingContact(null);
+    setActive(pageId);
+    setShowNotif(false);
+    setSelectedTeacher(null);
+    setSelectedUser(null);
+    setUsersInitialTab("all");
+  }
 
   return (
     <div style={s.shell}>
@@ -236,7 +246,7 @@ export default function Dashboard({ user, onLogout }) {
           {NAV.map(item => (
             <button
               key={item.id}
-              onClick={() => { setActive(item.id); setShowNotif(false); setSelectedTeacher(null); setSelectedUser(null); setUsersInitialTab("all"); }}
+              onClick={() => navigateTo(item.id)}
               style={{
                 ...s.navItem,
                 ...(active === item.id ? s.navActive : {}),
@@ -259,8 +269,6 @@ export default function Dashboard({ user, onLogout }) {
           </svg>
           Logout
         </button>
-
-
       </aside>
 
       {/* ── Main ── */}
@@ -298,6 +306,12 @@ export default function Dashboard({ user, onLogout }) {
               <div>
                 <div style={{ fontSize: 20, fontWeight: 700, color: "#000080", lineHeight: 1.2 }}>Messages</div>
                 <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>Manage all conversations</div>
+              </div>
+            )}
+            {active === "settings" && !showNotif && (
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#000080", lineHeight: 1.2 }}>Settings</div>
+                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>Manage your account and preferences</div>
               </div>
             )}
             {active === "users" && !showNotif && selectedUser && (
@@ -415,13 +429,11 @@ export default function Dashboard({ user, onLogout }) {
                 ...s.statCard,
                 borderLeft: stat.borderColor ? `3.5px solid ${stat.borderColor}` : "1px solid #f1f5f9",
               }}>
-                {/* Top row: icon + badge */}
                 <div style={s.statTop}>
                   <div style={{ ...s.statIconCircle, background: stat.iconBg }}>
                     <StatIcon type={stat.icon} color={stat.iconColor} />
                   </div>
                 </div>
-                {/* Value + label */}
                 <div style={s.statValue}>
                   {statValues[i] === null ? "—" : statValues[i].toLocaleString()}
                 </div>
@@ -437,7 +449,6 @@ export default function Dashboard({ user, onLogout }) {
               <h2 style={s.sectionTitle}>Pending Critical Tasks</h2>
               <div style={s.tasksList}>
 
-                {/* Teacher validation */}
                 {pendingTeachers === null ? (
                   <div style={{ ...s.taskCard, color: "#94a3b8", fontSize: 13 }}>Loading...</div>
                 ) : pendingTeachers === 0 ? (
@@ -454,11 +465,10 @@ export default function Dashboard({ user, onLogout }) {
                       <div style={s.taskTitle}>{pendingTeachers} teacher{pendingTeachers > 1 ? "s" : ""} awaiting validation</div>
                       <div style={s.taskDesc}>Credentials submitted for review</div>
                     </div>
-                    <button style={{ ...s.actionBtn, background: "#000080" }} onClick={() => { setActive("teachers"); setShowNotif(false); setSelectedTeacher(null); }}>Review</button>
+                    <button style={{ ...s.actionBtn, background: "#000080" }} onClick={() => navigateTo("teachers")}>Review</button>
                   </div>
                 )}
 
-                {/* Messages */}
                 <div style={s.taskCard}>
                   <div style={s.taskIcon}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
@@ -467,10 +477,9 @@ export default function Dashboard({ user, onLogout }) {
                     <div style={s.taskTitle}>Messages</div>
                     <div style={s.taskDesc}>View and respond to user conversations</div>
                   </div>
-                  <button style={{ ...s.actionBtn, background: "#000080" }} onClick={() => { setActive("messages"); setShowNotif(false); }}>Open</button>
+                  <button style={{ ...s.actionBtn, background: "#000080" }} onClick={() => navigateTo("messages")}>Open</button>
                 </div>
 
-                {/* Session reports */}
                 {sessionReports === null ? (
                   <div style={{ ...s.taskCard, color: "#94a3b8", fontSize: 13 }}>Loading...</div>
                 ) : sessionReports.length === 0 ? (
@@ -487,7 +496,7 @@ export default function Dashboard({ user, onLogout }) {
                       <div style={s.taskTitle}>{sessionReports.length} urgent session report{sessionReports.length > 1 ? "s" : ""}</div>
                       <div style={s.taskDesc}>{sessionReports[0].text?.slice(0, 60) || "Reported session behavior"}{sessionReports[0].text?.length > 60 ? "…" : ""}</div>
                     </div>
-                    <button style={{ ...s.actionBtn, background: "#dc2626" }} onClick={() => { setActive("reports"); setShowNotif(false); }}>View</button>
+                    <button style={{ ...s.actionBtn, background: "#dc2626" }} onClick={() => navigateTo("reports")}>View</button>
                   </div>
                 )}
 
@@ -551,10 +560,11 @@ export default function Dashboard({ user, onLogout }) {
               onSuspendChange={(id, next) => setSelectedUser(u => ({ ...u, is_suspended: next }))}
               onViewUser={setSelectedUser}
               onContact={userData => {
-                setPendingContact(userData);
                 setActive("messages");
                 setShowNotif(false);
                 setSelectedUser(null);
+                // Delay so MessagesPage mounts and starts loading conversations first
+                setTimeout(() => setPendingContact(userData), 0);
               }}
             />
           )}
@@ -574,6 +584,15 @@ export default function Dashboard({ user, onLogout }) {
                 setSelectedUser(userData);
                 setActive("users");
               }}
+            />
+          )}
+
+          {/* ── Settings page ── */}
+          {!showNotif && active === "settings" && (
+            <SettingsPage
+              user={user}
+              adminData={adminData}
+              onAdminDataChange={setAdminData}
             />
           )}
 
@@ -609,15 +628,6 @@ function MessagesIcon() {
 }
 function SettingsIcon() {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>;
-}
-function SeedIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>;
-}
-function PendingIcon({ color }) {
-  return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>;
-}
-function UrgentIcon() {
-  return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>;
 }
 function StatIcon({ type, color }) {
   const p = { width: 22, height: 22, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.8 };
@@ -671,43 +681,12 @@ const s = {
     position: "relative",
     zIndex: 10,
   },
-  sideBadge: {
-    position: "absolute",
-    top: 6,
-    right: 6,
-    background: "#3b82f6",
-    color: "#fff",
-    fontSize: 11,
-    fontWeight: 700,
-    borderRadius: 999,
-    padding: "2px 7px",
-    zIndex: 2,
-  },
-  sideBadgeBottom: {
-    alignSelf: "center",
-    background: "#3b82f6",
-    color: "#fff",
-    fontSize: 11,
-    fontWeight: 700,
-    borderRadius: 999,
-    padding: "2px 7px",
-    marginTop: 8,
-  },
   logoRow: {
     display: "flex",
     alignItems: "center",
     gap: 10,
     padding: "20px 16px 12px",
     borderBottom: "1px solid #f1f5f9",
-  },
-  logoIcon: {
-    width: 40,
-    height: 40,
-    background: "#e8eafe",
-    borderRadius: 10,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
   },
   logoLabel: {
     fontSize: 16,
@@ -743,11 +722,7 @@ const s = {
     flexShrink: 0,
   },
   userName: { fontSize: 12, fontWeight: 600, color: "#1F2937", lineHeight: 1.3 },
-  userRole: {
-    fontSize: 11,
-    color: "#000080",
-    fontWeight: 600,
-  },
+  userRole: { fontSize: 11, color: "#000080", fontWeight: 600 },
   nav: { display: "flex", flexDirection: "column", gap: 2, padding: "0 8px" },
   navItem: {
     display: "flex",
@@ -783,12 +758,7 @@ const s = {
     fontWeight: 500,
     color: "#dc2626",
   },
-  main: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    overflow: "hidden",
-  },
+  main: { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" },
   topbar: {
     display: "flex",
     alignItems: "center",
@@ -797,11 +767,7 @@ const s = {
     background: "transparent",
     gap: 16,
   },
-  searchWrap: {
-    position: "relative",
-    flex: 1,
-    maxWidth: 400,
-  },
+  searchWrap: { position: "relative", flex: 1, maxWidth: 400 },
   search: {
     width: "100%",
     height: 38,
@@ -834,12 +800,7 @@ const s = {
     display: "flex",
     flexDirection: "column",
   },
-  pageTitle: {
-    fontSize: 24,
-    fontWeight: 700,
-    color: "#000080",
-    margin: "0 0 20px",
-  },
+  pageTitle: { fontSize: 24, fontWeight: 700, color: "#000080", margin: "0 0 20px" },
   statsRow: {
     display: "grid",
     gridTemplateColumns: "repeat(4, 1fr)",
@@ -853,208 +814,76 @@ const s = {
     border: "1px solid #f1f5f9",
     boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
   },
-  statCardAccent: {
-    borderLeft: "3px solid #ef4444",
-  },
-  statTop: {
-    display: "flex",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
+  statTop: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 },
   statIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
+    width: 44, height: 44, borderRadius: "50%",
+    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
-  statBadge: {
-    fontSize: 11,
-    fontWeight: 700,
-    letterSpacing: "0.5px",
-    paddingTop: 2,
-  },
-  statValue: {
-    fontSize: 28,
-    fontWeight: 700,
-    color: "#1F2937",
-    lineHeight: 1.2,
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 13,
-    color: "#64748B",
-  },
-  bottomRow: {
-    display: "flex",
-    gap: 20,
-    flex: 1,
-    minHeight: 0,
-    alignItems: "flex-start",
-  },
+  statValue: { fontSize: 28, fontWeight: 700, color: "#1F2937", lineHeight: 1.2, marginBottom: 4 },
+  statLabel: { fontSize: 13, color: "#64748B" },
+  bottomRow: { display: "flex", gap: 20, flex: 1, minHeight: 0, alignItems: "flex-start" },
   tasksCol: { flex: 1 },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 600,
-    color: "#1F2937",
-    margin: "0 0 14px",
-  },
+  sectionTitle: { fontSize: 16, fontWeight: 600, color: "#1F2937", margin: "0 0 14px" },
   tasksList: { display: "flex", flexDirection: "column", gap: 12 },
   taskCard: {
-    display: "flex",
-    alignItems: "center",
-    gap: 14,
-    background: "#fff",
-    borderRadius: 14,
-    padding: "14px 16px",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-    border: "1px solid #f1f5f9",
+    display: "flex", alignItems: "center", gap: 14,
+    background: "#fff", borderRadius: 14, padding: "14px 16px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.04)", border: "1px solid #f1f5f9",
   },
-  taskCardUrgent: {
-    background: "#fff5f5",
-    border: "1px solid #fecaca",
-  },
+  taskCardUrgent: { background: "#fff5f5", border: "1px solid #fecaca" },
   taskIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    background: "#f8faff",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    color: "#dc2626",
+    width: 36, height: 36, borderRadius: 10, background: "#f8faff",
+    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "#dc2626",
   },
   taskText: { flex: 1 },
   taskTitle: { fontSize: 14, fontWeight: 600, color: "#1F2937", marginBottom: 3 },
   taskDesc: { fontSize: 12, color: "#64748B" },
   actionBtn: {
-    padding: "8px 20px",
-    borderRadius: 999,
-    border: "none",
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: 600,
-    cursor: "pointer",
-    flexShrink: 0,
-    whiteSpace: "nowrap",
+    padding: "8px 20px", borderRadius: 999, border: "none",
+    color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap",
   },
   suspendedCol: { width: 220, flexShrink: 0 },
   suspendedCard: {
-    background: "#fff",
-    borderRadius: 16,
-    padding: "16px",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-    border: "1px solid #f1f5f9",
+    background: "#fff", borderRadius: 16, padding: "16px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.04)", border: "1px solid #f1f5f9",
   },
-  suspendedRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 14,
-  },
+  suspendedRow: { display: "flex", alignItems: "center", gap: 10, marginBottom: 14 },
   suspendedAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: "50%",
-    background: "#f1f5f9",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
+    width: 36, height: 36, borderRadius: "50%", background: "#f1f5f9",
+    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
   suspendedName: { fontSize: 13, fontWeight: 600, color: "#1F2937" },
   roleBadge: {
-    fontSize: 10,
-    fontWeight: 700,
-    color: "#6366f1",
-    background: "#eef2ff",
-    borderRadius: 4,
-    padding: "1px 6px",
-    display: "inline-block",
-    marginTop: 2,
+    fontSize: 10, fontWeight: 700, color: "#6366f1", background: "#eef2ff",
+    borderRadius: 4, padding: "1px 6px", display: "inline-block", marginTop: 2,
   },
   seeAllBtn: {
-    width: "100%",
-    padding: "9px",
-    border: "1px solid #e2e8f0",
-    borderRadius: 10,
-    background: "#fff",
-    fontSize: 13,
-    fontWeight: 500,
-    color: "#1F2937",
-    cursor: "pointer",
-    marginTop: 4,
+    width: "100%", padding: "9px", border: "1px solid #e2e8f0",
+    borderRadius: 10, background: "#fff", fontSize: 13, fontWeight: 500, color: "#1F2937", cursor: "pointer", marginTop: 4,
   },
-  notifTabs: {
-    display: "flex",
-    gap: 10,
-    marginBottom: 20,
-  },
+  notifTabs: { display: "flex", gap: 10, marginBottom: 20 },
   notifTab: {
-    padding: "7px 22px",
-    borderRadius: 20,
-    border: "1.5px solid #e2e8f0",
-    background: "#fff",
-    fontSize: 13,
-    fontWeight: 500,
-    color: "#64748b",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
+    padding: "7px 22px", borderRadius: 20, border: "1.5px solid #e2e8f0",
+    background: "#fff", fontSize: 13, fontWeight: 500, color: "#64748b",
+    cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
   },
-  notifTabActive: {
-    background: "#000080",
-    borderColor: "#000080",
-    color: "#fff",
-  },
+  notifTabActive: { background: "#000080", borderColor: "#000080", color: "#fff" },
   notifBadge: {
-    background: "#ef4444",
-    color: "#fff",
-    borderRadius: 10,
-    fontSize: 11,
-    fontWeight: 700,
-    padding: "1px 6px",
+    background: "#ef4444", color: "#fff", borderRadius: 10,
+    fontSize: 11, fontWeight: 700, padding: "1px 6px",
   },
-  notifList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 10,
-    width: "100%",
-    maxWidth: 620,
-  },
+  notifList: { display: "flex", flexDirection: "column", gap: 10, width: "100%", maxWidth: 620 },
   notifCard: {
-    display: "flex",
-    alignItems: "center",
-    gap: 16,
-    padding: "16px 20px",
-    background: "#fff",
-    borderRadius: 14,
-    border: "1px solid #e2e8f0",
+    display: "flex", alignItems: "center", gap: 16, padding: "16px 20px",
+    background: "#fff", borderRadius: 14, border: "1px solid #e2e8f0",
     boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
   },
   notifTitle: { fontSize: 14, fontWeight: 600, color: "#1F2937", marginBottom: 3 },
   notifDesc:  { fontSize: 13, color: "#64748b" },
   notifTime:  { fontSize: 12, color: "#94a3b8", whiteSpace: "nowrap" },
-  notifDot: {
-    width: 9,
-    height: 9,
-    borderRadius: "50%",
-    background: "#000080",
-    flexShrink: 0,
-  },
+  notifDot:   { width: 9, height: 9, borderRadius: "50%", background: "#000080", flexShrink: 0 },
   markReadBtn: {
-    padding: "10px 32px",
-    borderRadius: 24,
-    border: "none",
-    background: "#000080",
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: 600,
-    cursor: "pointer",
+    padding: "10px 32px", borderRadius: 24, border: "none",
+    background: "#000080", color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer",
   },
 };
