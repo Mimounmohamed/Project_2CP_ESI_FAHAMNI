@@ -65,7 +65,7 @@ class _MemberItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 6,
             offset: const Offset(0, 2),
           )
@@ -76,7 +76,7 @@ class _MemberItem extends StatelessWidget {
           // Avatar
           CircleAvatar(
             radius: 24,
-            backgroundColor: const Color(0xFF000080).withOpacity(0.08),
+            backgroundColor: const Color(0xFF000080).withValues(alpha: 0.08),
             backgroundImage: student.picture.isNotEmpty
                 ? NetworkImage(student.picture)
                 : null,
@@ -116,7 +116,7 @@ class _MemberItem extends StatelessWidget {
                     fontFamily: 'Nunito',
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: const Color(0xFF000080).withOpacity(0.6),
+                    color: const Color(0xFF000080).withValues(alpha: 0.6),
                   ),
                 ),
               ],
@@ -138,3 +138,4 @@ class _MemberItem extends StatelessWidget {
     );
   }
 }
+

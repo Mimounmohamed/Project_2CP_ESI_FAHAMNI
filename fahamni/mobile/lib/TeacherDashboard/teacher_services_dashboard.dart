@@ -420,7 +420,7 @@ class _TeacherServiceCard extends StatelessWidget {
                           height: 50,
                           width: 50,
                           decoration: BoxDecoration(
-                            color: Color(0xFF000080).withOpacity(0.1),
+                            color: Color(0xFF000080).withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                           ),
                           child: GestureDetector(
@@ -451,17 +451,17 @@ class _TeacherServiceCard extends StatelessWidget {
                           width: 50,
                           decoration: BoxDecoration(
                             color: const Color(0xFF000080
-                            ).withOpacity(0.1),
+                            ).withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                           ),
                           child:
                         GestureDetector(
+                          onTap: onDelete,
                           child: const Icon(
                             Icons.delete_outline_rounded,
                             size: 22,
                             color: Color(0xFF000080),
                           ),
-                          onTap: onDelete,
                         ),)
                       ],
                     ),
@@ -936,3 +936,5 @@ class _TeacherPortalError extends StatelessWidget {
     );
   }
 }
+
+

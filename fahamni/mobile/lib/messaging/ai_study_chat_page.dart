@@ -477,3 +477,5 @@ class _AiStudySegment {
   final _AiStudySegmentType type;
   final String value;
 }
+
+

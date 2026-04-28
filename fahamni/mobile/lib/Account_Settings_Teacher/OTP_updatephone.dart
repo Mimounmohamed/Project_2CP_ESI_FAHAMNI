@@ -35,8 +35,12 @@ class _OtpUpdatePhonePageState extends State<OtpUpdatePhonePage> {
 
   @override
   void dispose() {
-    for (final c in _controllers) c.dispose();
-    for (final f in _focusNodes) f.dispose();
+    for (final c in _controllers) {
+      c.dispose();
+    }
+    for (final f in _focusNodes) {
+      f.dispose();
+    }
     super.dispose();
   }
 
@@ -271,3 +275,4 @@ class _OtpUpdatePhonePageState extends State<OtpUpdatePhonePage> {
     );
   }
 }
+

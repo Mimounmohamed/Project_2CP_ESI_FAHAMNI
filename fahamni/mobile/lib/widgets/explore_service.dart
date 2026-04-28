@@ -33,3 +33,4 @@ Future<List<ServiceModel>> getAllServices() async {
   return snapshot.docs.map((doc) => ServiceModel.fromMap(doc.data())).toList();
 }
 }
+

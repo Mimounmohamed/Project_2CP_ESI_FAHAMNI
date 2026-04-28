@@ -203,7 +203,7 @@ class ServiceCard extends StatelessWidget {
                             ),
                           ),
                           const Spacer(),
-                          if (trailingActions != null) trailingActions!,
+                          ?trailingActions,
                           if (showBookButton)
                             ElevatedButton(
                               onPressed: isActionDisabled ? null : (onPrimaryAction ?? () {}),
@@ -342,3 +342,5 @@ ImageProvider<Object>? _resolveImageProvider(String imagePath) {
 
   return null;
 }
+
+

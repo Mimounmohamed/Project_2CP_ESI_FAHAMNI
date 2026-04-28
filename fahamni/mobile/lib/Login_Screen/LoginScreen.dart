@@ -250,14 +250,16 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
-                            if (value == null || value.isEmpty)
+                            if (value == null || value.isEmpty) {
                               return 'Email or Phone number is required';
+                            }
                             final isEmail = value.contains('@');
                             final isPhone = RegExp(
                               r'^(0[567]\d{8}|\+213\d{9})$',
                             ).hasMatch(value);
-                            if (!isEmail && !isPhone)
+                            if (!isEmail && !isPhone) {
                               return 'Enter a valid email or phone number';
+                            }
                             return null;
                           },
                           decoration: InputDecoration(
@@ -321,13 +323,16 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: _passwordController,
                           obscureText: _obscurePassword,
                           validator: (value) {
-                            if (value == null || value.isEmpty)
+                            if (value == null || value.isEmpty) {
                               return 'Password is required';
+                            }
                             if (value.length < 8) return 'Minimum 8 characters';
-                            if (!value.contains(RegExp(r'[A-Z]')))
+                            if (!value.contains(RegExp(r'[A-Z]'))) {
                               return 'Must contain at least one uppercase letter';
-                            if (!value.contains(RegExp(r'[0-9]')))
+                            }
+                            if (!value.contains(RegExp(r'[0-9]'))) {
                               return 'Must contain at least one number';
+                            }
                             return null;
                           },
                           decoration: InputDecoration(
@@ -587,3 +592,5 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+
+

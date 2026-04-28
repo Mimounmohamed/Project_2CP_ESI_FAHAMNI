@@ -181,3 +181,4 @@ class _UpdatePhonePasswordScreenState
     );
   }
 }
+

@@ -28,7 +28,7 @@ class MessageBubble extends StatelessWidget {
             color: Color(isme ? 0xFF000080 : 0xFFFFFFFF),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1), // Soft shadow color
+                color: Colors.black.withValues(alpha: 0.1), // Soft shadow color
                 spreadRadius: 1, // How much the shadow spreads
                 blurRadius: 4, // How "blurry" the shadow is
                 offset: const Offset(0, 4),
@@ -54,3 +54,5 @@ class MessageBubble extends StatelessWidget {
     );
   }
 }
+
+

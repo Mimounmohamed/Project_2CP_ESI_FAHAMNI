@@ -58,7 +58,7 @@ class _DocumentsTabState extends State<DocumentsTab> {
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         itemCount: _placeholderDocuments.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
           final _CourseDocument document = _placeholderDocuments[index];
           return Container(
@@ -363,7 +363,7 @@ class _SessionsTabState extends State<SessionsTab> {
           return ListView.separated(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             itemCount: sections.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 20),
+            separatorBuilder: (_, _) => const SizedBox(height: 20),
             itemBuilder: (context, index) {
               final _SessionSectionData section = sections[index];
               return Column(
@@ -796,3 +796,5 @@ class _SessionSectionData {
   final _SessionGroup group;
   final List<SessionModel> sessions;
 }
+
+

@@ -468,7 +468,7 @@ class _StatsRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: _navy.withOpacity(0.08),
+            color: _navy.withValues(alpha: 0.08),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -545,7 +545,7 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -1023,7 +1023,7 @@ class _AcademicTabState extends State<_AcademicTab> {
                     boxShadow: selected
                         ? [
                             BoxShadow(
-                              color: _navy.withOpacity(0.2),
+                              color: _navy.withValues(alpha: 0.2),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
                             )
@@ -1492,7 +1492,7 @@ class _DeleteAccountSheetState extends State<_DeleteAccountSheet> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: _errorRed.withOpacity(0.1),
+                  color: _errorRed.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(Icons.warning_amber_rounded,
@@ -1762,7 +1762,7 @@ class _SettingsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: _navy.withOpacity(0.06),
+            color: _navy.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -1797,7 +1797,7 @@ class _ToggleTile extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: _navy.withOpacity(0.08),
+              color: _navy.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: _navy, size: 20),
@@ -1863,7 +1863,7 @@ class _ActionTile extends StatelessWidget {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: c.withOpacity(0.08),
+                color: c.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: c, size: 20),
@@ -1908,7 +1908,7 @@ class _InfoTile extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: _navy.withOpacity(0.08),
+              color: _navy.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: _navy, size: 20),
@@ -1958,7 +1958,7 @@ class _ErrorBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFFEF2F2),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _errorRed.withOpacity(0.3)),
+        border: Border.all(color: _errorRed.withValues(alpha: 0.3)),
       ),
       child: Text(
         message,
@@ -1992,12 +1992,12 @@ class _PrimaryButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: _navy,
           foregroundColor: Colors.white,
-          disabledBackgroundColor: _navy.withOpacity(0.5),
+          disabledBackgroundColor: _navy.withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
           ),
           elevation: 2,
-          shadowColor: _navy.withOpacity(0.3),
+          shadowColor: _navy.withValues(alpha: 0.3),
         ),
         child: loading
             ? const SizedBox(
@@ -2081,3 +2081,4 @@ Future<bool> _showConfirmDialog({
   return result ?? false;
 }
 */
+

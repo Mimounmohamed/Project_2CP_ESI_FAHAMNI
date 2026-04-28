@@ -102,3 +102,4 @@ class StudentModel extends UserModel {
     );
   }
 }
+

@@ -204,7 +204,7 @@ class StudentTutorActionService {
       'description': description,
       'teaching_mode': teachingMode,
       'frequency': 'To be discussed',
-      'duration': '${durationMinutes} min',
+      'duration': '$durationMinutes min',
       'budget': 'To be discussed',
       'sessions_count': sessionsCount,
       'status': 'pending',
@@ -246,3 +246,5 @@ class StudentTutorActionService {
     );
   }
 }
+
+

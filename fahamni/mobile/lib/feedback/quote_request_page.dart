@@ -242,7 +242,7 @@ class _QuoteRequestPageState extends State<QuoteRequestPage> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       DropdownButtonFormField<String>(
-                        value: _selectedChildId,
+                        initialValue: _selectedChildId,
                         items: _children
                             .map(
                               (child) => DropdownMenuItem<String>(
@@ -270,7 +270,7 @@ class _QuoteRequestPageState extends State<QuoteRequestPage> {
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
-                        value: _selectedSubject,
+                        initialValue: _selectedSubject,
                         items: _subjectOptions
                             .map(
                               (subject) => DropdownMenuItem<String>(
@@ -316,7 +316,7 @@ class _QuoteRequestPageState extends State<QuoteRequestPage> {
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
-                        value: _selectedMode,
+                        initialValue: _selectedMode,
                         items: _modeOptions
                             .map(
                               (mode) => DropdownMenuItem<String>(
@@ -362,7 +362,7 @@ class _QuoteRequestPageState extends State<QuoteRequestPage> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: DropdownButtonFormField<int>(
-                              value: _selectedDuration,
+                              initialValue: _selectedDuration,
                               items: _durationOptions
                                   .map(
                                     (value) => DropdownMenuItem<int>(
@@ -419,3 +419,5 @@ class _QuoteRequestPageState extends State<QuoteRequestPage> {
     );
   }
 }
+
+

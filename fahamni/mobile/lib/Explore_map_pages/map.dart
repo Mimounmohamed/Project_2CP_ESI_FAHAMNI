@@ -185,7 +185,7 @@ class _MappageState extends State<Mappage> {
       centerOffset,
       radius + borderWidth,
       Paint()
-        ..color = Colors.black.withOpacity(0.25)
+        ..color = Colors.black.withValues(alpha: 0.25)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
     );
     canvas.drawCircle(
@@ -344,9 +344,9 @@ class _MappageState extends State<Mappage> {
             width: 5,
           ),
         };
-        print('polyline points: ${result.points.length}');
-        print('status: ${result.status}');
-        print('error: ${result.errorMessage}');
+        debugPrint('polyline points: ${result.points.length}');
+        debugPrint('status: ${result.status}');
+        debugPrint('error: ${result.errorMessage}');
       });
     }
   }
@@ -475,7 +475,7 @@ class _MappageState extends State<Mappage> {
                   borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
+                      color: Colors.black.withValues(alpha: 0.15),
                       blurRadius: 20,
                       offset: Offset(0, -4),
                     ),
@@ -603,7 +603,7 @@ class _MappageState extends State<Mappage> {
                                   vertical: 5,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Color(0xFF000080).withOpacity(0.1),
+                                  color: Color(0xFF000080).withValues(alpha: 0.1),
                                   borderRadius: BorderRadiusGeometry.circular(
                                     5,
                                   ),
@@ -667,7 +667,7 @@ class _MappageState extends State<Mappage> {
                                       decoration: BoxDecoration(
                                         color: Color(
                                           0xFF000080,
-                                        ).withOpacity(0.1),
+                                        ).withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Row(
@@ -709,7 +709,7 @@ class _MappageState extends State<Mappage> {
                                 width: 130,
                                 isAntiAlias: true,
                                 decoration: BoxDecoration(
-                                  color: Color(0xFF000080).withOpacity(0.1),
+                                  color: Color(0xFF000080).withValues(alpha: 0.1),
                                   borderRadius: BorderRadiusGeometry.circular(
                                     99,
                                   ),
@@ -900,3 +900,5 @@ class _MappedTutor {
   final TutorModel tutor;
   final Location location;
 }
+
+

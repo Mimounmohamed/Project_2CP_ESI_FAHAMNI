@@ -508,3 +508,5 @@ class _StudyInfoScreenState extends State<StudyInfoScreen> {
     );
   }
 }
+
+

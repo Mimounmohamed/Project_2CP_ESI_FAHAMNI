@@ -527,3 +527,5 @@ class _QuoteDocumentLocation {
   final String collection;
   final DocumentReference<Map<String, dynamic>> reference;
 }
+
+

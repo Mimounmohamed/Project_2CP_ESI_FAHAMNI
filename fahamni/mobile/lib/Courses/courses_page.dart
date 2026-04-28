@@ -601,3 +601,5 @@ class _CourseCardData {
   final TutorModel tutor;
   final ServiceModel? service;
 }
+
+

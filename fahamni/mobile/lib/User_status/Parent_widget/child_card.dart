@@ -87,7 +87,7 @@ class ChildCard extends StatelessWidget {
         border: Border.all(color: const Color(0xFFE0E0E0)),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.08),
+            color: Colors.grey.withValues(alpha: 0.08),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -450,3 +450,4 @@ class ChildCard extends StatelessWidget {
     );
   }
 }
+

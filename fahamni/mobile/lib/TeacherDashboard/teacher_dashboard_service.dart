@@ -180,9 +180,9 @@ class TeacherDashboardService {
     final Map<String, dynamic> payload = <String, dynamic>{
       'status': accepted ? QuoteStatus.accepted.name : QuoteStatus.rejected.name,
       'responded_at': Timestamp.fromDate(DateTime.now()),
-      if (price != null) 'teacher_price': price,
-      if (sessionsNumber != null) 'teacher_sessions_num': sessionsNumber,
-      if (sessionDurationMinutes != null) 'teacher_session_duration': sessionDurationMinutes,
+      'teacher_price': ?price,
+      'teacher_sessions_num': ?sessionsNumber,
+      'teacher_session_duration': ?sessionDurationMinutes,
     };
 
     final DocumentReference<Map<String, dynamic>> quoteRef =
@@ -647,3 +647,5 @@ class TeacherDashboardService {
     return value[0].toUpperCase() + value.substring(1).toLowerCase();
   }
 }
+
+

@@ -18,3 +18,5 @@ class TutorReviewBundle {
   final Map<String, StudentModel> reviewers;
   final double averageRating;
 }
+
+

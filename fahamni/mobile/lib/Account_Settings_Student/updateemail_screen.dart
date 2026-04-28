@@ -161,3 +161,4 @@ class _UpdateEmailScreenState extends State<UpdateEmailScreen> {
     );
   }
 }
+

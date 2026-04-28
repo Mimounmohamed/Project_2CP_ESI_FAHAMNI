@@ -79,3 +79,4 @@ class Bare extends StatelessWidget {
     );
   }
 }
+

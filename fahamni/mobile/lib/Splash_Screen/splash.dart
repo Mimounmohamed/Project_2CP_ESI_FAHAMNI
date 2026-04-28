@@ -25,7 +25,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-    print('SPLASH: initState started');
+    debugPrint('SPLASH: initState started');
 
     _controller = AnimationController(
       vsync: this,
@@ -68,12 +68,12 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _controller.forward().then((_) {
-      print('SPLASH: Animation completed');
+      debugPrint('SPLASH: Animation completed');
     });
 
     // Use WidgetsBinding to ensure navigation happens after build
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      print('SPLASH: Post frame callback - scheduling navigation');
+      debugPrint('SPLASH: Post frame callback - scheduling navigation');
       Future.delayed(const Duration(milliseconds: 4000), () async {
         if (!mounted) return;
         final user = FirebaseAuth.instance.currentUser;
@@ -103,14 +103,14 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   void dispose() {
-    print('SPLASH: dispose called');
+    debugPrint('SPLASH: dispose called');
     _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    print('SPLASH: build method');
+    debugPrint('SPLASH: build method');
     return Scaffold(
       body: Container(
         color: const Color(0xFFFAFAFA),
@@ -193,3 +193,4 @@ class _SplashScreenState extends State<SplashScreen>
     );
   }
 }
+

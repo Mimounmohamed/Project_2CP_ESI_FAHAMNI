@@ -497,7 +497,7 @@ class _ChildSelector extends StatelessWidget {
         border: Border.all(color: const Color(0xFFD1D5DB)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF000080).withOpacity(0.08),
+            color: const Color(0xFF000080).withValues(alpha: 0.08),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1347,3 +1347,5 @@ _EventPalette _paletteForSession(
   ];
   return palettes[fallbackIndex % palettes.length];
 }
+
+

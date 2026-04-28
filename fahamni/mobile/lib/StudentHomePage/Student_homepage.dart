@@ -221,7 +221,7 @@ class _StudenthomepageState extends State<Studenthomepage> {
                       decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(80),
                         boxShadow: [ BoxShadow(
-                          color: Color(0xFF000080).withOpacity(0.61),
+                          color: Color(0xFF000080).withValues(alpha: 0.61),
                           spreadRadius: 0,
                           blurRadius: 5,
                           offset: const Offset(0,0),
@@ -294,7 +294,7 @@ class _StudenthomepageState extends State<Studenthomepage> {
                           image: DecorationImage(image: AssetImage(item),fit: BoxFit.cover),
                             boxShadow: [
                               BoxShadow(
-                                color: Color(0xFF000080).withOpacity(0.3),
+                                color: Color(0xFF000080).withValues(alpha: 0.3),
                                 spreadRadius: 1,
                                 blurRadius: 10,
                                 offset: Offset(0, 0),
@@ -854,3 +854,5 @@ class _NextCourseCard extends StatelessWidget {
     );
   }
 }
+
+

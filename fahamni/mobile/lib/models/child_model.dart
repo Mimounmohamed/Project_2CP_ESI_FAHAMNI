@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ChildModel {
   final String id;
@@ -64,3 +63,4 @@ class ChildModel {
 
   bool get isFemale => gender == 'female';
 }
+

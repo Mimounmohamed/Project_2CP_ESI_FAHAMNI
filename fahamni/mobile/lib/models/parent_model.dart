@@ -72,3 +72,4 @@ class ParentModel extends UserModel {
     );
   }
 }
+

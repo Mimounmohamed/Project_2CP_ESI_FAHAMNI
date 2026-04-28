@@ -107,7 +107,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
 
               onTap: () {
                 // ACTION HERE
-                print("Selected: $selectedLanguage");
+                debugPrint("Selected: $selectedLanguage");
               },
 
               child: AnimatedScale(
@@ -122,7 +122,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF000080),
                       elevation: 4,
-                      shadowColor: Colors.black.withOpacity(0.25),
+                      shadowColor: Colors.black.withValues(alpha: 0.25),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(28),
                       ),
@@ -146,3 +146,4 @@ class _LanguageScreenState extends State<LanguageScreen> {
     );
   }
 }
+

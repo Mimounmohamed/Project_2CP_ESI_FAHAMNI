@@ -263,7 +263,7 @@ class _ParenthomepageState extends State<Parenthomepage> {
                           borderRadius: BorderRadius.circular(80),
                           boxShadow: <BoxShadow>[
                             BoxShadow(
-                              color: const Color(0xFF000080).withOpacity(0.2),
+                              color: const Color(0xFF000080).withValues(alpha: 0.2),
                               spreadRadius: 0,
                               blurRadius: 3,
                               offset: const Offset(0, 0),
@@ -470,7 +470,7 @@ class _ParenthomepageState extends State<Parenthomepage> {
                               boxShadow: <BoxShadow>[
                                 BoxShadow(
                                   color:
-                                      const Color.fromARGB(255, 0, 0, 128).withOpacity(0.2),
+                                      const Color.fromARGB(255, 0, 0, 128).withValues(alpha: 0.2),
                                   blurRadius: 3,
                                   offset: const Offset(0, 0),
                                 ),
@@ -692,3 +692,4 @@ class _ParenthomepageState extends State<Parenthomepage> {
     );
   }
 }
+

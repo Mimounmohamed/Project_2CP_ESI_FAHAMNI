@@ -67,7 +67,7 @@ class _OTPBoxState extends State<OTPBox> {
         boxShadow: _isFocused
             ? [
                 BoxShadow(
-                  color: const Color(0xFF000080).withOpacity(0.15),
+                  color: const Color(0xFF000080).withValues(alpha: 0.15),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -110,3 +110,4 @@ class _OTPBoxState extends State<OTPBox> {
     );
   }
 }
+

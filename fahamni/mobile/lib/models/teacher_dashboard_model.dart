@@ -123,3 +123,5 @@ class TeacherDashboardQuoteRequest {
   final String avatarPath;
   final String actionLabel;
 }
+
+

@@ -1090,3 +1090,5 @@ _TeacherEventPalette _teacherPaletteForSession(
   ];
   return palettes[fallbackIndex % palettes.length];
 }
+
+

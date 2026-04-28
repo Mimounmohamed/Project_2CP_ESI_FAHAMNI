@@ -105,7 +105,7 @@ class _ResourceItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           )
@@ -117,7 +117,7 @@ class _ResourceItem extends StatelessWidget {
             height: 42,
             width: 42,
             decoration: BoxDecoration(
-              color: _iconColor.withOpacity(0.1),
+              color: _iconColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(_icon, color: _iconColor, size: 22),
@@ -169,3 +169,4 @@ class _ResourceItem extends StatelessWidget {
     );
   }
 }
+

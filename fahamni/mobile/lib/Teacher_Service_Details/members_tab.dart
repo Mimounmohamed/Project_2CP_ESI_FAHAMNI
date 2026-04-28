@@ -281,7 +281,7 @@ class _StatBox extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Color(0xFF000080).withOpacity(0.2),
+              color: Color(0xFF000080).withValues(alpha: 0.2),
               blurRadius: 2,
               offset: const Offset(1, 2),
             ),
@@ -309,3 +309,5 @@ class _StatBox extends StatelessWidget {
     );
   }
 }
+
+

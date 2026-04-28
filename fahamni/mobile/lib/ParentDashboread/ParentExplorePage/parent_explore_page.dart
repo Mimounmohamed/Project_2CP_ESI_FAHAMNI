@@ -53,7 +53,7 @@ class _ParentExplorePageState extends State<ParentExplorePage> {
   GoogleMapController? _controller;
   int nearbyTutorsCount = 0;
 
-  int _selectedIndex = 1;
+  final int _selectedIndex = 1;
 
   // ignore: unused_field
   final studenthomepage_service _studentService = studenthomepage_service();
@@ -645,7 +645,7 @@ class _ParentExplorePageState extends State<ParentExplorePage> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF000080).withOpacity(0.1),
+                            color: const Color(0xFF000080).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -747,7 +747,7 @@ class _ParentExplorePageState extends State<ParentExplorePage> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF000080).withOpacity(0.1),
+                            color: const Color(0xFF000080).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -845,7 +845,7 @@ class _ParentExplorePageState extends State<ParentExplorePage> {
         border: Border.all(color: const Color(0xFFD1D5DB)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF000080).withOpacity(0.08),
+            color: const Color(0xFF000080).withValues(alpha: 0.08),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1257,3 +1257,5 @@ class _RecommendedTeacherTile extends StatelessWidget {
     );
   }
 }
+
+

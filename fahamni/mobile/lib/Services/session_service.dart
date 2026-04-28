@@ -75,3 +75,4 @@ class SessionService {
     await _db.collection(_collection).doc(sessionId).delete();
   }
 }
+

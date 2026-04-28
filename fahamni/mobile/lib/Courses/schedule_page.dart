@@ -1134,3 +1134,5 @@ _EventPalette _paletteForSession(_ScheduledSession item, {required int fallbackI
   ];
   return palettes[fallbackIndex % palettes.length];
 }
+
+

@@ -279,3 +279,5 @@ class _StudentCourseDetailsPageState extends State<StudentCourseDetailsPage>
     );
   }
 }
+
+

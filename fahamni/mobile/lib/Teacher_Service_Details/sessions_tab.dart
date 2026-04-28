@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/session_model.dart';
 import 'service_details_service.dart';
-import 'session_card.dart';
 
 class SessionsTab extends StatefulWidget {
   final String serviceId;
@@ -112,7 +111,9 @@ class _SessionsTabState extends State<SessionsTab> {
                   onPressed: () async {
                     if (startTime == null ||
                         endTime == null ||
-                        modeController.text.isEmpty) return;
+                        modeController.text.isEmpty) {
+                      return;
+                    }
                     final DateTime selectedStart = startTime!;
                     final session = SessionModel(
                       sessionId: '',
@@ -281,7 +282,7 @@ class _SessionGridCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -411,7 +412,7 @@ class _StatBox extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Color(0xFF000080).withOpacity(0.2),
+              color: Color(0xFF000080).withValues(alpha: 0.2),
               blurRadius: 2,
               offset: const Offset(1, 2),
             ),
@@ -445,3 +446,4 @@ class _StatBox extends StatelessWidget {
     );
   }
 }
+

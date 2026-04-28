@@ -246,7 +246,7 @@ class _ServicedetailsState extends State<Servicedetails> {
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: Color(0xFF000080).withOpacity(0.2),
+                            color: Color(0xFF000080).withValues(alpha: 0.2),
                             spreadRadius: 0.5,
                             blurRadius:4,
                             offset: Offset(0, 1),
@@ -285,7 +285,7 @@ class _ServicedetailsState extends State<Servicedetails> {
                               Container(
                                 padding: EdgeInsets.all(8),
                                 decoration : BoxDecoration(
-                                  color: Color(0xFF000080).withOpacity(0.1),
+                                  color: Color(0xFF000080).withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: SvgPicture.asset(
@@ -328,7 +328,7 @@ class _ServicedetailsState extends State<Servicedetails> {
                               Container(
                                 padding: EdgeInsets.all(8),
                                 decoration : BoxDecoration(
-                                  color: Color(0xFF000080).withOpacity(0.1),
+                                  color: Color(0xFF000080).withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Icon(
@@ -370,7 +370,7 @@ class _ServicedetailsState extends State<Servicedetails> {
                               Container(
                                 padding: EdgeInsets.all(8),
                                 decoration : BoxDecoration(
-                                  color: Color(0xFF000080).withOpacity(0.1),
+                                  color: Color(0xFF000080).withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Icon(
@@ -412,7 +412,7 @@ class _ServicedetailsState extends State<Servicedetails> {
                               Container(
                                 padding: EdgeInsets.all(8),
                                 decoration : BoxDecoration(
-                                  color: Color(0xFF000080).withOpacity(0.1),
+                                  color: Color(0xFF000080).withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Icon(
@@ -455,7 +455,7 @@ class _ServicedetailsState extends State<Servicedetails> {
                               Container(
                                 padding: EdgeInsets.all(8),
                                 decoration : BoxDecoration(
-                                  color: Color(0xFF000080).withOpacity(0.1),
+                                  color: Color(0xFF000080).withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Icon(
@@ -522,7 +522,7 @@ class _ServicedetailsState extends State<Servicedetails> {
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: Color(0xFF000080).withOpacity(0.2),
+                              color: Color(0xFF000080).withValues(alpha: 0.2),
                               spreadRadius: 0.5,
                               blurRadius:4,
                               offset: Offset(0, 1),
@@ -566,7 +566,7 @@ class _ServicedetailsState extends State<Servicedetails> {
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: Color(0xFF000080).withOpacity(0.2),
+                              color: Color(0xFF000080).withValues(alpha: 0.2),
                               spreadRadius: 0.5,
                               blurRadius:4,
                               offset: Offset(0, 1),
@@ -629,7 +629,7 @@ class _ServicedetailsState extends State<Servicedetails> {
                                           height: 25,
                                           width: 50,
                                           decoration: ShapeDecoration(
-                                            color: Color(0xFF000080).withOpacity(0.1),
+                                            color: Color(0xFF000080).withValues(alpha: 0.1),
                                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
                                           ),
                                           child: Center(
@@ -671,7 +671,7 @@ class _ServicedetailsState extends State<Servicedetails> {
                                           },
                                           style: ElevatedButton.styleFrom(
                                             side: BorderSide(
-                                                color: Color(0xFF000080).withOpacity(0.2)
+                                                color: Color(0xFF000080).withValues(alpha: 0.2)
                                             ),
                                             padding: EdgeInsets.all(10),
                                             backgroundColor: Colors.white,
@@ -812,7 +812,7 @@ Widget _buildStatCard(String title, String value, double width) {
       color: Colors.white,
       borderRadius: BorderRadius.circular(10),
       boxShadow: [BoxShadow(
-        color: Color(0xFF000080).withOpacity(0.2),
+        color: Color(0xFF000080).withValues(alpha: 0.2),
         spreadRadius: 0.5,
         blurRadius:4,
         offset: Offset(0, 1),
@@ -843,3 +843,5 @@ Widget _buildStatCard(String title, String value, double width) {
     ) ,
   );
 }
+
+
