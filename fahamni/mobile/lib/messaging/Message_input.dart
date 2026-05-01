@@ -12,6 +12,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 
+import '../models/chat_model.dart';
+
 // --- ATTACHMENT FEATURE START ---
 class ComposerAttachment {
   const ComposerAttachment({
@@ -49,8 +51,11 @@ class MessageInput extends StatefulWidget {
   });
 
   final TextEditingController? controller;
-  final Future<void> Function(String text, List<ComposerAttachment> attachments)?
-      onSend;
+  final Future<void> Function(
+    String text,
+    List<AttachmentModel> attachments,
+    List<File> filesToUpload,
+  )? onSend;
   final VoidCallback? onAiPressed;
   final VoidCallback? onVoicePressed;
   // --- VOICE FEATURE START ---
@@ -124,7 +129,9 @@ class _MessageInputState extends State<MessageInput> {
       return;
     }
 
-    if (_controller.text.trim().isEmpty && _attachments.isEmpty) {
+    if (_controller.text.trim().isEmpty &&
+        _attachments.isEmpty &&
+        (_voicePreviewPath ?? '').isEmpty) {
       return;
     }
 
@@ -133,15 +140,23 @@ class _MessageInputState extends State<MessageInput> {
     });
 
     try {
-      await widget.onSend!(
-        _controller.text,
-        List<ComposerAttachment>.from(_attachments),
-      );
+      if ((_voicePreviewPath ?? '').isNotEmpty) {
+        await _sendVoicePreview();
+      } else {
+        await widget.onSend!(
+          _controller.text,
+          <AttachmentModel>[],
+          _attachments
+              .map((ComposerAttachment e) => File(e.localPath))
+              .toList(),
+        );
+      }
       if (!mounted) {
         return;
       }
       setState(() {
         _attachments.clear();
+        _controller.clear();
       });
     } finally {
       if (mounted) {
@@ -182,6 +197,15 @@ class _MessageInputState extends State<MessageInput> {
                   onTap: () {
                     Navigator.of(context).pop();
                     _pickFileAttachment();
+                  },
+                ),
+                const SizedBox(height: 12),
+                _AttachmentOptionTile(
+                  icon: Icons.link_outlined,
+                  title: 'Link',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _showAddLinkDialog();
                   },
                 ),
               ],
@@ -401,6 +425,78 @@ class _MessageInputState extends State<MessageInput> {
     setState(() {
       _attachments.removeWhere((ComposerAttachment a) => a.id == attachmentId);
     });
+  }
+
+  Future<void> _showAddLinkDialog() async {
+    final TextEditingController urlController = TextEditingController();
+    final TextEditingController titleController = TextEditingController();
+
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Add Link'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Link Title',
+                  hintText: 'Enter a title for the link',
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: urlController,
+                decoration: const InputDecoration(
+                  labelText: 'URL',
+                  hintText: 'https://example.com',
+                ),
+                keyboardType: TextInputType.url,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                final String url = urlController.text.trim();
+                final String title = titleController.text.trim();
+
+                if (url.isNotEmpty && title.isNotEmpty) {
+                  _addLinkAttachment(url, title);
+                  Navigator.of(context).pop();
+                }
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _addLinkAttachment(String url, String title) {
+    if (!_canAcceptMoreAttachments()) {
+      return;
+    }
+
+    _attachments.add(
+      ComposerAttachment(
+        id: '${DateTime.now().microsecondsSinceEpoch}_link',
+        name: title,
+        sizeBytes: 0,
+        mimeType: 'application/link',
+        kind: 'link',
+        localPath: url,
+      ),
+    );
+
+    setState(() {});
   }
 
   String _inferMimeTypeFromName(String fileName) {

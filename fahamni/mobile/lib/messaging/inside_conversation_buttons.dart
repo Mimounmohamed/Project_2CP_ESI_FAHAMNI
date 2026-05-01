@@ -2,14 +2,21 @@ import 'package:fahamni/models/chat_model.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../Services/chat_service.dart';
+import '../repositories/firestore_chat_repository.dart';
 import 'media_grid.dart';
 import 'conversation_members.dart';
 import 'conversation_attachements.dart';
 
 class InsideConversationButtons extends StatefulWidget {
   final ConversationModel conversation;
+  final ChatService? chatService;
 
-  const InsideConversationButtons({super.key, required this.conversation});
+  const InsideConversationButtons({
+    super.key,
+    required this.conversation,
+    this.chatService,
+  });
 
   @override
   State<InsideConversationButtons> createState() =>
@@ -19,11 +26,13 @@ class InsideConversationButtons extends StatefulWidget {
 class _InsideConversationButtonsState extends State<InsideConversationButtons>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  late ChatService _chatService;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _chatService = widget.chatService ?? ChatService(FirestoreChatRepository());
+    _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
         setState(() {});
@@ -103,6 +112,19 @@ class _InsideConversationButtonsState extends State<InsideConversationButtons>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      const Icon(Icons.link_outlined),
+                      const SizedBox(width: 6),
+                      const Text("Links"),
+                    ],
+                  ),
+                ),
+              ),
+              Tab(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                       const Icon(Icons.group_outlined),
                       const SizedBox(width: 6),
                       const Text("Members"),
@@ -118,9 +140,66 @@ class _InsideConversationButtonsState extends State<InsideConversationButtons>
             child: TabBarView(
               controller: _tabController,
               children: [
-                MediaGrid(images: widget.conversation.media),
-                AttachmentsList(),
-                ConversationMembers(participants: widget.conversation.participants),
+                // Media Tab
+                StreamBuilder<List<String>>(
+                  stream: _chatService.getConversationMediaUrls(
+                    widget.conversation.conversationId,
+                  ),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Text('Error: ${snapshot.error}'),
+                      );
+                    }
+                    final mediaUrls = snapshot.data ?? [];
+                    return MediaGrid(images: mediaUrls);
+                  },
+                ),
+                // Attachments Tab
+                StreamBuilder<List<AttachmentModel>>(
+                  stream: _chatService.getConversationFileAttachments(
+                    widget.conversation.conversationId,
+                  ),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Text('Error: ${snapshot.error}'),
+                      );
+                    }
+                    final attachments = snapshot.data ?? [];
+                    return AttachmentsList(attachments: attachments);
+                  },
+                ),
+                // Links Tab
+                StreamBuilder<List<AttachmentModel>>(
+                  stream: _chatService.getConversationLinkAttachments(
+                    widget.conversation.conversationId,
+                  ),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Text('Error: ${snapshot.error}'),
+                      );
+                    }
+                    final links = snapshot.data ?? [];
+                    return AttachmentsList(attachments: links);
+                  },
+                ),
+                // Members Tab
+                ConversationMembers(
+                  participants: widget.conversation.participants,
+                ),
+
+
               ],
             ),
           ),
@@ -129,5 +208,3 @@ class _InsideConversationButtonsState extends State<InsideConversationButtons>
     );
   }
 }
-
-

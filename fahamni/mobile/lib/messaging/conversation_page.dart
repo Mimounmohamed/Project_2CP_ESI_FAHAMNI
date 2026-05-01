@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:fahamni/messaging/conversation_doc_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -97,7 +99,8 @@ class _ConversationPageState extends State<ConversationPage> {
 
   Future<void> _handleSend(
     String text,
-    List<ComposerAttachment> attachments,
+    List<AttachmentModel> attachments,
+    List<File> filesToUpload,
   ) async {
     final String senderId = _auth.currentUser?.uid ?? widget.currentUserId;
     final String receiverId = _receiverIdFor(senderId);
@@ -118,16 +121,8 @@ class _ConversationPageState extends State<ConversationPage> {
         receiverId: receiverId,
         content: text,
         controller: _messageController,
-        attachments: attachments
-            .map(
-              (ComposerAttachment attachment) => AttachmentModel(
-                url: attachment.localPath,
-                name: attachment.name,
-                size: attachment.sizeBytes,
-                mimeType: attachment.mimeType,
-              ),
-            )
-            .toList(),
+        attachments: attachments,
+        filesToUpload: filesToUpload,
       );
       _scheduleScrollToBottom();
     } catch (error) {
@@ -259,15 +254,16 @@ class _ConversationPageState extends State<ConversationPage> {
   IconButton(
     onPressed: () {
       Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (context) => ConversationDocPage(
-      imageUrl: widget.imageUrl,
-      name: widget.conversation.conversationName,
-      conversation: widget.conversation,
-    ),
-  ),
-);
+        context,
+        MaterialPageRoute(
+          builder: (context) => ConversationDocPage(
+            imageUrl: widget.imageUrl,
+            name: widget.conversation.conversationName,
+            conversation: widget.conversation,
+            chatService: _chatService,
+          ),
+        ),
+      );
     },
     icon: const Icon(
       Icons.info_outline,
@@ -344,13 +340,10 @@ class _ConversationPageState extends State<ConversationPage> {
          
 
           // message input
-          Container(
-            margin: const EdgeInsets.all(16),
-            child: MessageInput(
+          MessageInput(
               controller: _messageController,
               onSend: _handleSend,
             ),
-          ),
         ],
       ),
     );

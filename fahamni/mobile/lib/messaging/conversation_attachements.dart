@@ -1,35 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../models/chat_model.dart';
 
 class AttachmentsList extends StatelessWidget {
-  const AttachmentsList({super.key});
+  final List<AttachmentModel> attachments;
 
-  final List<Map<String, String>> attachments = const [
-    {
-      'title': 'Lecture_04_Linked_Lists.pdf',
-      'subtitle': 'Sep 15 • 1.8 MB',
-      'type': 'file'
-    },
-    {
-      'title': 'Assignment_1_Guidelines.docx',
-      'subtitle': 'Sep 15 • 820 KB',
-      'type': 'file'
-    },
-    {
-      'title': 'Guide for Z language',
-      'subtitle': 'Sep 15 • DriveAlsdd/',
-      'type': 'link'
-    },
-  ];
+  const AttachmentsList({
+    super.key,
+    this.attachments = const [],
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (attachments.isEmpty) {
+      return Center(
+        child: Text(
+          'No attachments',
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            color: const Color(0xFF6B7280),
+          ),
+        ),
+      );
+    }
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16,8,16,8),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       itemCount: attachments.length,
       itemBuilder: (context, index) {
-        final item = attachments[index];
+        final attachment = attachments[index];
+        final String displaySize = attachment.isLink
+            ? 'Link'
+            : '${(attachment.size / 1024 / 1024).toStringAsFixed(1)} MB';
+
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
@@ -46,27 +49,31 @@ class AttachmentsList extends StatelessWidget {
           ),
           child: ListTile(
             onTap: () {
-              if (item['type'] == 'link') {
-              } 
-              else {
+              if (attachment.isLink) {
+                // Open link in browser or handle link click
+              } else {
+                // Handle file download/open
               }
             },
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             leading: Container(
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: Color(0xFFE8EAF6),
+                color: const Color(0xFFE8EAF6),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(
-                Icons.attach_file, 
-                color: Color(0xFF000080),
+              child: Icon(
+                attachment.isLink ? Icons.link_outlined : Icons.attach_file,
+                color: const Color(0xFF000080),
                 size: 22,
               ),
             ),
             title: Text(
-              item['title']!,
+              attachment.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: GoogleFonts.inter(
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
@@ -74,14 +81,14 @@ class AttachmentsList extends StatelessWidget {
               ),
             ),
             subtitle: Text(
-              item['subtitle']!,
+              displaySize,
               style: GoogleFonts.inter(
-                fontSize: 12, 
+                fontSize: 12,
                 color: const Color(0xFF6B7280),
               ),
             ),
             trailing: Icon(
-              item['type'] == 'link' ? Icons.open_in_new : Icons.file_download_outlined,
+              attachment.isLink ? Icons.open_in_new : Icons.file_download_outlined,
               color: const Color(0xFF9CA3AF),
               size: 22,
             ),

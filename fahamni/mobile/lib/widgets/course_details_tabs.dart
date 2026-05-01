@@ -1,10 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fahamni/Services/session_service.dart';
+import 'package:fahamni/Teacher_Service_Details/service_details_service.dart';
+import 'package:fahamni/models/resource_model.dart';
 import 'package:fahamni/models/service_model.dart';
 import 'package:fahamni/models/session_model.dart';
 import 'package:fahamni/models/student_model.dart';
 import 'package:fahamni/models/user_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DocumentsTab extends StatefulWidget {
   const DocumentsTab({
@@ -19,113 +23,183 @@ class DocumentsTab extends StatefulWidget {
 }
 
 class _DocumentsTabState extends State<DocumentsTab> {
-  static const List<_CourseDocument> _placeholderDocuments = <_CourseDocument>[
-    _CourseDocument(
-      name: 'Lecture Notes - Unit 01',
-      type: 'PDF',
-      subtitle: 'Course handout',
-      icon: Icons.picture_as_pdf_outlined,
-      actionIcon: Icons.download_rounded,
-    ),
-    _CourseDocument(
-      name: 'Session Replay - Introduction',
-      type: 'Video',
-      subtitle: 'Recorded explanation',
-      icon: Icons.play_circle_outline_rounded,
-      actionIcon: Icons.download_rounded,
-    ),
-    _CourseDocument(
-      name: 'Practice Resource Link',
-      type: 'Link',
-      subtitle: 'External reference',
-      icon: Icons.link_rounded,
-      actionIcon: Icons.open_in_new_rounded,
-    ),
-  ];
+  final CourseDetailsService _resourceService = CourseDetailsService();
+  late Future<List<ResourceModel>> _resourcesFuture;
+  String? _currentUserId;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    _resourcesFuture = _loadResources();
+  }
+
+  Future<List<ResourceModel>> _loadResources() async {
+    if (_currentUserId == null || !widget.service.studentIds.contains(_currentUserId)) {
+      return <ResourceModel>[];
+    }
+    return _resourceService.getResources(widget.service.serviceId);
+  }
+
+  IconData _resourceIcon(ResourceModel resource) {
+    if (resource is LinkResource) return Icons.link_rounded;
+    if (resource is MediaResource) return Icons.image_rounded;
+    if (resource is DocumentResource) {
+      final docType = resource.docType.toLowerCase();
+      if (docType == 'pdf') return Icons.picture_as_pdf_outlined;
+      return Icons.description_rounded;
+    }
+    return Icons.folder_open_rounded;
+  }
+
+  String _resourceSubtitle(ResourceModel resource) {
+    if (resource is LinkResource) return resource.linkUrl;
+    if (resource is DocumentResource) return resource.docType.toUpperCase();
+    if (resource is MediaResource) return resource.platform.isNotEmpty ? resource.platform : 'Media file';
+    return resource.contentType;
+  }
+
+  String _resourceUrl(ResourceModel resource) {
+    if (resource is LinkResource) return resource.linkUrl;
+    if (resource is DocumentResource) return resource.fileUrl;
+    if (resource is MediaResource) return resource.mediaUrl;
+    return '';
+  }
+
+  Future<void> _openResource(ResourceModel resource) async {
+    final url = _resourceUrl(resource);
+    if (url.isEmpty) {
+      return;
+    }
+
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to open resource.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (_placeholderDocuments.isEmpty) {
-      return const _TabEmptyState(
-        icon: Icons.folder_open_rounded,
-        title: 'No documents yet',
-        subtitle: 'Resources linked to this course will appear here.',
-      );
-    }
+    return FutureBuilder<List<ResourceModel>>(
+      future: _resourcesFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator(color: Color(0xFF000080)));
+        }
 
-    return Container(
-      color: const Color(0xFFF9F9F9),
-      child: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        itemCount: _placeholderDocuments.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          final _CourseDocument document = _placeholderDocuments[index];
-          return Container(
-            padding: const EdgeInsets.all(14),
-            decoration: _cardDecoration(),
-            child: Row(
-              children: [
-                Container(
-                  height: 48,
-                  width: 48,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE8EEFF),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    document.icon,
-                    color: const Color(0xFF000080),
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        document.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF0F172A),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${document.type} • ${document.subtitle}',
-                        style: const TextStyle(
-                          fontFamily: 'Lexend',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('${document.type} action coming soon.'),
-                      ),
-                    );
-                  },
-                  icon: Icon(
-                    document.actionIcon,
-                    color: const Color(0xFF000080),
-                  ),
-                ),
-              ],
-            ),
+        if (snapshot.hasError) {
+          return const _TabEmptyState(
+            icon: Icons.error_outline_rounded,
+            title: 'Unable to load resources',
+            subtitle: 'Please try again later.',
           );
-        },
-      ),
+        }
+
+        final resources = snapshot.data ?? [];
+        if (_currentUserId == null || !widget.service.studentIds.contains(_currentUserId)) {
+          return const _TabEmptyState(
+            icon: Icons.lock_outline_rounded,
+            title: 'Join to access resources',
+            subtitle: 'You must join this service before viewing its files.',
+          );
+        }
+
+        if (resources.isEmpty) {
+          return const _TabEmptyState(
+            icon: Icons.folder_open_rounded,
+            title: 'No resources yet',
+            subtitle: 'Resources linked to this service will appear here.',
+          );
+        }
+
+        return Container(
+          color: const Color(0xFFF9F9F9),
+          child: ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+            itemCount: resources.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final ResourceModel resource = resources[index];
+              return Container(
+                padding: const EdgeInsets.all(14),
+                decoration: _cardDecoration(),
+                child: Row(
+                  children: [
+                    Container(
+                      height: 48,
+                      width: 48,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8EEFF),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        _resourceIcon(resource),
+                        color: const Color(0xFF000080),
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            resource.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _resourceSubtitle(resource),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: 'Lexend',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => _openResource(resource),
+                      icon: Icon(
+                        resource is LinkResource ? Icons.open_in_new_rounded : Icons.download_rounded,
+                        color: const Color(0xFF000080),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  BoxDecoration _cardDecoration() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.04),
+          blurRadius: 6,
+          offset: const Offset(0, 2),
+        ),
+      ],
     );
   }
 }
@@ -504,7 +578,6 @@ class _SessionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final int duration = session.endTime.difference(session.startTime).inMinutes;
     final bool isCompleted = session.status == SessionStatus.Completed;
-    final bool isUpcoming = session.status == SessionStatus.Planned;
     final bool isOngoing = session.status == SessionStatus.Ongoing;
 
     Color statusBackground;
@@ -758,22 +831,6 @@ String _formatTime(DateTime time) {
   final String hour = time.hour.toString().padLeft(2, '0');
   final String minute = time.minute.toString().padLeft(2, '0');
   return '$hour:$minute';
-}
-
-class _CourseDocument {
-  const _CourseDocument({
-    required this.name,
-    required this.type,
-    required this.subtitle,
-    required this.icon,
-    required this.actionIcon,
-  });
-
-  final String name;
-  final String type;
-  final String subtitle;
-  final IconData icon;
-  final IconData actionIcon;
 }
 
 enum _SessionGroup {

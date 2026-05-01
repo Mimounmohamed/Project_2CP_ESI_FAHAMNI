@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'dart:io';
 import '../Services/notification_service.dart';
+import '../Services/ressource_service.dart';
 import '../models/chat_model.dart';
 import '../models/notification_model.dart';
 import '../repositories/chat_repository.dart';
@@ -10,10 +12,13 @@ class ChatService {
   ChatService(
     this._chatRepository, {
     NotificationService? notificationService,
-  }) : _notificationService = notificationService ?? NotificationService();
+    ResourceService? resourceService,
+  }) : _notificationService = notificationService ?? NotificationService(),
+       _resourceService = resourceService ?? ResourceService();
 
   final ChatRepository _chatRepository;
   final NotificationService _notificationService;
+  final ResourceService _resourceService;
 
   Stream<List<ConversationModel>> getConversations(
     String userId, {
@@ -45,13 +50,29 @@ class ChatService {
     String? messageId,
     TextEditingController? controller,
     List<AttachmentModel> attachments = const <AttachmentModel>[],
+    List<File> filesToUpload = const <File>[],
   }) async {
     final String trimmedContent = content.trim();
-    if (trimmedContent.isEmpty && attachments.isEmpty) return;
+    if (trimmedContent.isEmpty && attachments.isEmpty && filesToUpload.isEmpty) return;
+
+    final List<AttachmentModel> uploadedAttachments = [];
+    for (final File file in filesToUpload) {
+      final AttachmentModel uploadedAttachment = await _resourceService.uploadChatAttachment(
+        file: file,
+        conversationId: conversationId,
+        userId: senderId,
+      );
+      uploadedAttachments.add(uploadedAttachment);
+    }
+
+    final List<AttachmentModel> allAttachments = [
+      ...attachments,
+      ...uploadedAttachments,
+    ];
 
     final DateTime timestamp = DateTime.now();
-    final MessageType messageType = attachments.isNotEmpty
-        ? attachments.any((AttachmentModel attachment) => attachment.isImage)
+    final MessageType messageType = allAttachments.isNotEmpty
+        ? allAttachments.any((AttachmentModel attachment) => attachment.isImage)
             ? MessageType.image
             : MessageType.file
         : MessageType.text;
@@ -63,7 +84,7 @@ class ChatService {
       receiverId: receiverId,
       text: trimmedContent.isEmpty ? null : trimmedContent,
       type: messageType,
-      attachments: attachments,
+      attachments: allAttachments,
       voiceUrl: null,
       voiceDuration: null,
       createdAt: Timestamp.fromDate(timestamp),
@@ -96,6 +117,54 @@ class ChatService {
     return _chatRepository.ensureDirectConversation(
       currentUserId: currentUserId,
       otherUserId: otherUserId,
+    );
+  }
+
+  /// Gets all attachments from a conversation's messages as a stream
+  Stream<List<AttachmentModel>> getConversationAttachments(String conversationId) {
+    return getMessages(conversationId).map((messages) {
+      final List<AttachmentModel> allAttachments = [];
+      for (final MessageModel message in messages) {
+        allAttachments.addAll(message.attachments);
+      }
+      return allAttachments;
+    });
+  }
+
+  /// Gets all media (image) URLs from a conversation's messages as a stream
+  Stream<List<String>> getConversationMediaUrls(String conversationId) {
+    return getConversationAttachments(conversationId).map((attachments) {
+      return attachments
+          .where((attachment) => attachment.isImage)
+          .map((attachment) => attachment.url)
+          .toList();
+    });
+  }
+
+  /// Gets all file attachments (non-images) from a conversation's messages as a stream
+  Stream<List<AttachmentModel>> getConversationFileAttachments(String conversationId) {
+    return getConversationAttachments(conversationId).map((attachments) {
+      return attachments.where((attachment) => !attachment.isImage && !attachment.isLink).toList();
+    });
+  }
+
+  /// Gets all link attachments from a conversation's messages as a stream
+  Stream<List<AttachmentModel>> getConversationLinkAttachments(String conversationId) {
+    return getConversationAttachments(conversationId).map((attachments) {
+      return attachments.where((attachment) => attachment.isLink).toList();
+    });
+  }
+
+  /// Creates a link attachment model from a URL and title
+  AttachmentModel createLinkAttachment({
+    required String url,
+    required String title,
+  }) {
+    return AttachmentModel(
+      url: url,
+      name: title,
+      size: 0,
+      mimeType: 'application/link',
     );
   }
 

@@ -248,7 +248,13 @@ class AttachmentModel {
 
   bool get isImage => mimeType.startsWith('image/');
 
-  String get kind => isImage ? 'image' : 'file';
+  bool get isLink => mimeType == 'application/link';
+
+  String get kind {
+    if (isImage) return 'image';
+    if (isLink) return 'link';
+    return 'file';
+  }
 
   int get sizeBytes => size;
 
@@ -260,6 +266,7 @@ class AttachmentModel {
       'sizeBytes': size,
       'mimeType': mimeType,
       'kind': kind,
+      'isLink': isLink,
     };
   }
 

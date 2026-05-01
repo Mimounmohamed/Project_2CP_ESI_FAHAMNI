@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
-class ConversationMedia extends StatefulWidget {
-  const ConversationMedia({super.key});
+class ConversationMedia extends StatelessWidget {
+  final List<String> imageUrls;
 
-  @override
-  State<ConversationMedia> createState() => _ConversationMediaState();
-}
+  const ConversationMedia({super.key, this.imageUrls = const []});
 
-class _ConversationMediaState extends State<ConversationMedia> {
   @override
   Widget build(BuildContext context) {
+    if (imageUrls.isEmpty) {
+      return const Center(child: Text('No media yet'));
+    }
     return GridView.builder(
       shrinkWrap: true,
       physics: const ClampingScrollPhysics(),
@@ -19,14 +19,16 @@ class _ConversationMediaState extends State<ConversationMedia> {
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
       ),
-      itemCount: 20,
+      itemCount: imageUrls.length,
       itemBuilder: (context, index) {
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            image: const DecorationImage(
-              image: NetworkImage('https://picsum.photos/200'),
-              fit: BoxFit.cover,
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.network(
+            imageUrls[index],
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: Colors.grey[300],
+              child: const Icon(Icons.broken_image, color: Colors.grey),
             ),
           ),
         );

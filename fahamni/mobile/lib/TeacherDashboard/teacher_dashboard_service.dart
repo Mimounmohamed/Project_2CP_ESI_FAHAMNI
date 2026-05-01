@@ -277,6 +277,7 @@ class TeacherDashboardService {
     required String value,
     String subject = '',
     String level = '',
+    String serviceId = '',
   }) async {
     final TutorModel tutor = await _loadCurrentTutor();
     final DocumentReference<Map<String, dynamic>> ref = _firestore.collection('resources').doc();
@@ -314,7 +315,12 @@ class TeacherDashboardService {
             docType: 'file',
           );
 
-    await ref.set(resource.toMap());
+    final Map<String, dynamic> data = {
+      ...resource.toMap(),
+      if (serviceId.isNotEmpty) 'service_id': serviceId,
+    };
+
+    await ref.set(data);
     return ref.id;
   }
 

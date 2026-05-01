@@ -32,28 +32,51 @@ class CourseDetailsService {
         .get();
 
     final List<String> sessionIds = sessionsSnapshot.docs.map((doc) => doc.id).toList();
-    if (sessionIds.isEmpty) {
-      return <ResourceModel>[];
-    }
-
     final List<ResourceModel> resources = <ResourceModel>[];
-    for (int i = 0; i < sessionIds.length; i += 10) {
-      final List<String> batch = sessionIds.skip(i).take(10).toList();
-      final QuerySnapshot<Map<String, dynamic>> resourcesSnapshot = await _db
-          .collection('resources')
-          .where('session_id', whereIn: batch)
-          .get();
-      resources.addAll(
-        resourcesSnapshot.docs.map((doc) => ResourceModel.fromMap(doc.data())),
-      );
+    final Set<String> seenResourceIds = <String>{};
+
+    final QuerySnapshot<Map<String, dynamic>> serviceResourcesSnapshot = await _db
+        .collection('resources')
+        .where('service_id', isEqualTo: serviceId)
+        .get();
+
+    for (final doc in serviceResourcesSnapshot.docs) {
+      final resource = ResourceModel.fromMap(doc.data());
+      resources.add(resource);
+      seenResourceIds.add(resource.resourceId);
     }
 
+    if (sessionIds.isNotEmpty) {
+      for (int i = 0; i < sessionIds.length; i += 10) {
+        final List<String> batch = sessionIds.skip(i).take(10).toList();
+        final QuerySnapshot<Map<String, dynamic>> resourcesSnapshot = await _db
+            .collection('resources')
+            .where('session_id', whereIn: batch)
+            .get();
+        for (final doc in resourcesSnapshot.docs) {
+          final resource = ResourceModel.fromMap(doc.data());
+          if (!seenResourceIds.contains(resource.resourceId)) {
+            resources.add(resource);
+            seenResourceIds.add(resource.resourceId);
+          }
+        }
+      }
+    }
+
+    resources.sort((a, b) => b.addedAt.compareTo(a.addedAt));
     return resources;
   }
 
-  Future<void> addResource(ResourceModel resource) async {
+  Future<void> addResource(ResourceModel resource, {String? serviceId}) async {
     final ref = _db.collection('resources').doc();
-    await ref.set({...resource.toMap(), 'resource_id': ref.id});
+    final Map<String, dynamic> data = {
+      ...resource.toMap(),
+      'resource_id': ref.id,
+    };
+    if (serviceId != null && serviceId.isNotEmpty) {
+      data['service_id'] = serviceId;
+    }
+    await ref.set(data);
   }
 
   Future<void> deleteResource(String resourceId) async {

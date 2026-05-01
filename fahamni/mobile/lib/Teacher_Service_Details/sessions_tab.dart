@@ -36,12 +36,12 @@ class _SessionsTabState extends State<SessionsTab> {
     });
   }
 
-  void _showAddSessionSheet() {
+  void _showAddSessionSheet() async {
     final modeController = TextEditingController();
     DateTime? startTime;
     DateTime? endTime;
 
-    showModalBottomSheet(
+    final added = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
@@ -111,9 +111,25 @@ class _SessionsTabState extends State<SessionsTab> {
                   onPressed: () async {
                     if (startTime == null ||
                         endTime == null ||
-                        modeController.text.isEmpty) {
+                        modeController.text.trim().isEmpty) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please select start/end time and enter a mode.'),
+                        ),
+                      );
                       return;
                     }
+                    if (endTime!.isBefore(startTime!)) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('End time must occur after start time.'),
+                        ),
+                      );
+                      return;
+                    }
+
                     final DateTime selectedStart = startTime!;
                     final session = SessionModel(
                       sessionId: '',
@@ -131,9 +147,18 @@ class _SessionsTabState extends State<SessionsTab> {
                       startTime: selectedStart,
                       endTime: endTime!,
                     );
-                    await _service.addSession(session);
-                    Navigator.pop(ctx);
-                    _load();
+
+                    final messenger = ScaffoldMessenger.of(context);
+                    final navigator = Navigator.of(ctx);
+                    try {
+                      await _service.addSession(session);
+                      navigator.pop(true);
+                    } catch (error) {
+                      if (!mounted) return;
+                      messenger.showSnackBar(
+                        SnackBar(content: Text('Failed to add session: $error')),
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF000080),
@@ -151,18 +176,27 @@ class _SessionsTabState extends State<SessionsTab> {
         ),
       ),
     );
+
+    if (added == true) {
+      if (!mounted) return;
+      await _load();
+    }
   }
 
+  // ignore: use_build_context_synchronously
   Future<DateTime?> showDateTimePicker(BuildContext ctx) async {
+    final pickerContext = ctx;
     final date = await showDatePicker(
-      context: ctx,
+      context: pickerContext,
       initialDate: DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (date == null) return null;
+    if (!mounted) return null;
     final time = await showTimePicker(
-      context: ctx,
+      // ignore: use_build_context_synchronously
+      context: pickerContext,
       initialTime: TimeOfDay.now(),
     );
     if (time == null) return null;
@@ -446,4 +480,6 @@ class _StatBox extends StatelessWidget {
     );
   }
 }
+
+
 

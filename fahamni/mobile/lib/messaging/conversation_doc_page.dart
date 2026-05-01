@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../Services/chat_service.dart';
 import 'inside_conversation_buttons.dart';
 import '../models/chat_model.dart';
+import '../repositories/firestore_chat_repository.dart';
 
 class ConversationDocPage extends StatelessWidget {
   final String imageUrl;
   final String name;
   final ConversationModel conversation;
+  final ChatService? chatService;
 
   const ConversationDocPage({
     super.key,
     required this.imageUrl,
     required this.name,
     required this.conversation,
+    this.chatService,
   });
 
   @override
@@ -58,7 +62,10 @@ class ConversationDocPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10.0),
-          InsideConversationButtons(conversation: conversation),
+          InsideConversationButtons(
+            conversation: conversation,
+            chatService: chatService ?? ChatService(FirestoreChatRepository()),
+          ),
           const SizedBox(height: 8.0),
         ],
       ),
