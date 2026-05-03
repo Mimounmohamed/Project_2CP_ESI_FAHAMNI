@@ -10,10 +10,12 @@ import { httpsCallable } from "firebase/functions";
 import { doc, getDoc, setDoc, deleteDoc, Timestamp } from "firebase/firestore";
 import app from "./firebase";
 import { db, functions } from "./firebase";
+import { useTranslation } from "react-i18next";
 
 const auth = getAuth(app);
 
 export default function Login() {
+  const { t } = useTranslation();
   const [email,       setEmail]       = useState("");
   const [password,    setPassword]    = useState("");
   const [error,       setError]       = useState("");
@@ -40,7 +42,7 @@ export default function Login() {
       await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
       await signInWithEmailAndPassword(auth, email, password);
     } catch {
-      setError("Invalid email or password.");
+      setError(t("login.invalidCredentials"));
     } finally {
       setLoading(false);
     }
@@ -48,7 +50,7 @@ export default function Login() {
 
   // ── Forgot password: step 1 – send OTP ──
   async function handleSendOtp() {
-    if (!email) { setError("Enter your email address first."); return; }
+    if (!email) { setError(t("login.enterEmailFirst")); return; }
     setError(""); setForgotLoading(true);
     try {
       const code   = (100000 + Math.floor(Math.random() * 900000)).toString();
@@ -60,7 +62,7 @@ export default function Login() {
       setOtpCodes(["","","","","",""]);
       setForgotStep("otp");
     } catch (e) {
-      setError("Failed to send verification code. Please check the email and try again.");
+      setError(t("login.failedToSendCode"));
       console.error(e);
     }
     setForgotLoading(false);
@@ -69,17 +71,17 @@ export default function Login() {
   // ── Forgot password: step 2 – verify OTP ──
   async function handleVerifyOtp() {
     const code = otpCodes.join("");
-    if (code.length < 6) { setError("Enter the complete 6-digit code."); return; }
+    if (code.length < 6) { setError(t("login.enterComplete6Digit")); return; }
     setError(""); setForgotLoading(true);
     try {
       const snap = await getDoc(doc(db, "email_otps", email));
-      if (!snap.exists()) throw new Error("Code not found. Please request a new one.");
+      if (!snap.exists()) throw new Error(t("login.codeNotFound"));
       const { code: stored, expiresAt } = snap.data();
       if (new Date() > expiresAt.toDate()) {
         await deleteDoc(doc(db, "email_otps", email));
-        throw new Error("Code expired. Please request a new one.");
+        throw new Error(t("login.codeExpired"));
       }
-      if (stored !== code) throw new Error("Incorrect code. Please try again.");
+      if (stored !== code) throw new Error(t("login.incorrectCode"));
       await deleteDoc(doc(db, "email_otps", email));
       setNewPw(""); setConfirmPw("");
       setForgotStep("setPassword");
@@ -91,14 +93,14 @@ export default function Login() {
 
   // ── Forgot password: step 3 – reset password ──
   async function handleResetPassword() {
-    if (newPw !== confirmPw) { setError("Passwords do not match."); return; }
-    if (newPw.length < 6)   { setError("Password must be at least 6 characters."); return; }
+    if (newPw !== confirmPw) { setError(t("login.passwordMismatch")); return; }
+    if (newPw.length < 6)   { setError(t("login.passwordTooShort")); return; }
     setError(""); setForgotLoading(true);
     try {
       await httpsCallable(functions, "resetPassword")({ email, newPassword: newPw });
       setForgotStep("done");
     } catch (e) {
-      setError("Failed to reset password. Please try again.");
+      setError(t("login.failedToReset"));
       console.error(e);
     }
     setForgotLoading(false);
@@ -119,7 +121,7 @@ export default function Login() {
   return (
     <div style={styles.page}>
       <nav style={styles.navbar}>
-        <span style={styles.navBrand}>Fahamni Admin</span>
+        <span style={styles.navBrand}>{t("login.brand")}</span>
       </nav>
 
       <main style={styles.main}>
@@ -139,22 +141,22 @@ export default function Login() {
 
           {/* ── NORMAL LOGIN ── */}
           {forgotStep === null && <>
-            <h1 style={styles.title}>Admin Login</h1>
-            <p style={styles.subtitle}>Access the admin dashboard</p>
+            <h1 style={styles.title}>{t("login.title")}</h1>
+            <p style={styles.subtitle}>{t("login.subtitle")}</p>
 
             <form onSubmit={handleLogin} style={styles.form}>
               <div style={styles.fieldGroup}>
-                <label style={styles.label}>Email address</label>
+                <label style={styles.label}>{t("login.email")}</label>
                 <div style={styles.inputWrap}>
                   <span style={styles.icon}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
                   </span>
-                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@institution.edu" required style={styles.input} />
+                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={t("login.emailPlaceholder")} required style={styles.input} />
                 </div>
               </div>
 
               <div style={styles.fieldGroup}>
-                <label style={styles.label}>Password</label>
+                <label style={styles.label}>{t("login.password")}</label>
                 <div style={styles.inputWrap}>
                   <span style={styles.icon}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1.5" fill="#94a3b8"/></svg>
@@ -174,30 +176,30 @@ export default function Login() {
                   <div style={{ ...styles.checkbox, background: rememberMe ? "#000080" : "#fff", borderColor: rememberMe ? "#000080" : "#c7d2fe" }}>
                     {rememberMe && <svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.5 6L8 1" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
                   </div>
-                  Remember me
+                  {t("login.rememberMe")}
                 </label>
                 <button type="button" onClick={handleSendOtp} disabled={forgotLoading} style={styles.forgotBtn}>
-                  {forgotLoading ? "Sending…" : "Forgot password?"}
+                  {forgotLoading ? t("login.sending") : t("login.forgotPassword")}
                 </button>
               </div>
 
               {error && <ErrBox msg={error} />}
 
               <button type="submit" disabled={loading} style={{ ...styles.loginBtn, opacity: loading ? 0.7 : 1 }}>
-                {loading ? "Logging in…" : "Log In"}
+                {loading ? t("login.loggingIn") : t("login.logIn")}
               </button>
             </form>
 
             <div style={styles.cardFooter}>
               <hr style={styles.divider} />
-              <p style={styles.secureText}>Secure administrative gateway for institutional partners.</p>
+              <p style={styles.secureText}>{t("login.secureText")}</p>
               <p style={styles.ipText}>IP: 127.0.0.1 <span style={styles.authBadge}>(Authenticated)</span></p>
             </div>
           </>}
 
           {/* ── OTP STEP ── */}
           {forgotStep === "otp" && <>
-            <button onClick={resetForgot} style={styles.backLink}>← Back to login</button>
+            <button onClick={resetForgot} style={styles.backLink}>{t("login.backToLogin")}</button>
             <div style={styles.stepRow}>
               <div style={{ ...styles.stepDot, ...styles.stepDotActive }} />
               <div style={styles.stepDot} />
@@ -207,9 +209,9 @@ export default function Login() {
                 <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/>
               </svg>
             </div>
-            <h1 style={{ ...styles.title, fontSize: 22, marginTop: 0, marginBottom: 4 }}>Check Your Email</h1>
+            <h1 style={{ ...styles.title, fontSize: 22, marginTop: 0, marginBottom: 4 }}>{t("login.checkYourEmail")}</h1>
             <p style={{ ...styles.subtitle, marginBottom: 24, fontSize: 14 }}>
-              We sent a 6-digit code to<br /><strong style={{ color: "#1F2937" }}>{email}</strong>
+              {t("login.sentCodeTo")}<br /><strong style={{ color: "#1F2937" }}>{email}</strong>
             </p>
             <div style={styles.otpRow}>
               {otpCodes.map((c, i) => (
@@ -226,12 +228,12 @@ export default function Login() {
             </div>
             {error && <ErrBox msg={error} />}
             <button onClick={handleVerifyOtp} disabled={forgotLoading} style={{ ...styles.loginBtn, marginTop: 4, opacity: forgotLoading ? 0.7 : 1 }}>
-              {forgotLoading ? "Verifying…" : "Verify Code"}
+              {forgotLoading ? t("login.verifying") : t("login.verifyCode")}
             </button>
             <p style={{ textAlign: "center", fontSize: 13, color: "#64748b", margin: "14px 0 0" }}>
-              Didn't receive a code?{" "}
+              {t("login.didntReceiveCode")}{" "}
               <button onClick={handleSendOtp} disabled={forgotLoading} style={styles.inlineLink}>
-                Resend
+                {t("login.resend")}
               </button>
             </p>
           </>}
@@ -248,11 +250,11 @@ export default function Login() {
                 <circle cx="12" cy="16" r="1.5" fill="#000080"/>
               </svg>
             </div>
-            <h1 style={{ ...styles.title, fontSize: 22, marginTop: 0, marginBottom: 4 }}>Create New Password</h1>
-            <p style={{ ...styles.subtitle, marginBottom: 20, fontSize: 14 }}>Must be at least 6 characters long</p>
+            <h1 style={{ ...styles.title, fontSize: 22, marginTop: 0, marginBottom: 4 }}>{t("login.createNewPassword")}</h1>
+            <p style={{ ...styles.subtitle, marginBottom: 20, fontSize: 14 }}>{t("login.mustBe6Chars")}</p>
 
             <div style={styles.fieldGroup}>
-              <label style={styles.label}>New Password</label>
+              <label style={styles.label}>{t("login.newPassword")}</label>
               <div style={styles.inputWrap}>
                 <span style={styles.icon}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -268,7 +270,7 @@ export default function Login() {
             </div>
 
             <div style={{ ...styles.fieldGroup, marginBottom: 16 }}>
-              <label style={styles.label}>Confirm Password</label>
+              <label style={styles.label}>{t("login.confirmPassword")}</label>
               <div style={styles.inputWrap}>
                 <span style={styles.icon}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -285,7 +287,7 @@ export default function Login() {
 
             {error && <ErrBox msg={error} />}
             <button onClick={handleResetPassword} disabled={forgotLoading} style={{ ...styles.loginBtn, opacity: forgotLoading ? 0.7 : 1 }}>
-              {forgotLoading ? "Resetting…" : "Reset Password"}
+              {forgotLoading ? t("login.resetting") : t("login.resetPassword")}
             </button>
           </>}
 
@@ -295,9 +297,9 @@ export default function Login() {
               <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#f0fdf4", border: "2px solid #bbf7d0", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>
               </div>
-              <h1 style={{ ...styles.title, fontSize: 22 }}>Password Reset!</h1>
-              <p style={{ ...styles.subtitle, marginBottom: 24 }}>Your password has been updated.<br />You can now log in with your new password.</p>
-              <button onClick={resetForgot} style={styles.loginBtn}>Back to Login</button>
+              <h1 style={{ ...styles.title, fontSize: 22 }}>{t("login.passwordReset")}</h1>
+              <p style={{ ...styles.subtitle, marginBottom: 24 }}>{t("login.passwordUpdated").split("\n").map((line, i) => <span key={i}>{line}{i === 0 && <br />}</span>)}</p>
+              <button onClick={resetForgot} style={styles.loginBtn}>{t("login.backToLoginBtn")}</button>
             </div>
           )}
         </div>
@@ -306,11 +308,11 @@ export default function Login() {
       <footer style={styles.footer} className="login-footer">
         <div style={styles.footerLeft}>
           <span style={styles.footerBrand}>Fahamni</span>
-          <span style={styles.footerCopy}>© 2024 Fahamni Institutional Portal. All rights reserved.</span>
+          <span style={styles.footerCopy}>{t("login.copyright")}</span>
         </div>
         <div style={styles.footerRight}>
-          <a href="#" style={styles.footerLink}>Privacy Policy</a>
-          <a href="#" style={styles.footerLink}>Terms of Service</a>
+          <a href="#" style={styles.footerLink}>{t("login.privacyPolicy")}</a>
+          <a href="#" style={styles.footerLink}>{t("login.termsOfService")}</a>
         </div>
       </footer>
     </div>

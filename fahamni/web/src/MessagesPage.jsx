@@ -5,6 +5,7 @@ import {
   where, getDocs,
 } from "firebase/firestore";
 import { db } from "./firebase";
+import { useTranslation } from "react-i18next";
 
 const ROLE_STYLE = {
   teacher: { label: "TEACHER", color: "#16a34a", bg: "#dcfce7" },
@@ -40,6 +41,7 @@ function ConvAvatar({ src, name, size = 42, dark = false }) {
 }
 
 export default function MessagesPage({ adminUser, onViewUser, pendingContact, onContactHandled }) {
+  const { t } = useTranslation();
   const [conversations, setConversations] = useState([]);
   const [selected, setSelected]           = useState(null);
   const [mobileChatOpen, setMobileChatOpen] = useState(false);
@@ -212,7 +214,7 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
 
   return (
     <div style={s.page}>
-      <h1 style={s.title}>Messages</h1>
+      <h1 style={s.title}>{t("messages.title")}</h1>
 
       <div className="msg-body">
 
@@ -223,19 +225,19 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
               style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
-            <input style={s.searchInput} placeholder="Search conversations..." value={search} onChange={e => setSearch(e.target.value)} />
+            <input style={s.searchInput} placeholder={t("messages.searchPlaceholder")} value={search} onChange={e => setSearch(e.target.value)} />
           </div>
 
           <div style={s.inboxHeader}>
-            <span style={s.inboxTitle}>Inbox</span>
-            {totalUnread > 0 && <span style={s.unreadBadge}>{totalUnread} Unread</span>}
+            <span style={s.inboxTitle}>{t("messages.inbox")}</span>
+            {totalUnread > 0 && <span style={s.unreadBadge}>{t("messages.unread", { count: totalUnread })}</span>}
           </div>
 
           <div className="thin-scroll" style={s.convList}>
             {loadingConvs ? (
-              <div style={s.emptyState}>Loading…</div>
+              <div style={s.emptyState}>{t("messages.loading")}</div>
             ) : filtered.length === 0 ? (
-              <div style={s.emptyState}>{search ? "No results." : "No conversations yet."}</div>
+              <div style={s.emptyState}>{search ? t("messages.noResults") : t("messages.noConversations")}</div>
             ) : filtered.map(conv => {
               const role       = ROLE_STYLE[conv.user_role] ?? ROLE_STYLE.student;
               const isSelected = selected?.id === conv.id;
@@ -272,7 +274,7 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
               </svg>
-              Back to inbox
+              {t("messages.backToInbox")}
             </button>
             {/* Header */}
             <div style={s.chatHeader}>
@@ -294,13 +296,13 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
                   </svg>
-                  View Profile
+                  {t("messages.viewProfile")}
                 </button>
                 <button style={s.closeBtn} onClick={closeConversation}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                   </svg>
-                  Close Conversation
+                  {t("messages.closeConversation")}
                 </button>
               </div>
             </div>
@@ -308,9 +310,9 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
             {/* Messages */}
             <div className="thin-scroll" style={s.messagesArea}>
               {loadingMsgs ? (
-                <div style={s.emptyState}>Loading messages…</div>
+                <div style={s.emptyState}>{t("messages.loadingMessages")}</div>
               ) : messages.length === 0 ? (
-                <div style={s.emptyState}>No messages yet. Start the conversation.</div>
+                <div style={s.emptyState}>{t("messages.noMessages")}</div>
               ) : messages.map(msg => {
                 const isAdmin = msg.sender_id === "admin";
                 return (
@@ -318,7 +320,7 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
                     {!isAdmin && <ConvAvatar src={selected.user_picture} name={selected.user_name} size={36} />}
                     <div style={{ maxWidth: "62%", display: "flex", flexDirection: "column", alignItems: isAdmin ? "flex-end" : "flex-start", gap: 4 }}>
                       <div style={{ ...s.bubble, ...(isAdmin ? s.bubbleAdmin : s.bubbleUser) }}>{msg.text}</div>
-                      <span style={s.msgMeta}>{isAdmin ? "Admin" : selected.user_name} • {fmtTime(msg.created_at)}</span>
+                      <span style={s.msgMeta}>{isAdmin ? t("messages.admin") : selected.user_name} • {fmtTime(msg.created_at)}</span>
                     </div>
                     {isAdmin && <ConvAvatar src={null} name="Admin" size={36} dark />}
                   </div>
@@ -332,7 +334,7 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
               <input
                 ref={inputRef}
                 style={{ ...s.messageInput, opacity: selected.is_closed ? 0.5 : 1 }}
-                placeholder={selected.is_closed ? "This conversation is closed." : "Message..."}
+                placeholder={selected.is_closed ? t("messages.closedPlaceholder") : t("messages.inputPlaceholder")}
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
@@ -357,7 +359,7 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
             <span style={{ color: "#94a3b8", fontSize: 14, marginTop: 14, textAlign: "center" }}>
-              Select a conversation to start chatting
+              {t("messages.selectConversation")}
             </span>
           </div>
         )}

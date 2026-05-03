@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { collection, query, where, getDocs, updateDoc, doc, getCountFromServer } from "firebase/firestore";
 import { db } from "./firebase";
+import { useTranslation } from "react-i18next";
 
 const PAGE_SIZE = 10;
 
@@ -20,6 +21,7 @@ function formatJoined(val) {
 }
 
 export default function UsersPage({ onSelect, initialTab }) {
+  const { t } = useTranslation();
   const [tab, setTab]       = useState(initialTab ?? "all");
   const [search, setSearch] = useState("");
   const [users, setUsers]   = useState(null);
@@ -129,19 +131,19 @@ export default function UsersPage({ onSelect, initialTab }) {
           </svg>
           <input
             style={s.search}
-            placeholder="Search users..."
+            placeholder={t("users.searchPlaceholder")}
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
           />
         </div>
         <div className="page-tabs">
-          {["all","active","suspended"].map(t => (
+          {["all","active","suspended"].map(tabKey => (
             <button
-              key={t}
-              style={{ ...s.tabBtn, ...(tab === t ? s.tabActive : {}) }}
-              onClick={() => setTab(t)}
+              key={tabKey}
+              style={{ ...s.tabBtn, ...(tab === tabKey ? s.tabActive : {}) }}
+              onClick={() => setTab(tabKey)}
             >
-              {t.charAt(0).toUpperCase() + t.slice(1)}
+              {t(`users.tabs.${tabKey}`)}
             </button>
           ))}
         </div>
@@ -149,10 +151,10 @@ export default function UsersPage({ onSelect, initialTab }) {
 
       {/* ── Stat cards ── */}
       <div className="users-stats-grid">
-        <StatCard label="TOTAL USERS"  value={stats.total}     accent="#6366f1" bold />
-        <StatCard label="TEACHERS"     value={stats.teachers}  accent="#6366f1" sub="Active educators" />
-        <StatCard label="STUDENTS"     value={stats.students}  accent="#6366f1" sub="Enrolled learners" />
-        <StatCard label="SUSPENDED"    value={stats.suspended} accent="#ef4444" sub="Requires review" red />
+        <StatCard label={t("users.stats.totalUsers")}  value={stats.total}     accent="#6366f1" bold />
+        <StatCard label={t("users.stats.teachers")}   value={stats.teachers}  accent="#6366f1" sub={t("users.stats.activeEducators")} />
+        <StatCard label={t("users.stats.students")}   value={stats.students}  accent="#6366f1" sub={t("users.stats.enrolledLearners")} />
+        <StatCard label={t("users.stats.suspended")}  value={stats.suspended} accent="#ef4444" sub={t("users.stats.requiresReview")} red />
       </div>
 
       {/* ── Table ── */}
@@ -160,18 +162,18 @@ export default function UsersPage({ onSelect, initialTab }) {
         <div className="table-scroll-inner thin-scroll">
         <div className="table-min">
         <div style={s.tableHead}>
-          <span style={{ ...s.col, flex: 2.5 }}>USER PROFILE</span>
-          <span style={{ ...s.col, flex: 1.1 }}>ROLE</span>
-          <span style={{ ...s.col, flex: 2   }}>CONTACT</span>
-          <span style={{ ...s.col, flex: 1.2 }}>STATUS</span>
-          <span style={{ ...s.col, flex: 1, textAlign:"center" }}>ACTIONS</span>
+          <span style={{ ...s.col, flex: 2.5 }}>{t("users.table.userProfile")}</span>
+          <span style={{ ...s.col, flex: 1.1 }}>{t("users.table.role")}</span>
+          <span style={{ ...s.col, flex: 2   }}>{t("users.table.contact")}</span>
+          <span style={{ ...s.col, flex: 1.2 }}>{t("users.table.status")}</span>
+          <span style={{ ...s.col, flex: 1, textAlign:"center" }}>{t("users.table.actions")}</span>
         </div>
 
         <div style={s.tableBody}>
           {users === null ? (
-            <div style={s.empty}>Loading...</div>
+            <div style={s.empty}>{t("users.loading")}</div>
           ) : paginated.length === 0 ? (
-            <div style={s.empty}>No users found.</div>
+            <div style={s.empty}>{t("users.noUsersFound")}</div>
           ) : paginated.map(u => {
             const rs = ROLE_STYLE[u.role];
             const suspended = u.is_suspended === true;
@@ -191,7 +193,7 @@ export default function UsersPage({ onSelect, initialTab }) {
                   }
                   <div>
                     <div style={s.name}>{u.first_name} {u.last_name}</div>
-                    {joined && <div style={s.joined}>JOINED {joined.toUpperCase()}</div>}
+                    {joined && <div style={s.joined}>{t("users.joined")} {joined.toUpperCase()}</div>}
                   </div>
                 </div>
 
@@ -209,7 +211,7 @@ export default function UsersPage({ onSelect, initialTab }) {
                 <div style={{ ...s.cell, flex: 1.2, gap: 6 }}>
                   <span style={{ ...s.statusDot, background: suspended ? "#ef4444" : "#22c55e" }} />
                   <span style={{ fontSize: 13, fontWeight: 500, color: suspended ? "#ef4444" : "#22c55e" }}>
-                    {suspended ? "Suspended" : "Active"}
+                    {suspended ? t("users.suspendedStatus") : t("users.activeStatus")}
                   </span>
                 </div>
 
@@ -236,7 +238,7 @@ export default function UsersPage({ onSelect, initialTab }) {
         {filtered.length > 0 && (
           <div style={s.pagin}>
             <span style={s.paginInfo}>
-              SHOWING {Math.min((page-1)*PAGE_SIZE+1, filtered.length)} TO {Math.min(page*PAGE_SIZE, filtered.length)} OF {filtered.length} USERS
+              {t("users.showing", { from: Math.min((page-1)*PAGE_SIZE+1, filtered.length), to: Math.min(page*PAGE_SIZE, filtered.length), total: filtered.length })}
             </span>
             <div style={s.paginBtns}>
               <button style={s.paginArrow} disabled={page === 1} onClick={() => setPage(p => p-1)}>‹</button>
