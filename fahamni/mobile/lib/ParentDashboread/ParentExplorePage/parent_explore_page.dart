@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fahamni/Explore_map_pages/map.dart';
+import 'package:fahamni/Account_Settings_Parent/account_screen.dart';
+import 'package:fahamni/ParentDashboread/ParentCoursePage/parent_courses_page.dart';
 import 'package:fahamni/ParentDashboread/ParentHomePage/home_page.dart';
 import 'package:fahamni/ParentDashboread/ParentSchedulePage/parent_schedule_page.dart';
 import 'package:fahamni/StudentHomePage/studenthome_service.dart';
@@ -344,7 +346,7 @@ class _ParentExplorePageState extends State<ParentExplorePage> {
     if (index == 2) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const ParentSchedulePage()),
+        MaterialPageRoute(builder: (_) => const ParentCoursesPage()),
       );
     }
     if (index == 3) {
@@ -354,8 +356,9 @@ class _ParentExplorePageState extends State<ParentExplorePage> {
       );
     }
     if (index == 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile page coming soon.')),
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const ParentAccountScreen()),
       );
     }
   }

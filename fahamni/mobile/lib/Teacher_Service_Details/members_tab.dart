@@ -1,5 +1,6 @@
 import 'package:fahamni/TeacherDashboard/models/teacher_portal_models.dart';
 import 'package:fahamni/TeacherDashboard/widgets/teacher_portal_modals.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fahamni/Services/chat_service.dart';
 import 'package:fahamni/messaging/conversation_page.dart';
 import 'package:fahamni/models/quote_model.dart';
@@ -10,6 +11,83 @@ import '../models/service_model.dart';
 import '../models/student_model.dart';
 import 'member_item.dart';
 import 'service_details_service.dart';
+
+class _ChatRecipient {
+  final String userId;
+  final String displayName;
+  final String imageUrl;
+
+  const _ChatRecipient({
+    required this.userId,
+    required this.displayName,
+    required this.imageUrl,
+  });
+}
+
+Future<_ChatRecipient> _resolveChatRecipient(StudentModel student) async {
+  try {
+    final childDoc = await FirebaseFirestore.instance.collection('children').doc(student.uid).get();
+    if (!childDoc.exists || childDoc.data() == null) {
+      return _ChatRecipient(
+        userId: student.uid,
+        displayName: '${student.firstName} ${student.lastName}'.trim().isEmpty
+            ? 'Student'
+            : '${student.firstName} ${student.lastName}'.trim(),
+        imageUrl: student.picture.isNotEmpty
+            ? student.picture
+            : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent('${student.firstName} ${student.lastName}'.trim())}&background=000080&color=ffffff',
+      );
+    }
+
+    final parentUid = (childDoc.data()?['parentUid'] ?? '').toString();
+    if (parentUid.isEmpty) {
+      return _ChatRecipient(
+        userId: student.uid,
+        displayName: '${student.firstName} ${student.lastName}'.trim().isEmpty
+            ? 'Student'
+            : '${student.firstName} ${student.lastName}'.trim(),
+        imageUrl: student.picture.isNotEmpty
+            ? student.picture
+            : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent('${student.firstName} ${student.lastName}'.trim())}&background=000080&color=ffffff',
+      );
+    }
+
+    final parentDoc = await FirebaseFirestore.instance.collection('parents').doc(parentUid).get();
+    if (!parentDoc.exists || parentDoc.data() == null) {
+      return _ChatRecipient(
+        userId: student.uid,
+        displayName: '${student.firstName} ${student.lastName}'.trim().isEmpty
+            ? 'Student'
+            : '${student.firstName} ${student.lastName}'.trim(),
+        imageUrl: student.picture.isNotEmpty
+            ? student.picture
+            : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent('${student.firstName} ${student.lastName}'.trim())}&background=000080&color=ffffff',
+      );
+    }
+
+    final parentData = parentDoc.data()!;
+    final parentName = '${parentData['first_name'] ?? ''} ${parentData['last_name'] ?? ''}'.trim();
+    final parentPicture = (parentData['picture'] ?? '').toString();
+
+    return _ChatRecipient(
+      userId: parentUid,
+      displayName: parentName.isNotEmpty ? parentName : 'Parent',
+      imageUrl: parentPicture.isNotEmpty
+          ? parentPicture
+          : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(parentName.isNotEmpty ? parentName : 'Parent')}&background=000080&color=ffffff',
+    );
+  } catch (_) {
+    return _ChatRecipient(
+      userId: student.uid,
+      displayName: '${student.firstName} ${student.lastName}'.trim().isEmpty
+          ? 'Student'
+          : '${student.firstName} ${student.lastName}'.trim(),
+      imageUrl: student.picture.isNotEmpty
+          ? student.picture
+          : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent('${student.firstName} ${student.lastName}'.trim())}&background=000080&color=ffffff',
+    );
+  }
+}
 
 class MembersTab extends StatefulWidget {
   final ServiceModel service;
@@ -107,9 +185,18 @@ class _MembersTabState extends State<MembersTab> {
     });
 
     try {
+      final recipient = await _resolveChatRecipient(student);
+      if (recipient.userId != student.uid && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('This child is contacted through their parent.'),
+          ),
+        );
+      }
+
       final conversation = await _chatService.ensureDirectConversation(
         currentUserId: currentUser.uid,
-        otherUserId: student.uid,
+        otherUserId: recipient.userId,
       );
       if (!mounted) {
         return;
@@ -118,14 +205,12 @@ class _MembersTabState extends State<MembersTab> {
         MaterialPageRoute(
           builder: (_) => ConversationPage(
             conversation: conversation.copyWith(
-              conversationName: _studentName(student),
-              participantDisplayName: _studentName(student),
-              participantAvatarUrl: student.picture,
-              participantSubtitle: student.schoolLevel.isNotEmpty
-                  ? student.schoolLevel
-                  : 'Student',
+              conversationName: recipient.displayName,
+              participantDisplayName: recipient.displayName,
+              participantAvatarUrl: recipient.imageUrl,
+              participantSubtitle: recipient.displayName,
             ),
-            imageUrl: student.picture,
+            imageUrl: recipient.imageUrl,
             currentUserId: currentUser.uid,
           ),
         ),

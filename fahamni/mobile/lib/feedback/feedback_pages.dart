@@ -10,6 +10,8 @@ import 'package:fahamni/models/student_model.dart';
 import 'package:fahamni/models/tutor_model.dart';
 import 'package:fahamni/models/tutor_review_bundle.dart';
 import 'package:fahamni/messaging/conversation_page.dart';
+import 'package:fahamni/widgets/servicecard.dart';
+import 'package:fahamni/widgets/servicedetails.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -989,104 +991,78 @@ class _TutorServicesTab extends StatelessWidget {
                   : 'Book Now';
           final bool isActionDisabled = isJoined || isPending;
 
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 14),
-            child: Card(
-              elevation: 6,
-              shadowColor: const Color(0xFF000080).withValues(alpha: 0.3),
-              color: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Stack(
-                children: [
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _ServiceHeaderImage(imagePath: service.picture),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              height: 23,
-                              width: 100,
-                              decoration: BoxDecoration(
-                                color: const Color(0x19000080),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  service.subject,
-                                  style: const TextStyle(
-                                    color: Color(0xFF000080),
-                                    fontSize: 13,
-                                    fontFamily: 'Nunito',
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.50,
-                                    letterSpacing: 0.50,
+          return GestureDetector(
+            onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => Servicedetails(tutor: tutor, service: service),
+          ),
+        );
+      },
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Card(
+                elevation: 6,
+                shadowColor: const Color(0xFF000080).withValues(alpha: 0.3),
+                color: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Stack(
+                  children: [
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _ServiceHeaderImage(imagePath: service.picture),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 0, 16),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                height: 23,
+                                width: 100,
+                                decoration: BoxDecoration(
+                                  color: const Color(0x19000080),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                  child: Center(
+                                    child: Text(
+                                      service.subject,
+                                      style: const TextStyle(
+                                        color: Color(0xFF000080),
+                                        fontSize: 13,
+                                        fontFamily: 'Nunito',
+                                        fontWeight: FontWeight.w700,
+                                        height: 1.50,
+                                        letterSpacing: 0.50,
+                                      ),
+                                    ),
                                   ),
+                              
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                service.name,
+                                style: const TextStyle(
+                                  color: Color(0xFF1F2937),
+                                  fontSize: 18,
+                                  fontFamily: 'Inter',
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.38,
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              service.name,
-                              style: const TextStyle(
-                                color: Color(0xFF1F2937),
-                                fontSize: 18,
-                                fontFamily: 'Inter',
-                                fontWeight: FontWeight.w700,
-                                height: 1.38,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                const Icon(Icons.access_time_rounded, color: Color(0xFF64748B)),
-                                const SizedBox(width: 5),
-                                Text(
-                                  '${service.duration}min session',
-                                  style: const TextStyle(
-                                    color: Color(0xFF64748B),
-                                    fontSize: 14,
-                                    fontFamily: 'Nunito',
-                                    fontWeight: FontWeight.w400,
-                                    height: 1.43,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                const Icon(Icons.location_on_outlined, color: Color(0xFF64748B)),
-                                const SizedBox(width: 5),
-                                Text(
-                                  serviceMode,
-                                  style: const TextStyle(
-                                    color: Color(0xFF64748B),
-                                    fontSize: 14,
-                                    fontFamily: 'Nunito',
-                                    fontWeight: FontWeight.w400,
-                                    height: 1.43,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            if (service.maxnum - service.enrollednum <= 10)
+                              const SizedBox(height: 8),
                               Row(
                                 children: [
-                                  const Icon(Icons.error_outline_rounded, color: Color(0xFFDD0D0D)),
+                                  const Icon(Icons.access_time_rounded, color: Color(0xFF64748B)),
                                   const SizedBox(width: 5),
                                   Text(
-                                    '${service.maxnum - service.enrollednum} places left',
+                                    '${service.duration}min session',
                                     style: const TextStyle(
-                                      color: Color(0xFFDD0D0D),
+                                      color: Color(0xFF64748B),
                                       fontSize: 14,
                                       fontFamily: 'Nunito',
                                       fontWeight: FontWeight.w400,
@@ -1095,93 +1071,129 @@ class _TutorServicesTab extends StatelessWidget {
                                   ),
                                 ],
                               ),
-                            const SizedBox(height: 8),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Text(
-                                  '${service.price.toInt()}DA',
-                                  style: const TextStyle(
-                                    color: Color(0xFF000080),
-                                    fontSize: 20,
-                                    fontFamily: 'Nunito',
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.56,
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  const Icon(Icons.location_on_outlined, color: Color(0xFF64748B)),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    serviceMode,
+                                    style: const TextStyle(
+                                      color: Color(0xFF64748B),
+                                      fontSize: 14,
+                                      fontFamily: 'Nunito',
+                                      fontWeight: FontWeight.w400,
+                                      height: 1.43,
+                                    ),
                                   ),
-                                ),
-                                const Expanded(child: SizedBox()),
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 16),
-                                  child: ElevatedButton(
-                                    onPressed: isActionDisabled
-                                        ? null
-                                        : () => onBookNow(service),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF000080),
-                                      foregroundColor: Colors.white,
-                                      minimumSize: const Size(100, 40),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              if (service.maxnum - service.enrollednum <= 10)
+                                Row(
+                                  children: [
+                                    const Icon(Icons.error_outline_rounded, color: Color(0xFFDD0D0D)),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      '${service.maxnum - service.enrollednum} places left',
+                                      style: const TextStyle(
+                                        color: Color(0xFFDD0D0D),
+                                        fontSize: 14,
+                                        fontFamily: 'Nunito',
+                                        fontWeight: FontWeight.w400,
+                                        height: 1.43,
                                       ),
                                     ),
-                                    child: Center(
-                                      child: Text(
-                                        actionLabel,
-                                        style: TextStyle(
-                                          fontFamily: 'Nunito',
-                                          fontWeight: FontWeight.w700,
-                                          color: Colors.white,
-                                          fontSize: 15,
+                                  ],
+                                ),
+                              const SizedBox(height: 8),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    '${service.price.toInt()}DA',
+                                    style: const TextStyle(
+                                      color: Color(0xFF000080),
+                                      fontSize: 20,
+                                      fontFamily: 'Nunito',
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.56,
+                                    ),
+                                  ),
+                                  const Expanded(child: SizedBox()),
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 16),
+                                    child: ElevatedButton(
+                                      onPressed: isActionDisabled
+                                          ? null
+                                          : () => onBookNow(service),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF000080),
+                                        foregroundColor: Colors.white,
+                                        minimumSize: const Size(100, 40),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          actionLabel,
+                                          style: TextStyle(
+                                            fontFamily: 'Nunito',
+                                            fontWeight: FontWeight.w700,
+                                            color: Colors.white,
+                                            fontSize: 15,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                )
-                              ],
-                            )
-                          ],
+                                  )
+                                ],
+                              )
+                            ],
+                          ),
+                        )
+                      ],
+                    ),
+                    Positioned(
+                      top: 15,
+                      right: 16,
+                      child: Container(
+                        height: 25,
+                        width: 50,
+                        decoration: ShapeDecoration(
+                          color: Colors.white.withValues(alpha: 0.90),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(5),
+                          ),
                         ),
-                      )
-                    ],
-                  ),
-                  Positioned(
-                    top: 15,
-                    right: 16,
-                    child: Container(
-                      height: 25,
-                      width: 50,
-                      decoration: ShapeDecoration(
-                        color: Colors.white.withValues(alpha: 0.90),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                      ),
-                      child: Center(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.star_border_outlined,
-                              color: Color(0xFFEAB308),
-                              size: 12,
-                            ),
-                            const SizedBox(width: 2),
-                            Text(
-                              tutor.averageRating.toStringAsFixed(1),
-                              style: const TextStyle(
-                                color: Color(0xFF1E293B),
-                                fontSize: 14,
-                                fontFamily: 'Nunito',
-                                fontWeight: FontWeight.w700,
-                                height: 1.33,
+                        child: Center(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.star_border_outlined,
+                                color: Color(0xFFEAB308),
+                                size: 12,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 2),
+                              Text(
+                                tutor.averageRating.toStringAsFixed(1),
+                                style: const TextStyle(
+                                  color: Color(0xFF1E293B),
+                                  fontSize: 14,
+                                  fontFamily: 'Nunito',
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.33,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );

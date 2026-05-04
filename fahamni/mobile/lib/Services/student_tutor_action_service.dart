@@ -149,6 +149,24 @@ class StudentTutorActionService {
           });
         }
       });
+
+      await _notificationService.sendNotification(
+        NotificationModel(
+          title: 'New join request',
+          content:
+              '$requestStudentName sent a join request for ${service.name}.',
+          dateTime: DateTime.now(),
+          isRead: false,
+          notificationId: '',
+          receiverId: tutor.uid,
+          type: 'join_request',
+          senderId: currentUser.uid,
+          tutorId: tutor.uid,
+          serviceId: service.serviceId,
+        ),
+      );
+
+      return;
     }
 
     final DocumentReference<Map<String, dynamic>> quoteRef = _firestore

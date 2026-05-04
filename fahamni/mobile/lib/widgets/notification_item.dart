@@ -149,6 +149,12 @@ _NotificationIconConfig _notificationIconForType(String type) {
         iconColor: Color(0xFFF59E0B),
         backgroundColor: Color(0xFFFEF3C7),
       );
+    case 'join_request':
+      return const _NotificationIconConfig(
+        icon: Icons.how_to_reg_outlined,
+        iconColor: Color(0xFF2563EB),
+        backgroundColor: Color(0xFFDBEAFE),
+      );
     case 'quote_request':
       return const _NotificationIconConfig(
         icon: Icons.request_quote_outlined,
@@ -169,5 +175,3 @@ _NotificationIconConfig _notificationIconForType(String type) {
       );
   }
 }
-
-

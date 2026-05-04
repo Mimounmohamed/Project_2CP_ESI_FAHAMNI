@@ -98,7 +98,7 @@ class ServiceCard extends StatelessWidget {
                       const SizedBox(height: 10),
                       Text(
                         service.name,
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Color(0xFF1F2937),

@@ -1,7 +1,9 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fahamni/Account_Settings_Parent/account_screen.dart';
 import 'package:fahamni/Notification_page/notification_page.dart';
 import 'package:fahamni/ParentDashboread/ParentExplorePage/parent_explore_page.dart';
+import 'package:fahamni/ParentDashboread/ParentCoursePage/parent_courses_page.dart';
 import 'package:fahamni/ParentDashboread/ParentSchedulePage/parent_schedule_page.dart';
 import 'package:fahamni/StudentHomePage/studenthome_service.dart';
 import 'package:fahamni/feedback/feedback_pages.dart';
@@ -61,9 +63,7 @@ class _ParenthomepageState extends State<Parenthomepage> {
         .collection('children')
         .where('parentUid', isEqualTo: parentUid)
         .get();
-    return query.docs
-        .map((doc) => ChildModel.fromMap(doc.data()))
-        .toList();
+    return query.docs.map((doc) => ChildModel.fromMap(doc.data())).toList();
   }
 
   Future<void> loadParent() async {
@@ -71,8 +71,7 @@ class _ParenthomepageState extends State<Parenthomepage> {
       final ParentModel parentData = await _service.getParentData();
 
       // Fetch children directly from `children` collection by parentUid.
-      final List<ChildModel> children =
-          await _fetchChildren(parentData.uid);
+      final List<ChildModel> children = await _fetchChildren(parentData.uid);
 
       // Favorite tutors are not linked to ChildModel children, so we skip
       // that join here. Wire this up once children have a Courses field.
@@ -135,7 +134,7 @@ class _ParenthomepageState extends State<Parenthomepage> {
   void _openSchedulePage() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const ParentSchedulePage()),
+      MaterialPageRoute(builder: (_) => const ParentCoursesPage()),
     );
   }
 
@@ -150,7 +149,7 @@ class _ParenthomepageState extends State<Parenthomepage> {
     if (index == 1) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const ParentExplorePage()),
+        MaterialPageRoute(builder: (_) => const ParentCoursesPage()),
       );
       return;
     }
@@ -169,8 +168,9 @@ class _ParenthomepageState extends State<Parenthomepage> {
     }
 
     if (index == 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile page is coming soon.')),
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const ParentAccountScreen()),
       );
     }
   }
@@ -178,9 +178,7 @@ class _ParenthomepageState extends State<Parenthomepage> {
   @override
   Widget build(BuildContext context) {
     if (parent == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -239,7 +237,8 @@ class _ParenthomepageState extends State<Parenthomepage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) => const NotificationPage()),
+                            builder: (_) => const NotificationPage(),
+                          ),
                         );
                       },
                       icon: const ImageIcon(
@@ -263,7 +262,9 @@ class _ParenthomepageState extends State<Parenthomepage> {
                           borderRadius: BorderRadius.circular(80),
                           boxShadow: <BoxShadow>[
                             BoxShadow(
-                              color: const Color(0xFF000080).withValues(alpha: 0.2),
+                              color: const Color(
+                                0xFF000080,
+                              ).withValues(alpha: 0.2),
                               spreadRadius: 0,
                               blurRadius: 3,
                               offset: const Offset(0, 0),
@@ -284,7 +285,9 @@ class _ParenthomepageState extends State<Parenthomepage> {
                               borderSide: BorderSide.none,
                             ),
                             contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 0),
+                              horizontal: 20,
+                              vertical: 0,
+                            ),
                             filled: true,
                             fillColor: Colors.white,
                           ),
@@ -332,8 +335,9 @@ class _ParenthomepageState extends State<Parenthomepage> {
                                       ),
                                       boxShadow: <BoxShadow>[
                                         BoxShadow(
-                                          color: const Color(0xFF000080)
-                                              .withValues(alpha: 77),
+                                          color: const Color(
+                                            0xFF000080,
+                                          ).withValues(alpha: 77),
                                           spreadRadius: 1,
                                           blurRadius: 10,
                                           offset: const Offset(0, 0),
@@ -346,9 +350,13 @@ class _ParenthomepageState extends State<Parenthomepage> {
                                     left: 23,
                                     child: Container(
                                       constraints: const BoxConstraints(
-                                          minHeight: 35, minWidth: 100),
+                                        minHeight: 35,
+                                        minWidth: 100,
+                                      ),
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 14, vertical: 8),
+                                        horizontal: 14,
+                                        vertical: 8,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: Colors.white,
                                         borderRadius: BorderRadius.circular(8),
@@ -373,8 +381,9 @@ class _ParenthomepageState extends State<Parenthomepage> {
                           height: 200,
                           autoPlay: true,
                           autoPlayInterval: const Duration(seconds: 3),
-                          autoPlayAnimationDuration:
-                              const Duration(milliseconds: 800),
+                          autoPlayAnimationDuration: const Duration(
+                            milliseconds: 800,
+                          ),
                           enlargeCenterPage: true,
                           aspectRatio: 16 / 9,
                           viewportFraction: 0.95,
@@ -461,16 +470,24 @@ class _ParenthomepageState extends State<Parenthomepage> {
                           (child) => Container(
                             margin: const EdgeInsets.only(bottom: 10),
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 12),
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
-                                  color: const Color(0xFFE5E7EB), width: 1),
+                                color: const Color(0xFFE5E7EB),
+                                width: 1,
+                              ),
                               boxShadow: <BoxShadow>[
                                 BoxShadow(
-                                  color:
-                                      const Color.fromARGB(255, 0, 0, 128).withValues(alpha: 0.2),
+                                  color: const Color.fromARGB(
+                                    255,
+                                    0,
+                                    0,
+                                    128,
+                                  ).withValues(alpha: 0.2),
                                   blurRadius: 3,
                                   offset: const Offset(0, 0),
                                 ),
@@ -591,7 +608,8 @@ class _ParenthomepageState extends State<Parenthomepage> {
                                         context,
                                         MaterialPageRoute(
                                           builder: (_) => TutorProfilePage(
-                                              tutorId: tutor.uid),
+                                            tutorId: tutor.uid,
+                                          ),
                                         ),
                                       ).then((_) => loadParent());
                                     },
@@ -604,8 +622,8 @@ class _ParenthomepageState extends State<Parenthomepage> {
                                             shape: BoxShape.circle,
                                             image: DecorationImage(
                                               image: NetworkImage(
-                                                  favoriteTutors[index]
-                                                      .picture),
+                                                favoriteTutors[index].picture,
+                                              ),
                                               fit: BoxFit.cover,
                                             ),
                                           ),
@@ -622,7 +640,8 @@ class _ParenthomepageState extends State<Parenthomepage> {
                                             ),
                                             child: Center(
                                               child: SvgPicture.asset(
-                                                  'assets/images/heart.svg'),
+                                                'assets/images/heart.svg',
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -692,4 +711,3 @@ class _ParenthomepageState extends State<Parenthomepage> {
     );
   }
 }
-

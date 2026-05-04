@@ -1,3 +1,5 @@
+import 'package:fahamni/Account_Settings_Parent/account_screen.dart';
+import 'package:fahamni/ParentDashboread/ParentCoursePage/parent_courses_page.dart';
 import 'package:fahamni/ParentDashboread/ParentExplorePage/parent_explore_page.dart';
 import 'package:fahamni/ParentDashboread/ParentHomePage/home_page.dart';
 import 'package:fahamni/StudentHomePage/studenthome_service.dart';
@@ -242,6 +244,10 @@ class _ParentSchedulePageState extends State<ParentSchedulePage> {
     }
 
     if (index == 2) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const ParentCoursesPage()),
+      );
       return;
     }
 
@@ -254,8 +260,9 @@ class _ParentSchedulePageState extends State<ParentSchedulePage> {
     }
 
     if (index == 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile page is coming soon.')),
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const ParentAccountScreen()),
       );
       return;
     }
@@ -1347,5 +1354,3 @@ _EventPalette _paletteForSession(
   ];
   return palettes[fallbackIndex % palettes.length];
 }
-
-

@@ -1,3 +1,4 @@
+import 'package:fahamni/ParentDashboread/ParentCoursePage/parent_courses_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,6 +8,7 @@ import 'package:fahamni/Courses/courses_page.dart';
 import 'package:fahamni/Explore_map_pages/explorepage.dart';
 import 'package:fahamni/StudentHomePage/Student_homepage.dart';
 import 'package:fahamni/StudentHomePage/studenthome_service.dart';
+import 'package:fahamni/Account_Settings_Parent/account_screen.dart';
 import 'package:fahamni/ParentDashboread/ParentHomePage/home_page.dart';
 import 'package:fahamni/ParentDashboread/ParentExplorePage/parent_explore_page.dart';
 import 'package:fahamni/ParentDashboread/ParentSchedulePage/parent_schedule_page.dart';
@@ -29,8 +31,7 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  final ChatService _chatService =
-      ChatService(FirestoreChatRepository());
+  final ChatService _chatService = ChatService(FirestoreChatRepository());
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final studenthomepage_service _studentService = studenthomepage_service();
@@ -82,8 +83,10 @@ class _ChatPageState extends State<ChatPage> {
     if (userId == null || _didResolveInitialTab) return;
 
     UserRole? currentRole;
-    final DocumentSnapshot<Map<String, dynamic>> userSnapshot =
-        await _firestore.collection('users').doc(userId).get();
+    final DocumentSnapshot<Map<String, dynamic>> userSnapshot = await _firestore
+        .collection('users')
+        .doc(userId)
+        .get();
     final String? roleName = userSnapshot.data()?['role'] as String?;
 
     if (roleName != null) {
@@ -96,15 +99,18 @@ class _ChatPageState extends State<ChatPage> {
     }
 
     if (currentRole == null) {
-      final List<MapEntry<String, UserRole>> checks = <MapEntry<String, UserRole>>[
-        const MapEntry<String, UserRole>('tutors', UserRole.tutor),
-        const MapEntry<String, UserRole>('students', UserRole.student),
-        const MapEntry<String, UserRole>('parents', UserRole.parent),
-      ];
+      final List<MapEntry<String, UserRole>> checks =
+          <MapEntry<String, UserRole>>[
+            const MapEntry<String, UserRole>('tutors', UserRole.tutor),
+            const MapEntry<String, UserRole>('students', UserRole.student),
+            const MapEntry<String, UserRole>('parents', UserRole.parent),
+          ];
 
       for (final MapEntry<String, UserRole> check in checks) {
-        final DocumentSnapshot<Map<String, dynamic>> snapshot =
-            await _firestore.collection(check.key).doc(userId).get();
+        final DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore
+            .collection(check.key)
+            .doc(userId)
+            .get();
         if (snapshot.exists) {
           currentRole = check.value;
           break;
@@ -118,7 +124,7 @@ class _ChatPageState extends State<ChatPage> {
       _currentRole = currentRole;
       _selectedTabIndex = currentRole == UserRole.tutor ? 1 : 0;
     });
-    
+
     // Load user data after role is resolved
     await _loadUserDataForNavigation();
   }
@@ -180,14 +186,15 @@ class _ChatPageState extends State<ChatPage> {
       if (index == 2) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const ParentSchedulePage()),
+          MaterialPageRoute(builder: (_) => const ParentCoursesPage()),
         );
         return;
       }
 
       if (index == 4) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile page is coming soon.')),
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ParentAccountScreen()),
         );
       }
     }
@@ -210,7 +217,9 @@ class _ChatPageState extends State<ChatPage> {
       return 'Group Conversation';
     }
 
-    return otherParticipants.isNotEmpty ? 'Direct Conversation' : 'Conversation';
+    return otherParticipants.isNotEmpty
+        ? 'Direct Conversation'
+        : 'Conversation';
   }
 
   String _conversationAvatar(ConversationModel conversation) {
@@ -226,9 +235,7 @@ class _ChatPageState extends State<ChatPage> {
   void _openStudyAiPage() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const AIStudyChatPage(),
-      ),
+      MaterialPageRoute(builder: (context) => const AIStudyChatPage()),
     );
   }
 
@@ -277,7 +284,10 @@ class _ChatPageState extends State<ChatPage> {
                 children: [
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Icon(Icons.search, color: Color.fromARGB(179, 31, 41, 55)),
+                    child: Icon(
+                      Icons.search,
+                      color: Color.fromARGB(179, 31, 41, 55),
+                    ),
                   ),
                   Expanded(
                     child: TextField(
@@ -311,9 +321,7 @@ class _ChatPageState extends State<ChatPage> {
           Expanded(
             child: currentUserId == null
                 ? const Center(
-                    child: Text(
-                      'Sign in to view your conversations.',
-                    ),
+                    child: Text('Sign in to view your conversations.'),
                   )
                 : StreamBuilder<List<ConversationModel>>(
                     stream: _chatService.getConversations(
@@ -329,9 +337,7 @@ class _ChatPageState extends State<ChatPage> {
 
                       if (snapshot.connectionState == ConnectionState.waiting &&
                           !snapshot.hasData) {
-                        return const Center(
-                          child: CircularProgressIndicator(),
-                        );
+                        return const Center(child: CircularProgressIndicator());
                       }
 
                       final List<ConversationModel> conversations =
@@ -350,9 +356,10 @@ class _ChatPageState extends State<ChatPage> {
                         itemBuilder: (context, index) {
                           final ConversationModel conversation =
                               conversations[index].copyWith(
-                            conversationName:
-                                _conversationName(conversations[index]),
-                          );
+                                conversationName: _conversationName(
+                                  conversations[index],
+                                ),
+                              );
 
                           return Conversationbox(
                             conversation: conversation,
@@ -376,9 +383,7 @@ class _ChatPageState extends State<ChatPage> {
               highlightElevation: 6,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(18),
-                side: const BorderSide(
-                  color: Color.fromARGB(40, 0, 0, 128),
-                ),
+                side: const BorderSide(color: Color.fromARGB(40, 0, 0, 128)),
               ),
               icon: const Icon(Icons.auto_awesome_rounded, size: 20),
               label: Text(
@@ -390,14 +395,10 @@ class _ChatPageState extends State<ChatPage> {
                 ),
               ),
             ),
-      bottomNavigationBar: _currentRole == UserRole.student || _currentRole == UserRole.parent
-          ? CustomBottomNavbar(
-              selectedIndex: 3,
-              onTap: _handleBottomNavigation,
-            )
+      bottomNavigationBar:
+          _currentRole == UserRole.student || _currentRole == UserRole.parent
+          ? CustomBottomNavbar(selectedIndex: 3, onTap: _handleBottomNavigation)
           : null,
     );
   }
 }
-
-
