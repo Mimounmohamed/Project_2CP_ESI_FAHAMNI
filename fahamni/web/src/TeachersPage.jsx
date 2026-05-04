@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "./firebase";
+import { useTranslation } from "react-i18next";
 
 const STATUS_MAP = { pending: "pending", approved: "validated", rejected: "rejected" };
 const TABS = ["pending", "approved", "rejected"];
 
 export default function TeachersPage({ onSelect }) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState("pending");
   const [search, setSearch] = useState("");
   const [teachers, setTeachers] = useState(null);
@@ -37,7 +39,7 @@ export default function TeachersPage({ onSelect }) {
   return (
     <div style={s.page}>
       {/* Toolbar */}
-      <div style={s.toolbar}>
+      <div className="page-toolbar">
         <div style={s.searchWrap}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"
             style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)" }}>
@@ -45,40 +47,42 @@ export default function TeachersPage({ onSelect }) {
           </svg>
           <input
             style={s.search}
-            placeholder="Search teachers by name or email..."
+            placeholder={t("teachers.searchPlaceholder")}
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        <div style={s.tabs}>
-          {TABS.map(t => (
+        <div className="page-tabs">
+          {TABS.map(tabKey => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
-              style={{ ...s.tabBtn, ...(tab === t ? s.tabActive : {}) }}
+              key={tabKey}
+              onClick={() => setTab(tabKey)}
+              style={{ ...s.tabBtn, ...(tab === tabKey ? s.tabActive : {}) }}
             >
-              {t.charAt(0).toUpperCase() + t.slice(1)}
+              {t(`teachers.tabs.${tabKey}`)}
             </button>
           ))}
         </div>
       </div>
 
       {/* Table */}
-      <div style={s.tableWrap}>
+      <div className="table-scroll">
+        <div className="table-scroll-inner thin-scroll">
+        <div className="table-min">
         {/* Head */}
         <div style={s.tableHead}>
-          <span style={{ ...s.col, flex: 2.5 }}>User Profile</span>
-          <span style={{ ...s.col, flex: 2 }}>Contact</span>
-          <span style={{ ...s.col, flex: 1.5 }}>Submitted Date</span>
-          <span style={{ ...s.col, flex: 1, textAlign: "center" }}>Actions</span>
+          <span style={{ ...s.col, flex: 2.5 }}>{t("teachers.userProfile")}</span>
+          <span style={{ ...s.col, flex: 2 }}>{t("teachers.contact")}</span>
+          <span style={{ ...s.col, flex: 1.5 }}>{t("teachers.submittedDate")}</span>
+          <span style={{ ...s.col, flex: 1, textAlign: "center" }}>{t("teachers.actions")}</span>
         </div>
 
         {/* Body */}
-        <div className="thin-scroll" style={s.tableBody}>
+        <div style={s.tableBody}>
           {teachers === null ? (
-            <div style={s.empty}>Loading...</div>
+            <div style={s.empty}>{t("teachers.loading")}</div>
           ) : filtered.length === 0 ? (
-            <div style={s.empty}>No {tab} teachers found.</div>
+            <div style={s.empty}>{t("teachers.noTeachersFound", { tab: t(`teachers.tabs.${tab}`) })}</div>
           ) : filtered.map(t => (
             <div key={t.id} style={s.row}>
               <div style={{ ...s.cell, flex: 2.5, gap: 12 }}>
@@ -113,6 +117,8 @@ export default function TeachersPage({ onSelect }) {
             </div>
           ))}
         </div>
+        </div>{/* table-min */}
+        </div>{/* table-scroll-inner */}
       </div>
     </div>
   );

@@ -2,6 +2,8 @@ import { initializeApp } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
 import { getAuth, setPersistence, browserSessionPersistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
+import { getFunctions } from "firebase/functions";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_API_KEY,
@@ -20,5 +22,7 @@ setPersistence(auth, browserSessionPersistence);
 
 isSupported().then(yes => { if (yes) getAnalytics(app); });
 
-export const db = getFirestore(app);
+export const db        = getFirestore(app);
+export const storage   = getStorage(app);
+export const functions = getFunctions(app, "us-central1");
 export default app;

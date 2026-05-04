@@ -1,5 +1,5 @@
 import { useState, useEffect, Component } from "react";
-import { collection, query, where, getDocs, getDoc, doc, setDoc, getCountFromServer } from "firebase/firestore";
+import { collection, query, where, getDocs, getDoc, doc, setDoc, getCountFromServer, onSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 import TeachersPage from "./TeachersPage";
 import TeacherProfilePage from "./TeacherProfilePage";
@@ -8,52 +8,26 @@ import UserProfilePage from "./UserProfilePage";
 import ReportsPage from "./ReportsPage";
 import MessagesPage from "./MessagesPage";
 import SettingsPage from "./SettingsPage";
+import { useTranslation } from "react-i18next";
+import { applyAdminLanguage } from "./i18n";
 
 
-const MOCK_NOTIFICATIONS = [
-  { id: 1, title: "New Report", desc: "A new report has been submitted", time: "09:15AM", read: false },
-  { id: 2, title: "New Message", desc: "There is a new message from Djellal Toufik", time: "09:15AM", read: false },
-  { id: 3, title: "New Message", desc: "There is a new message from Djellal Toufik", time: "09:15AM", read: false },
-  { id: 4, title: "Teacher Validated", desc: "Meriem Chabane has been validated as a teacher", time: "08:40AM", read: true },
-  { id: 5, title: "New Message", desc: "There is a new message from Djellal Toufik", time: "08:10AM", read: false },
-  { id: 6, title: "User Suspended", desc: "Karim Bouazza has been suspended", time: "Yesterday", read: true },
-  { id: 7, title: "New Report", desc: "A session report has been flagged as urgent", time: "Yesterday", read: true },
-];
+function fmtNotifTime(ts) {
+  if (!ts) return "";
+  const d = new Date(ts.seconds * 1000), now = new Date(), diff = now - d;
+  if (diff < 60000)    return "Just now";
+  if (diff < 3600000)  return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return "Yesterday";
+}
 
-const NAV = [
-  { id: "dashboard", label: "Dashboard", icon: <GridIcon /> },
-  { id: "teachers", label: "Teachers", icon: <TeacherIcon /> },
-  { id: "users", label: "Users", icon: <UsersIcon /> },
-  { id: "reports", label: "Reports", icon: <ReportsIcon /> },
-  { id: "messages", label: "Messages", icon: <MessagesIcon /> },
-  { id: "settings", label: "Settings", icon: <SettingsIcon /> },
-];
+const STATS_KEYS = ["validatedTeachers", "totalUsers", "totalReports", "totalSessions"];
 
 const STATS_CONFIG = [
-  {
-    label: "Validated Teachers",
-    badge: null, borderColor: "#6366f1",
-    iconBg: "#eef2ff", iconColor: "#6366f1",
-    icon: "teacher-check",
-  },
-  {
-    label: "Total Users",
-    badge: null, borderColor: null,
-    iconBg: "#eef2ff", iconColor: "#6366f1",
-    icon: "users",
-  },
-  {
-    label: "Total Reports",
-    badge: null, borderColor: "#ef4444",
-    iconBg: "#fef2f2", iconColor: "#ef4444",
-    icon: "alert",
-  },
-  {
-    label: "Total Sessions",
-    badge: null, borderColor: null,
-    iconBg: "#eef2ff", iconColor: "#6366f1",
-    icon: "sessions",
-  },
+  { key: "validatedTeachers", badge: null, borderColor: "#6366f1", iconBg: "#eef2ff", iconColor: "#6366f1", icon: "teacher-check" },
+  { key: "totalUsers",        badge: null, borderColor: null,       iconBg: "#eef2ff", iconColor: "#6366f1", icon: "users" },
+  { key: "totalReports",      badge: null, borderColor: "#ef4444",  iconBg: "#fef2f2", iconColor: "#ef4444", icon: "alert" },
+  { key: "totalSessions",     badge: null, borderColor: null,       iconBg: "#eef2ff", iconColor: "#6366f1", icon: "sessions" },
 ];
 
 
@@ -74,7 +48,7 @@ class PageErrorBoundary extends Component {
         <div style={{ fontSize:15, fontWeight:600, color:"#1F2937" }}>Something went wrong</div>
         <div style={{ fontSize:13, color:"#94a3b8" }}>{this.state.error?.message}</div>
         <button onClick={() => this.setState({ error:null })} style={{ padding:"8px 24px", background:"#000080", color:"#fff", border:"none", borderRadius:20, cursor:"pointer", fontSize:13, fontWeight:600 }}>
-          Try again
+          {this.props.tryAgainLabel ?? "Try again"}
         </button>
       </div>
     );
@@ -83,10 +57,27 @@ class PageErrorBoundary extends Component {
 }
 
 export default function Dashboard({ user, onLogout }) {
+  const { t } = useTranslation();
+
+  const NAV = [
+    { id: "dashboard", label: t("nav.dashboard"), icon: <GridIcon /> },
+    { id: "teachers",  label: t("nav.teachers"),  icon: <TeacherIcon /> },
+    { id: "users",     label: t("nav.users"),      icon: <UsersIcon /> },
+    { id: "reports",   label: t("nav.reports"),    icon: <ReportsIcon /> },
+    { id: "messages",  label: t("nav.messages"),   icon: <MessagesIcon /> },
+    { id: "settings",  label: t("nav.settings"),   icon: <SettingsIcon /> },
+  ];
+
   const [active, setActive] = useState("dashboard");
-  const [showNotif, setShowNotif] = useState(false);
-  const [notifTab, setNotifTab] = useState("unread");
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showNotif,   setShowNotif]   = useState(false);
+  const [notifTab,    setNotifTab]    = useState("unread");
+  const [tutorNotifs, setTutorNotifs] = useState([]);
+  const [reportNotifs,setReportNotifs]= useState([]);
+  const [readIds,     setReadIds]     = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("admin_notif_read") || "[]")); }
+    catch { return new Set(); }
+  });
   const [adminData, setAdminData] = useState(null);
   const [statValues, setStatValues] = useState([null, null, null, null]);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
@@ -186,6 +177,7 @@ export default function Dashboard({ user, onLogout }) {
         if (snap.empty) return;
         const data = snap.docs[0].data();
         setAdminData(data);
+        if (data.language) applyAdminLanguage(data.language);
         const uidRef = doc(db, "admins", user.uid);
         const uidSnap = await getDoc(uidRef).catch(() => null);
         if (uidSnap && !uidSnap.exists()) {
@@ -195,6 +187,52 @@ export default function Dashboard({ user, onLogout }) {
       .catch(err => console.error("Firestore error:", err));
   }, [user?.uid, user?.email]);
 
+  // ── Real-time notification listeners ──
+  useEffect(() => {
+    const q1 = query(collection(db, "tutors"),  where("account_status", "==", "pending"));
+    const q2 = query(collection(db, "reports"), where("status",         "==", "pending"));
+
+    const unsub1 = onSnapshot(q1, snap => {
+      setTutorNotifs(snap.docs.map(d => {
+        const data = d.data();
+        return {
+          id:    `tutor_${d.id}`,
+          titleKey: "dashboard.teacherValidationRequest",
+          descSuffix: `${data.first_name ?? ""} ${data.last_name ?? ""}`.trim(),
+          descSuffixKey: "dashboard.submittedRequest",
+          time:  fmtNotifTime(data.created_at),
+          ts:    data.created_at?.seconds ?? 0,
+        };
+      }));
+    }, err => console.error("Notif tutor listener:", err));
+
+    const unsub2 = onSnapshot(q2, snap => {
+      setReportNotifs(snap.docs.map(d => {
+        const data = d.data();
+        return {
+          id:    `report_${d.id}`,
+          titleKey: "dashboard.newReport",
+          desc:  data.reason ?? `A ${data.type ?? "new"} report has been submitted`,
+          time:  fmtNotifTime(data.created_at),
+          ts:    data.created_at?.seconds ?? 0,
+        };
+      }));
+    }, err => console.error("Notif report listener:", err));
+
+    return () => { unsub1(); unsub2(); };
+  }, []);
+
+  const notifications = [
+    ...tutorNotifs.map(n  => ({ ...n, read: readIds.has(n.id) })),
+    ...reportNotifs.map(n => ({ ...n, read: readIds.has(n.id) })),
+  ].sort((a, b) => (b.ts ?? 0) - (a.ts ?? 0));
+
+  function markAllRead() {
+    const all = new Set([...readIds, ...notifications.map(n => n.id)]);
+    setReadIds(all);
+    try { localStorage.setItem("admin_notif_read", JSON.stringify([...all])); } catch {}
+  }
+
   // ── Shared nav handler ──
   function navigateTo(pageId) {
     if (pageId !== "messages") setPendingContact(null);
@@ -203,12 +241,18 @@ export default function Dashboard({ user, onLogout }) {
     setSelectedTeacher(null);
     setSelectedUser(null);
     setUsersInitialTab("all");
+    setSidebarOpen(false);
   }
+
+  function closeSidebar() { setSidebarOpen(false); }
 
   return (
     <div style={s.shell}>
+      {/* Mobile sidebar overlay */}
+      <div className={`sidebar-overlay${sidebarOpen ? " sidebar-open" : ""}`} onClick={closeSidebar} />
+
       {/* ── Sidebar ── */}
-      <aside style={s.sidebar}>
+      <aside style={s.sidebar} className={`dash-sidebar${sidebarOpen ? " sidebar-open" : ""}`}>
         {/* Logo */}
         <div style={s.logoRow}>
           <svg width="44" height="34" viewBox="0 0 114 87" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -237,7 +281,7 @@ export default function Dashboard({ user, onLogout }) {
             <div style={s.userName}>
               {adminData ? `${adminData.firstName} ${adminData.lastName}` : "—"}
             </div>
-            <div style={s.userRole}>Admin</div>
+            <div style={s.userRole}>{t("nav.admin")}</div>
           </div>
         </div>
 
@@ -261,57 +305,62 @@ export default function Dashboard({ user, onLogout }) {
         <div style={{ flex: 1 }} />
 
         {/* Logout */}
-        <button style={s.logoutBtn} onClick={onLogout}>
+        <button style={s.logoutBtn} onClick={() => { onLogout(); closeSidebar(); }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
             <polyline points="16 17 21 12 16 7" />
             <line x1="21" y1="12" x2="9" y2="12" />
           </svg>
-          Logout
+          {t("nav.logout")}
         </button>
       </aside>
 
       {/* ── Main ── */}
       <main style={s.main}>
         {/* Topbar */}
-        <header style={s.topbar}>
+        <header style={s.topbar} className="dash-topbar">
+          <button className="hamburger-btn" onClick={() => setSidebarOpen(v => !v)} aria-label="Menu">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F2937" strokeWidth="2">
+              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
           <div style={{ flex: 1, minWidth: 0 }}>
             {active === "dashboard" && !showNotif && (
               <div style={s.searchWrap}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)" }}>
                   <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
-                <input style={s.search} placeholder="Search data, teachers, or logs..." />
+                <input style={s.search} placeholder={t("topbar.searchPlaceholder")} />
               </div>
             )}
             {active === "teachers" && !showNotif && !selectedTeacher && (
               <div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: "#000080", lineHeight: 1.2 }}>Teacher Management</div>
-                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>Manage all teachers on the platform</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#000080", lineHeight: 1.2 }}>{t("topbar.teacherManagement")}</div>
+                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{t("topbar.manageTeachers")}</div>
               </div>
             )}
             {active === "users" && !showNotif && !selectedUser && (
               <div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: "#000080", lineHeight: 1.2 }}>User Management</div>
-                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>Manage all users on the platform</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#000080", lineHeight: 1.2 }}>{t("topbar.userManagement")}</div>
+                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{t("topbar.manageUsers")}</div>
               </div>
             )}
             {active === "reports" && !showNotif && (
               <div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: "#000080", lineHeight: 1.2 }}>Reports Management</div>
-                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>Manage all reports on the platform</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#000080", lineHeight: 1.2 }}>{t("topbar.reportsManagement")}</div>
+                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{t("topbar.manageReports")}</div>
               </div>
             )}
             {active === "messages" && !showNotif && (
               <div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: "#000080", lineHeight: 1.2 }}>Messages</div>
-                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>Manage all conversations</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#000080", lineHeight: 1.2 }}>{t("nav.messages")}</div>
+                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{t("topbar.manageConversations")}</div>
               </div>
             )}
             {active === "settings" && !showNotif && (
               <div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: "#000080", lineHeight: 1.2 }}>Settings</div>
-                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>Manage your account and preferences</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#000080", lineHeight: 1.2 }}>{t("nav.settings")}</div>
+                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{t("topbar.manageAccount")}</div>
               </div>
             )}
             {active === "users" && !showNotif && selectedUser && (
@@ -347,8 +396,8 @@ export default function Dashboard({ user, onLogout }) {
         </header>
 
         {/* Content */}
-        <div style={s.content}>
-        <PageErrorBoundary pageKey={active}>
+        <div style={s.content} className="dash-content">
+        <PageErrorBoundary pageKey={active} tryAgainLabel={t("dashboard.tryAgain")}>
 
           {/* ── Notifications page ── */}
           {showNotif && (() => {
@@ -358,31 +407,33 @@ export default function Dashboard({ user, onLogout }) {
               : notifications;
             return (
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", height: "100%", minHeight: 0 }}>
-                <h1 style={{ ...s.pageTitle, alignSelf: "flex-start" }}>Notifications</h1>
+                <h1 style={{ ...s.pageTitle, alignSelf: "flex-start" }}>{t("dashboard.notifications")}</h1>
                 <div style={{ ...s.notifTabs, justifyContent: "center" }}>
                   <button
                     style={{ ...s.notifTab, ...(notifTab === "unread" ? s.notifTabActive : {}) }}
                     onClick={() => setNotifTab("unread")}
                   >
-                    Unread {unreadCount > 0 && <span style={s.notifBadge}>{unreadCount}</span>}
+                    {t("dashboard.unread")} {unreadCount > 0 && <span style={s.notifBadge}>{unreadCount}</span>}
                   </button>
                   <button
                     style={{ ...s.notifTab, ...(notifTab === "all" ? s.notifTabActive : {}) }}
                     onClick={() => setNotifTab("all")}
                   >
-                    All
+                    {t("dashboard.all")}
                   </button>
                 </div>
                 <div className="notif-scroll" style={{ ...s.notifList, flex: 1, minHeight: 0, overflowY: "auto", paddingRight: 4 }}>
                   {visible.length === 0 ? (
                     <div style={{ textAlign: "center", color: "#94a3b8", fontSize: 14, padding: "40px 0" }}>
-                      No notifications.
+                      {t("dashboard.noNotifications")}
                     </div>
                   ) : visible.map(n => (
                     <div key={n.id} style={{ ...s.notifCard, background: n.read ? "#fff" : "#f5f7ff" }}>
                       <div style={{ flex: 1 }}>
-                        <div style={s.notifTitle}>{n.title}</div>
-                        <div style={s.notifDesc}>{n.desc}</div>
+                        <div style={s.notifTitle}>{n.titleKey ? t(n.titleKey) : n.title}</div>
+                        <div style={s.notifDesc}>
+                          {n.descSuffix ? `${n.descSuffix} ${t(n.descSuffixKey)}` : n.desc}
+                        </div>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
                         <span style={s.notifTime}>{n.time}</span>
@@ -395,9 +446,9 @@ export default function Dashboard({ user, onLogout }) {
                   <div style={{ paddingTop: 16, flexShrink: 0 }}>
                     <button
                       style={s.markReadBtn}
-                      onClick={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
+                      onClick={markAllRead}
                     >
-                      Mark as read
+                      {t("dashboard.markAsRead")}
                     </button>
                   </div>
                 )}
@@ -420,10 +471,10 @@ export default function Dashboard({ user, onLogout }) {
 
           {/* ── Dashboard page ── */}
           {!showNotif && active === "dashboard" && <>
-          <h1 style={s.pageTitle}>Admin Dashboard</h1>
+          <h1 style={s.pageTitle}>{t("dashboard.title")}</h1>
 
           {/* Stat Cards */}
-          <div style={s.statsRow}>
+          <div className="stats-grid">
             {STATS_CONFIG.map((stat, i) => (
               <div key={i} style={{
                 ...s.statCard,
@@ -437,24 +488,24 @@ export default function Dashboard({ user, onLogout }) {
                 <div style={s.statValue}>
                   {statValues[i] === null ? "—" : statValues[i].toLocaleString()}
                 </div>
-                <div style={s.statLabel}>{stat.label}</div>
+                <div style={s.statLabel}>{t(`dashboard.stats.${stat.key}`)}</div>
               </div>
             ))}
           </div>
 
           {/* Bottom row */}
-          <div style={s.bottomRow}>
+          <div className="dash-bottom-row">
             {/* Tasks */}
-            <div style={s.tasksCol}>
-              <h2 style={s.sectionTitle}>Pending Critical Tasks</h2>
+            <div className="dash-tasks-col">
+              <h2 style={s.sectionTitle}>{t("dashboard.pendingTasks")}</h2>
               <div style={s.tasksList}>
 
                 {pendingTeachers === null ? (
-                  <div style={{ ...s.taskCard, color: "#94a3b8", fontSize: 13 }}>Loading...</div>
+                  <div style={{ ...s.taskCard, color: "#94a3b8", fontSize: 13 }}>{t("dashboard.loading")}</div>
                 ) : pendingTeachers === 0 ? (
                   <div style={{ ...s.taskCard, gap: 10 }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" style={{ flexShrink: 0 }}><path d="M20 6L9 17l-5-5" /></svg>
-                    <span style={{ fontSize: 13, color: "#64748b" }}>No teacher validation requests pending.</span>
+                    <span style={{ fontSize: 13, color: "#64748b" }}>{t("dashboard.noValidationPending")}</span>
                   </div>
                 ) : (
                   <div style={s.taskCard}>
@@ -462,10 +513,10 @@ export default function Dashboard({ user, onLogout }) {
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M3 9h18M9 21V9" /></svg>
                     </div>
                     <div style={s.taskText}>
-                      <div style={s.taskTitle}>{pendingTeachers} teacher{pendingTeachers > 1 ? "s" : ""} awaiting validation</div>
-                      <div style={s.taskDesc}>Credentials submitted for review</div>
+                      <div style={s.taskTitle}>{t("dashboard.teachersAwaiting", { count: pendingTeachers })}</div>
+                      <div style={s.taskDesc}>{t("dashboard.credentialsSubmitted")}</div>
                     </div>
-                    <button style={{ ...s.actionBtn, background: "#000080" }} onClick={() => navigateTo("teachers")}>Review</button>
+                    <button style={{ ...s.actionBtn, background: "#000080" }} onClick={() => navigateTo("teachers")}>{t("dashboard.review")}</button>
                   </div>
                 )}
 
@@ -474,18 +525,18 @@ export default function Dashboard({ user, onLogout }) {
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
                   </div>
                   <div style={s.taskText}>
-                    <div style={s.taskTitle}>Messages</div>
-                    <div style={s.taskDesc}>View and respond to user conversations</div>
+                    <div style={s.taskTitle}>{t("nav.messages")}</div>
+                    <div style={s.taskDesc}>{t("dashboard.viewRespond")}</div>
                   </div>
-                  <button style={{ ...s.actionBtn, background: "#000080" }} onClick={() => navigateTo("messages")}>Open</button>
+                  <button style={{ ...s.actionBtn, background: "#000080" }} onClick={() => navigateTo("messages")}>{t("dashboard.open")}</button>
                 </div>
 
                 {sessionReports === null ? (
-                  <div style={{ ...s.taskCard, color: "#94a3b8", fontSize: 13 }}>Loading...</div>
+                  <div style={{ ...s.taskCard, color: "#94a3b8", fontSize: 13 }}>{t("dashboard.loading")}</div>
                 ) : sessionReports.length === 0 ? (
                   <div style={{ ...s.taskCard, gap: 10 }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" style={{ flexShrink: 0 }}><path d="M20 6L9 17l-5-5" /></svg>
-                    <span style={{ fontSize: 13, color: "#64748b" }}>No urgent session reports at the moment.</span>
+                    <span style={{ fontSize: 13, color: "#64748b" }}>{t("dashboard.noUrgentReports")}</span>
                   </div>
                 ) : (
                   <div style={{ ...s.taskCard, ...s.taskCardUrgent }}>
@@ -493,10 +544,10 @@ export default function Dashboard({ user, onLogout }) {
                       <span style={{ fontSize: 18 }}>✱</span>
                     </div>
                     <div style={s.taskText}>
-                      <div style={s.taskTitle}>{sessionReports.length} urgent session report{sessionReports.length > 1 ? "s" : ""}</div>
-                      <div style={s.taskDesc}>{sessionReports[0].text?.slice(0, 60) || "Reported session behavior"}{sessionReports[0].text?.length > 60 ? "…" : ""}</div>
+                      <div style={s.taskTitle}>{t("dashboard.urgentReport", { count: sessionReports.length })}</div>
+                      <div style={s.taskDesc}>{sessionReports[0].text?.slice(0, 60) || t("dashboard.reportedBehavior")}{sessionReports[0].text?.length > 60 ? "…" : ""}</div>
                     </div>
-                    <button style={{ ...s.actionBtn, background: "#dc2626" }} onClick={() => navigateTo("reports")}>View</button>
+                    <button style={{ ...s.actionBtn, background: "#dc2626" }} onClick={() => navigateTo("reports")}>{t("dashboard.view")}</button>
                   </div>
                 )}
 
@@ -504,15 +555,15 @@ export default function Dashboard({ user, onLogout }) {
             </div>
 
             {/* Suspended Users */}
-            <div style={s.suspendedCol}>
-              <h2 style={s.sectionTitle}>Suspended Users</h2>
+            <div className="dash-suspended-col">
+              <h2 style={s.sectionTitle}>{t("dashboard.suspendedUsers")}</h2>
               <div style={s.suspendedCard}>
                 {suspendedUsers === null ? (
-                  <div style={{ fontSize: 13, color: "#94a3b8", padding: "8px 0" }}>Loading...</div>
+                  <div style={{ fontSize: 13, color: "#94a3b8", padding: "8px 0" }}>{t("dashboard.loading")}</div>
                 ) : suspendedUsers.length === 0 ? (
                   <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#64748b", padding: "8px 0" }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2"><path d="M20 6L9 17l-5-5" /></svg>
-                    No suspended users.
+                    {t("dashboard.noSuspended")}
                   </div>
                 ) : (
                   <>
@@ -539,7 +590,7 @@ export default function Dashboard({ user, onLogout }) {
                         style={s.seeAllBtn}
                         onClick={() => { setActive("users"); setUsersInitialTab("suspended"); setShowNotif(false); setSelectedUser(null); }}
                       >
-                        See Full List ({suspendedUsers.length - 3} more)
+                        {t("dashboard.seeFullList")} ({suspendedUsers.length - 3} more)
                       </button>
                     )}
                   </>

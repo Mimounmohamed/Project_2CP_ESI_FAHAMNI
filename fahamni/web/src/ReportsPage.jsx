@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { collection, query, where, getDocs, doc, updateDoc, getDoc } from "firebase/firestore";
 import { db } from "./firebase";
+import { useTranslation } from "react-i18next";
 
 const TYPE_STYLE = {
   teacher: { label: "ACCOUNT", color: "#6366f1", bg: "#eef2ff" },
@@ -86,6 +87,7 @@ async function resolveReviewDoc(report) {
 }
 
 export default function ReportsPage() {
+  const { t } = useTranslation();
   const [tab, setTab] = useState("pending");
   const [search, setSearch] = useState("");
   const [reports, setReports] = useState(null);
@@ -224,7 +226,7 @@ export default function ReportsPage() {
     <div style={s.page}>
 
       {/* Toolbar */}
-      <div style={s.toolbar}>
+      <div className="page-toolbar">
         <div style={s.searchWrap}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"
             style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)" }}>
@@ -232,19 +234,19 @@ export default function ReportsPage() {
           </svg>
           <input
             style={s.search}
-            placeholder="Search reports by user name..."
+            placeholder={t("reports.searchPlaceholder")}
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
         </div>
-        <div style={s.tabs}>
-          {[["pending","Pending"],["reviewed","Reviewed"],["all","All"]].map(([val, label]) => (
+        <div className="page-tabs">
+          {[["pending","reports.tabs.pending"],["reviewed","reports.tabs.reviewed"],["all","reports.tabs.all"]].map(([val, labelKey]) => (
             <button
               key={val}
               style={{ ...s.tabBtn, ...(tab === val ? s.tabActive : {}) }}
               onClick={() => setTab(val)}
             >
-              {label}
+              {t(labelKey)}
             </button>
           ))}
         </div>
@@ -255,28 +257,30 @@ export default function ReportsPage() {
         <div style={s.urgentBanner}>
           <span style={s.urgentStar}>✱</span>
           <div>
-            <div style={s.urgentTitle}>{pendingCount} Urgent report{pendingCount > 1 ? "s" : ""}</div>
-            <div style={s.urgentSub}>There are reports waiting for review</div>
+            <div style={s.urgentTitle}>{t("reports.urgentReport", { count: pendingCount })}</div>
+            <div style={s.urgentSub}>{t("reports.waitingReview")}</div>
           </div>
         </div>
       )}
 
       {/* Table */}
-      <div style={s.tableWrap}>
+      <div className="table-scroll">
+        <div className="table-scroll-inner thin-scroll">
+        <div className="table-min">
         <div style={s.tableHead}>
-          <span style={{ ...s.col, flex: 2.2 }}>REPORTER</span>
-          <span style={{ ...s.col, flex: 1   }}>TYPE</span>
-          <span style={{ ...s.col, flex: 2.2 }}>REPORTED</span>
-          <span style={{ ...s.col, flex: 1.4 }}>DATE</span>
-          {tab === "all" && <span style={{ ...s.col, flex: 1.2 }}>STATUS</span>}
-          <span style={{ ...s.col, flex: 0.6, textAlign:"center" }}>ACTIONS</span>
+          <span style={{ ...s.col, flex: 2.2 }}>{t("reports.table.reporter")}</span>
+          <span style={{ ...s.col, flex: 1   }}>{t("reports.table.type")}</span>
+          <span style={{ ...s.col, flex: 2.2 }}>{t("reports.table.reported")}</span>
+          <span style={{ ...s.col, flex: 1.4 }}>{t("reports.table.date")}</span>
+          {tab === "all" && <span style={{ ...s.col, flex: 1.2 }}>{t("reports.table.status")}</span>}
+          <span style={{ ...s.col, flex: 0.6, textAlign:"center" }}>{t("reports.table.actions")}</span>
         </div>
 
-        <div className="thin-scroll" style={s.tableBody}>
+        <div style={s.tableBody}>
           {reports === null ? (
-            <div style={s.empty}>Loading...</div>
+            <div style={s.empty}>{t("reports.loading")}</div>
           ) : filtered.length === 0 ? (
-            <div style={s.empty}>No {tab === "all" ? "" : tab} reports found.</div>
+            <div style={s.empty}>{t("reports.noReportsFound", { tab: tab === "all" ? "" : t(`reports.tabs.${tab}`) })}</div>
           ) : filtered.map(r => {
             const ts = typeStyle(r.type);
             const ss = STATUS_STYLE[r.status] ?? STATUS_STYLE.pending;
@@ -287,7 +291,7 @@ export default function ReportsPage() {
                 <div style={{ ...s.cell, flex: 2.2, gap: 10 }}>
                   <Avatar name={r.reporter_name} picture={r.reporter_picture} />
                   <div>
-                    <div style={s.name}>{r.reporter_name || "Unknown"}</div>
+                    <div style={s.name}>{r.reporter_name || t("reports.unknown")}</div>
                     {r.reporter_role && <RoleBadge role={r.reporter_role} />}
                   </div>
                 </div>
@@ -301,7 +305,7 @@ export default function ReportsPage() {
                 <div style={{ ...s.cell, flex: 2.2, gap: 10 }}>
                   <Avatar name={r.reported_name} picture={r.reported_picture} />
                   <div>
-                    <div style={s.name}>{r.reported_name || "Unknown"}</div>
+                    <div style={s.name}>{r.reported_name || t("reports.unknown")}</div>
                     {r.reported_role && <RoleBadge role={r.reported_role} />}
                   </div>
                 </div>
@@ -331,6 +335,8 @@ export default function ReportsPage() {
             );
           })}
         </div>
+        </div>{/* table-min */}
+        </div>{/* table-scroll-inner */}
       </div>
 
       {/* ── Detail Modal ─────────────────────────────────────────────────────── */}
@@ -340,7 +346,7 @@ export default function ReportsPage() {
 
             {/* Header */}
             <div style={s.modalHeader}>
-              <span style={s.modalTitle}>Report Details</span>
+              <span style={s.modalTitle}>{t("reports.reportDetails")}</span>
               <button style={s.closeBtn} onClick={() => setSelected(null)}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2">
                   <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -354,7 +360,7 @@ export default function ReportsPage() {
               <div style={s.modalUser}>
                 <Avatar name={selected.reporter_name} picture={reporterInfo?.picture} size={36} />
                 <div>
-                  <div style={s.modalName}>{selected.reporter_name || "Unknown"}</div>
+                  <div style={s.modalName}>{selected.reporter_name || t("reports.unknown")}</div>
                   <div style={s.modalRole}>
                     {reporterInfo
                       ? (ROLE_STYLE[reporterInfo.role]?.label ?? reporterInfo.role.toUpperCase())
@@ -370,7 +376,7 @@ export default function ReportsPage() {
               <div style={s.modalUser}>
                 <Avatar name={selected.reported_name} picture={reportedInfo?.picture} size={36} />
                 <div>
-                  <div style={s.modalName}>{selected.reported_name || "Unknown"}</div>
+                  <div style={s.modalName}>{selected.reported_name || t("reports.unknown")}</div>
                   <div style={s.modalRole}>
                     {reportedInfo
                       ? (ROLE_STYLE[reportedInfo.role]?.label ?? reportedInfo.role.toUpperCase())
@@ -396,8 +402,8 @@ export default function ReportsPage() {
                   {/* Comment box */}
                   <div style={{ ...s.commentBox, opacity: isHidden ? 0.5 : 1 }}>
                     {isHidden
-                      ? <em style={{ color:"#94a3b8" }}>Comment is currently hidden from users.</em>
-                      : commentText || "No comment text."}
+                      ? <em style={{ color:"#94a3b8" }}>{t("reports.commentHidden")}</em>
+                      : commentText || t("reports.noCommentText")}
                   </div>
 
                   {/* Hide / Unhide toggle — only when there's a real Firestore doc to update */}
@@ -408,17 +414,17 @@ export default function ReportsPage() {
                       onClick={handleToggleHide}
                     >
                       {actionLoading === "hide"
-                        ? "Updating..."
+                        ? t("reports.updating")
                         : isHidden
-                        ? "Unhide Comment"
-                        : "Hide Comment"}
+                        ? t("reports.unhideComment")
+                        : t("reports.hideComment")}
                     </button>
                   )}
                 </>
               ) : (
                 <>
-                  <div style={s.descTitle}>Report Description</div>
-                  <div style={s.descText}>{selected.text || "No description provided."}</div>
+                  <div style={s.descTitle}>{t("reports.reportDescription")}</div>
+                  <div style={s.descText}>{selected.text || t("reports.noDescription")}</div>
                 </>
               )}
             </div>
@@ -426,8 +432,8 @@ export default function ReportsPage() {
             {/* Action feedback */}
             {actionDone && (
               <div style={s.actionFeedback}>
-                {actionDone === "averted"   && "User has been averted and report marked as reviewed."}
-                {actionDone === "suspended" && "User has been suspended and report marked as reviewed."}
+                {actionDone === "averted"   && t("reports.averted")}
+                {actionDone === "suspended" && t("reports.suspended")}
               </div>
             )}
 
@@ -439,7 +445,7 @@ export default function ReportsPage() {
                   disabled={!!actionLoading}
                   onClick={handleAvert}
                 >
-                  {actionLoading === "avert" ? "Processing..." : "Avert User"}
+                  {actionLoading === "avert" ? t("reports.processing") : t("reports.avertUser")}
                 </button>
                 <button
                   style={{
@@ -451,10 +457,10 @@ export default function ReportsPage() {
                   onClick={handleSuspend}
                 >
                   {reportedInfo?.is_suspended
-                    ? "Already Suspended"
+                    ? t("reports.alreadySuspended")
                     : actionLoading === "suspend"
-                    ? "Suspending..."
-                    : "Suspend User"}
+                    ? t("reports.suspending")
+                    : t("reports.suspendUser")}
                 </button>
               </div>
             )}
