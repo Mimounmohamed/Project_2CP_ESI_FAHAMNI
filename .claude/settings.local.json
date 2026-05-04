@@ -30,7 +30,8 @@
       "Bash(mkdir -p /tmp/fahamni-cleanup)",
       "Read(//tmp/**)",
       "Bash(npm init *)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Read(//c/Users/catal/.claude/projects/c--Users-catal-Fahamni/memory/**)"
     ]
   }
 }

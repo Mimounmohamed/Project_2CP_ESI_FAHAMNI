@@ -7,6 +7,7 @@ import UsersPage from "./UsersPage";
 import UserProfilePage from "./UserProfilePage";
 import ReportsPage from "./ReportsPage";
 import MessagesPage from "./MessagesPage";
+import StatisticsPage from "./StatisticsPage";
 import SettingsPage from "./SettingsPage";
 import { useTranslation } from "react-i18next";
 import { applyAdminLanguage } from "./i18n";
@@ -64,8 +65,9 @@ export default function Dashboard({ user, onLogout }) {
     { id: "teachers",  label: t("nav.teachers"),  icon: <TeacherIcon /> },
     { id: "users",     label: t("nav.users"),      icon: <UsersIcon /> },
     { id: "reports",   label: t("nav.reports"),    icon: <ReportsIcon /> },
-    { id: "messages",  label: t("nav.messages"),   icon: <MessagesIcon /> },
-    { id: "settings",  label: t("nav.settings"),   icon: <SettingsIcon /> },
+    { id: "messages",    label: t("nav.messages"),    icon: <MessagesIcon />    },
+    { id: "statistics",  label: t("nav.statistics"),  icon: <StatisticsIcon /> },
+    { id: "settings",    label: t("nav.settings"),    icon: <SettingsIcon />    },
   ];
 
   const [active, setActive] = useState("dashboard");
@@ -357,6 +359,12 @@ export default function Dashboard({ user, onLogout }) {
                 <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{t("topbar.manageConversations")}</div>
               </div>
             )}
+            {active === "statistics" && !showNotif && (
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#000080", lineHeight: 1.2 }}>{t("topbar.statisticsTitle")}</div>
+                <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{t("topbar.statisticsSub")}</div>
+              </div>
+            )}
             {active === "settings" && !showNotif && (
               <div>
                 <div style={{ fontSize: 20, fontWeight: 700, color: "#000080", lineHeight: 1.2 }}>{t("nav.settings")}</div>
@@ -638,6 +646,16 @@ export default function Dashboard({ user, onLogout }) {
             />
           )}
 
+          {/* ── Statistics page ── */}
+          {!showNotif && active === "statistics" && (
+            <div
+              className="thin-scroll"
+              style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "thin", scrollbarColor: "rgba(0,0,0,0.1) transparent" }}
+            >
+              <StatisticsPage />
+            </div>
+          )}
+
           {/* ── Settings page ── */}
           {!showNotif && active === "settings" && (
             <SettingsPage
@@ -648,7 +666,7 @@ export default function Dashboard({ user, onLogout }) {
           )}
 
           {/* placeholder for other pages */}
-          {!showNotif && !["dashboard","teachers","users","reports","messages","settings"].includes(active) && (
+          {!showNotif && !["dashboard","teachers","users","reports","messages","statistics","settings"].includes(active) && (
             <div style={{ color: "#94a3b8", fontSize: 14, paddingTop: 40, textAlign: "center" }}>
               {active.charAt(0).toUpperCase() + active.slice(1)} — coming soon.
             </div>
@@ -663,22 +681,25 @@ export default function Dashboard({ user, onLogout }) {
 
 // ── Icons ──
 function GridIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>;
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>;
 }
 function TeacherIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" /></svg>;
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" /></svg>;
 }
 function UsersIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="8" r="3" /><path d="M2 20c0-3.3 3-6 7-6s7 2.7 7 6" /><circle cx="17" cy="8" r="3" /><path d="M22 20c0-3.3-2-5.5-5-6" /></svg>;
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="8" r="3" /><path d="M2 20c0-3.3 3-6 7-6s7 2.7 7 6" /><circle cx="17" cy="8" r="3" /><path d="M22 20c0-3.3-2-5.5-5-6" /></svg>;
 }
 function ReportsIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="17" x2="12" y2="17" /></svg>;
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="17" x2="12" y2="17" /></svg>;
 }
 function MessagesIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>;
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>;
 }
 function SettingsIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>;
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>;
+}
+function StatisticsIcon() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><polyline points="2 20 22 20"/></svg>;
 }
 function StatIcon({ type, color }) {
   const p = { width: 22, height: 22, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.8 };

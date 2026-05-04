@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\catal\\\\Fahamni\\\\fahamni\\\\web\\\\src\\\\\" -File | Select-Object Name)"
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\catal\\\\Fahamni\\\\fahamni\\\\web\\\\src\\\\\" -File | Select-Object Name)",
+      "Bash(npx vite *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\catal\\Fahamni\\fahamni\\web\\src"

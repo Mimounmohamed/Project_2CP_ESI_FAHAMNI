@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { getAuth, reauthenticateWithCredential, EmailAuthProvider, updatePassword, updateEmail, sendEmailVerification } from "firebase/auth";
 import { doc, updateDoc, collection, query, where, getDocs, setDoc, getDoc, deleteDoc, Timestamp } from "firebase/firestore";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -145,15 +145,7 @@ function AccountTab({ user, adminData, onAdminDataChange }) {
               <Field label={t("account.phone")}        value={form.phone}     onChange={() => {}} disabled />
               <div>
                 <div style={s.fieldLabel}>{t("account.language")}</div>
-                <select
-                  value={form.language}
-                  onChange={e => set("language", e.target.value)}
-                  style={{ ...s.input, cursor: "pointer", appearance: "auto" }}
-                >
-                  <option value="Eng">{t("account.languageEn")}</option>
-                  <option value="Fr">{t("account.languageFr")}</option>
-                  <option value="Ar">{t("account.languageAr")}</option>
-                </select>
+                <LangDropdown value={form.language} onChange={v => set("language", v)} />
               </div>
             </div>
             {msg && <MsgBox msg={msg} />}
@@ -702,6 +694,98 @@ function TabIcon({ name, active }) {
   if (name === "Notifications") return <svg {...p}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>;
   if (name === "Support")       return <svg {...p}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
   return null;
+}
+
+// ── Language Dropdown ─────────────────────────────────────────────────────────
+function LangDropdown({ value, onChange }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const ref = useRef();
+
+  const OPTIONS = [
+    { value: "Eng", label: t("account.languageEn") },
+    { value: "Fr",  label: t("account.languageFr") },
+    { value: "Ar",  label: t("account.languageAr") },
+  ];
+  const selected = OPTIONS.find(o => o.value === value) ?? OPTIONS[0];
+
+  useEffect(() => {
+    if (!open) return;
+    function close(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      {/* Trigger */}
+      <div
+        onClick={() => setOpen(v => !v)}
+        style={{
+          display: "flex", alignItems: "center", gap: 10,
+          padding: "9px 12px",
+          border: `1.5px solid ${open ? "#000080" : "#e2e8f0"}`,
+          borderRadius: 8,
+          background: "#fff",
+          cursor: "pointer",
+          fontSize: 13, color: "#1F2937",
+          userSelect: "none",
+          transition: "border-color 0.15s",
+          boxSizing: "border-box", width: "100%",
+          boxShadow: open ? "0 0 0 3px rgba(0,0,128,0.07)" : "none",
+        }}
+      >
+        <span style={{ flex: 1, fontWeight: 500 }}>{selected.label}</span>
+        <svg
+          width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="#94a3b8" strokeWidth="2"
+          style={{ flexShrink: 0, transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "none" }}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </div>
+
+      {/* Dropdown panel */}
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0,
+          background: "#fff",
+          border: "1.5px solid #e2e8f0",
+          borderRadius: 10,
+          boxShadow: "0 8px 28px rgba(0,0,128,0.12)",
+          zIndex: 200,
+          overflow: "hidden",
+        }}>
+          {OPTIONS.map(opt => (
+            <div
+              key={opt.value}
+              onClick={() => { onChange(opt.value); setOpen(false); }}
+              style={{
+                display: "flex", alignItems: "center", gap: 10,
+                padding: "11px 14px",
+                cursor: "pointer",
+                background: opt.value === value ? "#f0f4ff" : "#fff",
+                fontSize: 13,
+                color: opt.value === value ? "#000080" : "#374151",
+                fontWeight: opt.value === value ? 600 : 400,
+                transition: "background 0.1s",
+                borderBottom: "1px solid #f8fafc",
+              }}
+              onMouseEnter={e => { if (opt.value !== value) e.currentTarget.style.background = "#f8fafc"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = opt.value === value ? "#f0f4ff" : "#fff"; }}
+            >
+              <span style={{ flex: 1 }}>{opt.label}</span>
+              {opt.value === value && (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000080" strokeWidth="2.5">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
