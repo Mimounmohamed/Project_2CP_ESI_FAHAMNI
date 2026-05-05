@@ -118,7 +118,7 @@ service cloud.firestore {
     // has signed in, so read access is allowed for unauthenticated users.
     match /users/{userId} {
       allow read: if true;
-      allow write: if isSelf(userId);
+      allow write: if isSelf(userId) || isAdmin();
     }
 
     match /students/{userId} {
