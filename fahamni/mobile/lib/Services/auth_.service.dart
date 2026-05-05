@@ -38,8 +38,9 @@ class AuthService {
       final Map<String, dynamic> data = usermodel.toMap();
       data['uid'] = uid;
       if (usermodel.role == UserRole.tutor && certificationFiles != null && certificationFiles.isNotEmpty) {
-        final String certUrl = await _uploadCertificationFile(uid, certificationFiles.first);
-        data['certification_url'] = certUrl;
+        final List<String> certUrls = await _uploadCertificationFiles(uid, certificationFiles);
+        data['certification_url'] = certUrls.first;
+        data['certification_urls'] = certUrls;
       }
  
       final collection = _collectionForRole(usermodel.role);
@@ -175,18 +176,35 @@ class AuthService {
     final Reference ref = FirebaseStorage.instance
         .ref()
         .child('tutor_certifications/$uid/${DateTime.now().millisecondsSinceEpoch}_$fileName');
+    final metadata = SettableMetadata(contentType: _contentTypeForFile(fileName));
 
     UploadTask uploadTask;
     if (file.path != null && file.path!.isNotEmpty) {
-      uploadTask = ref.putFile(File(file.path!));
+      uploadTask = ref.putFile(File(file.path!), metadata);
     } else if (file.bytes != null) {
-      uploadTask = ref.putData(file.bytes!);
+      uploadTask = ref.putData(file.bytes!, metadata);
     } else {
       throw Exception('Certification upload failed: file path and bytes are both unavailable.');
     }
 
     final TaskSnapshot snapshot = await uploadTask;
     return await snapshot.ref.getDownloadURL();
+  }
+
+  Future<List<String>> _uploadCertificationFiles(String uid, List<PlatformFile> files) async {
+    final urls = <String>[];
+    for (final file in files) {
+      urls.add(await _uploadCertificationFile(uid, file));
+    }
+    return urls;
+  }
+
+  String _contentTypeForFile(String fileName) {
+    final lower = fileName.toLowerCase();
+    if (lower.endsWith('.pdf')) return 'application/pdf';
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+    return 'application/octet-stream';
   }
  
   String _handleAuthError(FirebaseAuthException e) {
@@ -258,8 +276,9 @@ class AuthService {
     final data = userModel.toMap();
     data['uid'] = uid;
     if (userModel.role == UserRole.tutor && certificationFiles != null && certificationFiles.isNotEmpty) {
-      final String certUrl = await _uploadCertificationFile(uid, certificationFiles.first);
-      data['certification_url'] = certUrl;
+      final List<String> certUrls = await _uploadCertificationFiles(uid, certificationFiles);
+      data['certification_url'] = certUrls.first;
+      data['certification_urls'] = certUrls;
     }
     final collection = _collectionForRole(userModel.role);
     await _db.collection(collection).doc(uid).set(data);
@@ -299,8 +318,9 @@ class AuthService {
       final data = userModel.toMap();
       data['uid'] = uid;
       if (userModel.role == UserRole.tutor && certificationFiles != null && certificationFiles.isNotEmpty) {
-        final String certUrl = await _uploadCertificationFile(uid, certificationFiles.first);
-        data['certification_url'] = certUrl;
+        final List<String> certUrls = await _uploadCertificationFiles(uid, certificationFiles);
+        data['certification_url'] = certUrls.first;
+        data['certification_urls'] = certUrls;
       }
       final collection = _collectionForRole(userModel.role);
       await _db.collection(collection).doc(uid).set(data);
