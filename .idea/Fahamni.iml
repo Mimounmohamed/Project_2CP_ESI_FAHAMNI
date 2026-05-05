@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$">
+      <excludeFolder url="file://$MODULE_DIR$/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/build" />
+      <excludeFolder url="file://$MODULE_DIR$/fahamni/mobile/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/fahamni/mobile/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/fahamni/mobile/build" />
+      <excludeFolder url="file://$MODULE_DIR$/fahamni/mobile/linux/flutter/ephemeral/.plugin_symlinks/record_linux/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/fahamni/mobile/linux/flutter/ephemeral/.plugin_symlinks/record_linux/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/fahamni/mobile/linux/flutter/ephemeral/.plugin_symlinks/record_linux/build" />
+      <excludeFolder url="file://$MODULE_DIR$/fahamni/mobile/third_party/record_linux/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/fahamni/mobile/third_party/record_linux/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/fahamni/mobile/third_party/record_linux/build" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="Dart SDK" level="project" />
+    <orderEntry type="library" name="Dart Packages" level="project" />
+    <orderEntry type="library" name="Flutter Plugins" level="project" />
+  </component>
+</module>

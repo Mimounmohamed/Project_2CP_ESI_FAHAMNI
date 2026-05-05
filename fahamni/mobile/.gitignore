@@ -1,0 +1,96 @@
+﻿# ============================================
+# FLUTTER / DART
+# ============================================
+.dart_tool/
+.pub/
+.pub-cache/
+pubspec.lock
+*.dill
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.fvm/
+.fvm_flutter_config
+
+# ============================================
+# ANDROID
+# ============================================
+**/android/app/build/
+**/android/build/
+**/android/.gradle/
+**/android/local.properties
+**/android/**/build/
+**/android/**/*.apk
+**/android/**/*.aab
+**/android/**/*.so
+**/android/**/*.bin
+**/android/**/zip-cache/
+**/android/**/merged_native_libs/
+**/android/**/intermediates/
+**/android/**/outputs/
+
+# ============================================
+# IOS
+# ============================================
+**/ios/build/
+**/ios/Pods/
+**/ios/*.xcworkspace/xcuserdata/
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/ServiceDefinitions.json
+**/ios/**/*.app
+**/ios/**/*.ipa
+**/ios/**/*.framework
+
+# ============================================
+# LARGE BINARY FILES
+# ============================================
+*.apk
+*.aab
+*.so
+*.a
+*.o
+*.dill
+*.bin
+*.zip-cache
+*.dylib
+*.dll
+*.exe
+
+# ============================================
+# IDE & OS
+# ============================================
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# ============================================
+# SECRETS & KEYS
+# ============================================
+*.keystore
+*.jks
+google-services.json
+GoogleService-Info.plist
+.env
+.env.*
+secrets/
+keys/
+
+# ============================================
+# COVERAGE & REPORTS
+# ============================================
+coverage/
+test/.test_coverage.dart
+*.lcov
+
+# ============================================
+# WEB
+# ============================================
+build/web/
+web/.dart_tool/
+macos/Flutter/GeneratedPluginRegistrant.swift
