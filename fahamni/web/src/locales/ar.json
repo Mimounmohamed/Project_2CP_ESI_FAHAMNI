@@ -5,6 +5,7 @@
     "users": "المستخدمون",
     "reports": "التقارير",
     "messages": "الرسائل",
+    "statistics": "الإحصائيات",
     "settings": "الإعدادات",
     "logout": "تسجيل الخروج",
     "admin": "مدير"
@@ -18,6 +19,8 @@
     "manageReports": "إدارة جميع التقارير على المنصة",
     "manageConversations": "إدارة جميع المحادثات",
     "manageAccount": "إدارة حسابك وتفضيلاتك",
+    "statisticsTitle": "الإحصائيات",
+    "statisticsSub": "عرض تحليلات ومؤشرات أداء المنصة",
     "searchPlaceholder": "البحث عن بيانات أو معلمين أو سجلات..."
   },
   "dashboard": {
@@ -285,6 +288,33 @@
     "inputPlaceholder": "رسالة...",
     "selectConversation": "حدد محادثة لبدء الدردشة",
     "admin": "مدير"
+  },
+  "statistics": {
+    "title": "الإحصائيات",
+    "subtitle": "تحليلات المنصة ومؤشرات الأداء",
+    "totalUsers": "إجمالي المستخدمين",
+    "validatedTeachers": "المعلمون المعتمدون",
+    "totalSessions": "إجمالي الجلسات",
+    "totalReports": "إجمالي التقارير",
+    "monthlyActivity": "النشاط الشهري",
+    "monthlyActivitySub": "تقارير جديدة وتسجيلات معلمين شهرياً",
+    "reports": "التقارير",
+    "teachers": "المعلمون",
+    "userDistribution": "توزيع المستخدمين",
+    "userDistributionSub": "حسب نوع المستخدم",
+    "students": "الطلاب",
+    "tutors": "المعلمون",
+    "parents": "الأولياء",
+    "teacherStatus": "حالة المعلمين",
+    "teacherStatusSub": "نظرة عامة على التحقق",
+    "validated": "معتمد",
+    "pending": "قيد الانتظار",
+    "rejected": "مرفوض",
+    "suspended": "موقوف",
+    "activityHeatmap": "خريطة النشاط",
+    "activityHeatmapSub": "آخر 12 أسبوعًا من النشاط",
+    "less": "أقل",
+    "more": "أكثر"
   },
   "common": {
     "loading": "جارٍ التحميل...",

@@ -5,6 +5,7 @@
     "users": "Users",
     "reports": "Reports",
     "messages": "Messages",
+    "statistics": "Statistics",
     "settings": "Settings",
     "logout": "Logout",
     "admin": "Admin"
@@ -18,6 +19,8 @@
     "manageReports": "Manage all reports on the platform",
     "manageConversations": "Manage all conversations",
     "manageAccount": "Manage your account and preferences",
+    "statisticsTitle": "Statistics",
+    "statisticsSub": "View platform analytics and performance insights",
     "searchPlaceholder": "Search data, teachers, or logs..."
   },
   "dashboard": {
@@ -285,6 +288,33 @@
     "inputPlaceholder": "Message...",
     "selectConversation": "Select a conversation to start chatting",
     "admin": "Admin"
+  },
+  "statistics": {
+    "title": "Statistics",
+    "subtitle": "Platform analytics and performance insights",
+    "totalUsers": "Total Users",
+    "validatedTeachers": "Validated Teachers",
+    "totalSessions": "Total Sessions",
+    "totalReports": "Total Reports",
+    "monthlyActivity": "Monthly Activity",
+    "monthlyActivitySub": "New reports & teacher registrations per month",
+    "reports": "Reports",
+    "teachers": "Teachers",
+    "userDistribution": "User Distribution",
+    "userDistributionSub": "Breakdown by user type",
+    "students": "Students",
+    "tutors": "Tutors",
+    "parents": "Parents",
+    "teacherStatus": "Teacher Status",
+    "teacherStatusSub": "Validation overview",
+    "validated": "Validated",
+    "pending": "Pending",
+    "rejected": "Rejected",
+    "suspended": "Suspended",
+    "activityHeatmap": "Activity Heatmap",
+    "activityHeatmapSub": "Last 12 weeks of platform activity",
+    "less": "Less",
+    "more": "More"
   },
   "common": {
     "loading": "Loading...",

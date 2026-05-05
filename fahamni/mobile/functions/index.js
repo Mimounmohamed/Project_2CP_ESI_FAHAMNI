@@ -304,7 +304,6 @@ exports.sendPasswordChangedEmail = onCall(
     }
   }
 );
-<<<<<<< HEAD
 
 function normalizePath(path = "") {
   return path.replace(/^\/+/, "").replace(/\/+$/, "");
@@ -507,8 +506,7 @@ exports.teacherApi = onRequest(async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message || "Internal error." });
   }
-=======
-);
+});
 
 function requireAuth(request) {
   if (!request.auth || !request.auth.uid) {
@@ -758,5 +756,4 @@ exports.addTeacherResource = onCall(async (request) => {
 
   await resourceRef.set(resource);
   return { success: true, resourceId: resourceRef.id, resource };
->>>>>>> be0ed21aea0d900aeea9d4f403a4833d1461789e
 });

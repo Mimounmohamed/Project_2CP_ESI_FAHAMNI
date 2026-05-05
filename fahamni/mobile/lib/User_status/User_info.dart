@@ -191,7 +191,6 @@ class _studentinfoState extends State<studentinfo> {
     );
   }
 }
-
 class Buttons extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onSelectionChanged;
