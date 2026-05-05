@@ -67,7 +67,7 @@ class ResourceService {
       final String mimeType = _getMimeType(fileName);
       final int fileSize = await file.length();
       
-      Reference ref = _storage.ref().child('chat_attachments/$conversationId/$userId/${DateTime.now().millisecondsSinceEpoch}_$fileName');
+      Reference ref = _storage.ref().child('chat_attachments/$conversationId/${DateTime.now().millisecondsSinceEpoch}_$fileName');
       
       UploadTask uploadTask = ref.putFile(file);
       TaskSnapshot snapshot = await uploadTask;

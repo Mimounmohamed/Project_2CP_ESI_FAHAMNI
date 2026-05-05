@@ -6,10 +6,12 @@ class ChatButtons extends StatefulWidget {
     super.key,
     required this.selectedIndex,
     required this.onChanged,
+    this.tabs = const ['Teachers', 'Students', 'Groups'],
   });
 
   final int selectedIndex;
   final ValueChanged<int> onChanged;
+  final List<String> tabs;
 
   @override
   State<ChatButtons> createState() => _MyMessagesWidgetState();
@@ -25,8 +27,8 @@ class _MyMessagesWidgetState extends State<ChatButtons>
   void initState() {
     super.initState();
     
-    _tabController = TabController(length: 3, vsync: this);
-    _tabController.index = widget.selectedIndex;
+    _tabController = TabController(length: widget.tabs.length, vsync: this);
+    _tabController.index = widget.selectedIndex.clamp(0, widget.tabs.length - 1);
 
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) return;
@@ -38,8 +40,22 @@ class _MyMessagesWidgetState extends State<ChatButtons>
   @override
   void didUpdateWidget(covariant ChatButtons oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.selectedIndex != _tabController.index) {
-      _tabController.animateTo(widget.selectedIndex);
+    if (widget.tabs.length != oldWidget.tabs.length) {
+      final int currentIndex = _tabController.index;
+      _tabController.dispose();
+      _tabController = TabController(length: widget.tabs.length, vsync: this);
+      _tabController.index = widget.selectedIndex.clamp(0, widget.tabs.length - 1);
+      _tabController.addListener(() {
+        if (_tabController.indexIsChanging) return;
+        widget.onChanged(_tabController.index);
+        setState(() {});
+      });
+      return;
+    }
+
+    final int newIndex = widget.selectedIndex.clamp(0, widget.tabs.length - 1);
+    if (newIndex != _tabController.index) {
+      _tabController.animateTo(newIndex);
     }
   }
 
@@ -74,28 +90,11 @@ class _MyMessagesWidgetState extends State<ChatButtons>
               fontWeight: FontWeight.w600,
             ),
 
-            tabs: [
-              Tab(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text("Teachers"),
-                    const SizedBox(width: 4),
-                    // The dot
-                    /*Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF1A237E),
-                        shape: BoxShape.circle,
-                      ),
-                    ),*/
-                  ],
-                ),
-              ),
-              const Tab(text: "Students"),
-              const Tab(text: "Groups"),
-            ],
+            tabs: widget.tabs.map((String label) {
+              return Tab(
+                child: Text(label),
+              );
+            }).toList(),
           ),
           const Divider(height: 1, thickness: 1, color: Color(0xFFECEFF1)),
         ],

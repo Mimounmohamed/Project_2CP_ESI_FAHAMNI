@@ -66,6 +66,17 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Object? get _conversationFilter {
+    if (_currentRole == UserRole.tutor) {
+      switch (_selectedTabIndex) {
+        case 0:
+          return UserRole.student;
+        case 1:
+          return ChatConversationFilter.group;
+        default:
+          return null;
+      }
+    }
+
     switch (_selectedTabIndex) {
       case 0:
         return UserRole.tutor;
@@ -122,7 +133,7 @@ class _ChatPageState extends State<ChatPage> {
     setState(() {
       _didResolveInitialTab = true;
       _currentRole = currentRole;
-      _selectedTabIndex = currentRole == UserRole.tutor ? 1 : 0;
+      _selectedTabIndex = 0;
     });
 
     // Load user data after role is resolved
@@ -309,7 +320,11 @@ class _ChatPageState extends State<ChatPage> {
 
           // Tabs
           ChatButtons(
+            key: ValueKey(_currentRole == UserRole.tutor ? 'teacher-tabs' : 'default-tabs'),
             selectedIndex: _selectedTabIndex,
+            tabs: _currentRole == UserRole.tutor
+                ? const ['Students', 'Groups']
+                : const ['Teachers', 'Students', 'Groups'],
             onChanged: (int index) {
               setState(() {
                 _selectedTabIndex = index;

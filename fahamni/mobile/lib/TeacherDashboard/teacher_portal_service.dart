@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'models/teacher_portal_models.dart';
+import '../Services/notification_service.dart';
+import '../models/notification_model.dart';
 import '../models/quote_model.dart';
 import '../models/service_model.dart';
 import '../models/session_model.dart';
@@ -79,6 +81,70 @@ class TeacherPortalService {
 
     final List<TeacherJoinRequestDetail> joinRequests = serviceRequests;
 
+    // If no join requests constructed from service.pendingIds, try to infer
+    // join requests from recent notifications as a fallback (covers timing issues).
+    if (joinRequests.isEmpty) {
+      try {
+        final QuerySnapshot<Map<String, dynamic>> notifSnap = await _firestore
+            .collection('notifications')
+            .where('tutor_id', isEqualTo: tutor.uid)
+            .where('type', isEqualTo: 'join_request')
+            .orderBy('date_time', descending: true)
+            .get();
+
+        final Set<String> senderIds = {};
+        for (final d in notifSnap.docs) {
+          final s = d.data()['sender_id'] as String? ?? '';
+          if (s.isNotEmpty) senderIds.add(s);
+        }
+
+        final Map<String, StudentModel> notifStudents =
+            await _loadStudentsByIds(senderIds);
+
+        for (final d in notifSnap.docs) {
+          final data = d.data();
+          final String sender = data['sender_id'] as String? ?? '';
+          if (sender.isEmpty) continue;
+          final String serviceId = data['service_id'] ?? '';
+          ServiceModel? svc;
+          try {
+            svc = services.firstWhere((s) => s.serviceId == serviceId);
+          } catch (_) {
+            svc = null;
+          }
+          final student = notifStudents[sender];
+          joinRequests.add(TeacherJoinRequestDetail(
+            quote: QuoteModel(
+              quoteId: 'notif_${d.id}',
+              studentId: sender,
+              tutorId: tutor.uid,
+              serviceId: serviceId,
+              serviceName: svc?.name ?? '',
+              subject: svc?.subject ?? '',
+              level: '',
+              objective: 'Join Request for ${svc?.name ?? ''}',
+              frequency: svc != null ? '${svc.sessionsnum} sessions' : '',
+              duration: svc != null ? '${svc.duration} min' : '',
+              budget: svc != null ? '${svc.price} DA' : '',
+              status: QuoteStatus.pending,
+              createdAt: (data['date_time'] as Timestamp?)?.toDate() ?? DateTime.now(),
+            ),
+            studentName: _studentName(student),
+            studentLevel: student?.schoolLevel ?? '',
+            studentAvatar: student?.picture ?? '',
+            serviceTitle: svc?.name ?? (data['content'] ?? ''),
+            description: data['content'] ?? '',
+            subject: svc?.subject ?? '',
+            teachingMode: svc?.mode ?? '',
+            sessionsCount: svc?.sessionsnum ?? 0,
+            sessionDurationLabel: svc != null ? '${svc.duration} min' : '',
+            createdAtLabel: 'Now',
+            isChild: childIds.contains(sender),
+          ));
+        }
+      } catch (_) {}
+    }
+
     joinRequests.sort((a, b) {
       final DateTime aDate =
           a.quote.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -147,6 +213,7 @@ class TeacherPortalService {
     required QuoteStatus status,
     TeacherQuoteResponseDraft? response,
   }) async {
+    final TutorModel currentTutor = await _loadCurrentTutor();
     // If it's a join request from the pending_ids of a service
     if (request.quote.quoteId.startsWith('pending_')) {
       final studentId = request.quote.studentId;
@@ -179,11 +246,92 @@ class TeacherPortalService {
             'updated_at': Timestamp.now(),
           });
         });
+        // notify the requester (student or parent who initiated the join request)
+        try {
+          final NotificationService _ns = NotificationService();
+          String? senderId;
+          final QuerySnapshot<Map<String, dynamic>> notifSnap = await _firestore
+              .collection('notifications')
+              .where('tutor_id', isEqualTo: currentTutor.uid)
+              .where('service_id', isEqualTo: serviceId)
+              .where('type', isEqualTo: 'join_request')
+              .orderBy('date_time', descending: true)
+              .limit(10)
+              .get();
+          for (final d in notifSnap.docs) {
+            final s = d.data()['sender_id'] as String?;
+            final sid = d.data()['student_id'] as String?;
+            if (s != null && s.isNotEmpty) {
+              senderId = s;
+              break;
+            }
+            if (sid != null && sid == studentId) {
+              // fallback: treat studentId as receiver
+              senderId = sid;
+              break;
+            }
+          }
+          final String receiver = senderId ?? studentId;
+          await _ns.sendNotification(
+            NotificationModel(
+              title: 'Join request accepted',
+              content: '${request.studentName} has been accepted to ${request.serviceTitle}.',
+              dateTime: DateTime.now(),
+              isRead: false,
+              notificationId: '',
+              receiverId: receiver,
+              type: 'join_request_response',
+              senderId: currentTutor.uid,
+              tutorId: currentTutor.uid,
+              serviceId: serviceId,
+            ),
+          );
+        } catch (_) {}
       } else {
         await serviceRef.update({
           'pending_ids': FieldValue.arrayRemove([studentId]),
           'updated_at': Timestamp.now(),
         });
+        // notify the requester about rejection
+        try {
+          final NotificationService _ns = NotificationService();
+          String? senderId;
+          final QuerySnapshot<Map<String, dynamic>> notifSnap = await _firestore
+              .collection('notifications')
+              .where('tutor_id', isEqualTo: currentTutor.uid)
+              .where('service_id', isEqualTo: serviceId)
+              .where('type', isEqualTo: 'join_request')
+              .orderBy('date_time', descending: true)
+              .limit(10)
+              .get();
+          for (final d in notifSnap.docs) {
+            final s = d.data()['sender_id'] as String?;
+            final sid = d.data()['student_id'] as String?;
+            if (s != null && s.isNotEmpty) {
+              senderId = s;
+              break;
+            }
+            if (sid != null && sid == studentId) {
+              senderId = sid;
+              break;
+            }
+          }
+          final String receiver = senderId ?? studentId;
+          await _ns.sendNotification(
+            NotificationModel(
+              title: 'Join request rejected',
+              content: '${request.studentName} join request for ${request.serviceTitle} was rejected.',
+              dateTime: DateTime.now(),
+              isRead: false,
+              notificationId: '',
+              receiverId: receiver,
+              type: 'join_request_response',
+              senderId: currentTutor.uid,
+              tutorId: currentTutor.uid,
+              serviceId: serviceId,
+            ),
+          );
+        } catch (_) {}
       }
       return;
     }

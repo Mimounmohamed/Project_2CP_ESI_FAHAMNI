@@ -113,14 +113,14 @@ class _ConversationPageState extends State<ConversationPage> {
     if (text.trim().isEmpty && filesToUpload.isEmpty) return;
 
     try {
-      // For now, we only handle text messages as requested. 
-      // File upload logic would go here if backend is ready.
       await _chatService.sendMessage(
         conversationId: widget.conversation.conversationId,
         senderId: senderId,
         receiverId: receiverId,
         content: text,
         controller: _messageController,
+        attachments: attachments,
+        filesToUpload: filesToUpload,
       );
       _scheduleScrollToBottom();
     } catch (error) {

@@ -14,7 +14,9 @@ import 'package:flutter/material.dart';
 import 'teacher_dashboard.dart';
 
 class TeacherServicesDashboardScreen extends StatefulWidget {
-  const TeacherServicesDashboardScreen({super.key});
+  final int initialTab;
+
+  const TeacherServicesDashboardScreen({super.key, this.initialTab = 0});
 
   @override
   State<TeacherServicesDashboardScreen> createState() =>
@@ -26,13 +28,21 @@ class _TeacherServicesDashboardScreenState
   final TeacherPortalService _service = TeacherPortalService();
 
   late Future<TeacherServicesDashboardData> _dashboardFuture;
-  int _selectedTab = 0;
+  late int _selectedTab;
   TeacherServicesFilter _filter = TeacherServicesFilter.all;
+  bool _attemptedJoinRefresh = false;
 
   @override
   void initState() {
     super.initState();
     _dashboardFuture = _service.loadDashboard();
+    _selectedTab = widget.initialTab;
+    if (widget.initialTab == 1) {
+      // Ensure we load the latest join requests when opened directly
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _refresh();
+      });
+    }
   }
 
   Future<void> _refresh() async {
@@ -134,6 +144,15 @@ class _TeacherServicesDashboardScreenState
 
             final TeacherServicesDashboardData data = snapshot.data!;
             final List<ServiceModel> visibleServices = _filteredServices(data.services);
+
+            // If teacher opened Join Requests tab and it's empty, try one refresh (handles timing race)
+            if (_selectedTab == 1 && data.joinRequests.isEmpty && !_attemptedJoinRefresh) {
+              _attemptedJoinRefresh = true;
+              WidgetsBinding.instance.addPostFrameCallback((_) async {
+                await _refresh();
+              });
+              return const Center(child: CircularProgressIndicator());
+            }
 
             return RefreshIndicator(
               color: const Color(0xFF0D138B),

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { collection, query, where, getDocs, getDoc, updateDoc, doc } from "firebase/firestore";
-import { db } from "./firebase";
+import { ref as storageRef, listAll, getDownloadURL } from "firebase/storage";
+import { db, storage } from "./firebase";
 import ServiceDetailPanel from "./ServiceDetailPanel";
 
 const MONTHS = ["January","February","March","April","May","June",
@@ -68,6 +69,16 @@ function formatLevels(levels) {
   return levels.map(l => l.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())).join(", ");
 }
 
+function fileNameFromUrl(url) {
+  if (!url) return "Certificate";
+  try {
+    const path = decodeURIComponent(new URL(url).pathname);
+    return path.split("/").pop()?.split("?")[0] || "Certificate";
+  } catch {
+    return url.split("/").pop()?.split("?")[0] || "Certificate";
+  }
+}
+
 const TEACHER_TABS = ["General Info", "Reports", "Services", "Feedbacks"];
 const STUDENT_TABS = ["General Info", "Activity", "Reports"];
 const PARENT_TABS  = ["General Info", "Activity", "Reports"];
@@ -110,9 +121,56 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
   useEffect(() => {
     if (!tutorUid) return;
 
-    getDocs(query(collection(db, "resources"), where("tutor_id", "==", tutorUid)))
-      .then(snap => setCertificates(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
-      .catch(() => setCertificates([]));
+    async function listStorageCertificates(path) {
+      const list = await listAll(storageRef(storage, path));
+      const files = await Promise.all(list.items.map(async item => ({
+        id: item.fullPath,
+        title: item.name,
+        url: await getDownloadURL(item),
+        fullPath: item.fullPath,
+      })));
+      const nested = await Promise.all(list.prefixes.map(prefix => listStorageCertificates(prefix.fullPath)));
+      return files.concat(...nested);
+    }
+
+    async function loadCertificates() {
+      const seen = new Set();
+      const next = [];
+      const addCert = (cert) => {
+        const url = cert.url || cert.file_url || cert.media_url || cert.link_url || cert.download_url || cert.certification_url || "";
+        const key = url || cert.fullPath || cert.id || cert.title;
+        if (!key || seen.has(key)) return;
+        seen.add(key);
+        next.push(cert);
+      };
+
+      // teacher object fields
+      if (user.certification_url) {
+        addCert({ id: "certification_url", title: user.certification_url.split("/").pop(), url: user.certification_url });
+      }
+      const extraUrls = user.certification_urls || user.certificationUrls || [];
+      if (Array.isArray(extraUrls)) {
+        extraUrls.forEach((url, i) => addCert({ id: `certification_url_${i}`, title: url.split("/").pop(), url }));
+      }
+
+      try {
+        const snap = await getDocs(query(collection(db, "resources"), where("tutor_id", "==", tutorUid)));
+        snap.docs.forEach(d => addCert({ id: d.id, ...d.data() }));
+      } catch (e) {
+        console.error("Certificate resources load failed:", e);
+      }
+
+      try {
+        const storageCerts = await listStorageCertificates(`tutor_certifications/${tutorUid}`);
+        storageCerts.forEach(addCert);
+      } catch (e) {
+        console.error("Storage certificates load failed:", e);
+      }
+
+      setCertificates(next);
+    }
+
+    loadCertificates().catch(() => setCertificates([]));
   }, [tutorUid]);
 
   useEffect(() => {
@@ -398,29 +456,44 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
                       <span style={s.dimText}>Loading...</span>
                     ) : certificates.length === 0 ? (
                       <span style={s.dimText}>No certificates uploaded.</span>
-                    ) : certificates.map(c => (
-                      <div key={c.id} style={s.certItem}>
-                        <div style={s.certIconWrap}>
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="1.8">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
-                          </svg>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: "#1F2937" }}>
-                            {c.title || "Certificate.pdf"}
+                    ) : certificates.map(c => {
+                      const url = c.url || c.file_url || c.media_url || c.link_url || c.download_url || c.certification_url || "";
+                      const rawTitle = c.title || c.name || url || c.id || "Certificate";
+                      const title = (rawTitle && (rawTitle.includes("/") || rawTitle.includes("%2F")))
+                        ? decodeURIComponent(rawTitle).split("/").pop().split("?")[0]
+                        : (fileNameFromUrl(url) || rawTitle);
+                      return (
+                        <div key={c.id} style={s.certItem}>
+                          <div style={s.certIconWrap}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="1.8">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                              <polyline points="14 2 14 8 20 8"/>
+                            </svg>
                           </div>
-                          {c.size_mb && <div style={{ fontSize: 11, color: "#94a3b8" }}>{c.size_mb} MB</div>}
+                          <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+                            <div style={s.certTitle} title={title}>{title}</div>
+                            {c.size_mb && <div style={{ fontSize: 11, color: "#94a3b8" }}>{c.size_mb} MB</div>}
+                          </div>
+                          {url ? (
+                            <a href={url} target="_blank" rel="noopener noreferrer" style={s.openBtn} title="Open certificate">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                              </svg>
+                            </a>
+                          ) : (
+                            <button style={s.dlBtn} title="No URL available" disabled>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                              </svg>
+                            </button>
+                          )}
                         </div>
-                        <button style={s.dlBtn} title="Download">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                            <polyline points="7 10 12 15 17 10"/>
-                            <line x1="12" y1="15" x2="12" y2="3"/>
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -1035,6 +1108,8 @@ const s = {
     width: 36, height: 36, borderRadius: 8, background: "#eef2ff",
     display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
+  certTitle: { fontSize: 12, fontWeight: 600, color: "#1F2937", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+  openBtn: { width: 36, height: 36, borderRadius: 8, border: "none", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 },
   dlBtn: {
     background: "none", border: "none", cursor: "pointer",
     marginLeft: "auto", padding: 4, display: "flex",

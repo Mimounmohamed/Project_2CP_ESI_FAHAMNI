@@ -1,16 +1,19 @@
 import 'dart:math' as math;
 
+import 'package:fahamni/Services/auth_.service.dart';
 import 'package:fahamni/Services/review_service.dart';
 import 'package:fahamni/Services/student_tutor_action_service.dart';
 import 'package:fahamni/feedback/quote_request_page.dart';
+import 'package:fahamni/StudentHomePage/studenthome_service.dart';
 import 'package:fahamni/models/report_model.dart';
 import 'package:fahamni/models/review_model.dart';
+import 'package:fahamni/models/parent_model.dart';
 import 'package:fahamni/models/service_model.dart';
 import 'package:fahamni/models/student_model.dart';
 import 'package:fahamni/models/tutor_model.dart';
 import 'package:fahamni/models/tutor_review_bundle.dart';
+import 'package:fahamni/models/user_model.dart';
 import 'package:fahamni/messaging/conversation_page.dart';
-import 'package:fahamni/widgets/servicecard.dart';
 import 'package:fahamni/widgets/servicedetails.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +33,8 @@ class TutorProfilePage extends StatefulWidget {
 
 class _TutorProfilePageState extends State<TutorProfilePage>
     with SingleTickerProviderStateMixin {
+  final AuthService _authService = AuthService();
+  final studenthomepage_service _studentHomeService = studenthomepage_service();
   final ReviewService _reviewService = ReviewService();
   final StudentTutorActionService _studentTutorActionService =
       StudentTutorActionService();
@@ -386,9 +391,23 @@ class _TutorProfilePageState extends State<TutorProfilePage>
     });
 
     try {
+      final UserModel? currentUser = await _authService.getCurrentUserProfile();
+      StudentModel? selectedStudent;
+      if (currentUser?.role == UserRole.parent) {
+        selectedStudent = await _pickChildForParent();
+        if (selectedStudent == null) {
+          return;
+        }
+      }
+
       await _studentTutorActionService.createBookingRequest(
         tutor: tutor,
         service: service,
+        studentId: selectedStudent?.uid,
+        studentName: selectedStudent == null
+            ? null
+            : '${selectedStudent.firstName} ${selectedStudent.lastName}'.trim(),
+        studentLevel: selectedStudent?.schoolLevel,
       );
       final String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
       if (service != null &&
@@ -425,6 +444,48 @@ class _TutorProfilePageState extends State<TutorProfilePage>
         });
       }
     }
+  }
+
+  Future<StudentModel?> _pickChildForParent() async {
+    final UserModel? profile = await _authService.getCurrentUserProfile();
+    if (profile?.role != UserRole.parent) {
+      return null;
+    }
+
+    final ParentModel parent = profile as ParentModel;
+    List<StudentModel> children = await _studentHomeService.getLinkedChildren(
+      parent.childrenUids,
+    );
+    if (children.isEmpty) {
+      children = await _studentHomeService.getChildrenForParent(parent.uid);
+    }
+    if (children.isEmpty || !mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please add or link a child first.')),
+      );
+      return null;
+    }
+
+    return showDialog<StudentModel>(
+      context: context,
+      builder: (context) {
+        return SimpleDialog(
+          title: const Text('Select a child'),
+          children: children
+              .map(
+                (child) => SimpleDialogOption(
+                  onPressed: () => Navigator.of(context).pop(child),
+                  child: Text(
+                    child.firstName.isNotEmpty
+                        ? '${child.firstName} ${child.lastName}'.trim()
+                        : child.uid,
+                  ),
+                ),
+              )
+              .toList(),
+        );
+      },
+    );
   }
 
   @override

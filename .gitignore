@@ -16,3 +16,17 @@ package.json
 .dart_tool/
 build/
 /ios/.generated_files/
+
+# Android build artifacts
+.gradle/
+build/
+captures/
+*.apk
+*.jks
+*.keystore
+
+# Flutter/Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/

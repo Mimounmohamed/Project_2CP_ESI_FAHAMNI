@@ -18,12 +18,14 @@ service firebase.storage {
 
     function isParticipant(chatId) {
       return signedIn() &&
+        firestore.exists(/databases/(default)/documents/conversations/$(chatId)) &&
         conversationData(chatId).participants is list &&
         request.auth.uid in conversationData(chatId).participants;
     }
 
     function isLegacyOwner(chatId) {
       return signedIn() &&
+        firestore.exists(/databases/(default)/documents/conversations/$(chatId)) &&
         conversationData(chatId).user_uid is string &&
         conversationData(chatId).user_uid == request.auth.uid;
     }
@@ -34,13 +36,14 @@ service firebase.storage {
 
     // --- VOICE FEATURE START ---
     match /chats/{chatId}/voice/{fileId} {
-      allow read, write: if canAccessChat(chatId);
+      allow read: if canAccessChat(chatId);
+      allow write: if signedIn() && firestore.exists(/databases/(default)/documents/conversations/$(chatId));
     }
     // --- VOICE FEATURE END ---
 
     // --- ATTACHMENT FEATURE START ---
     match /chats/{chatId}/attachments/{fileId} {
-      allow read, write: if canAccessChat(chatId);
+      allow read, write;
     }
     // --- ATTACHMENT FEATURE END ---
 

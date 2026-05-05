@@ -45,6 +45,29 @@ function certificateUrl(cert) {
   return cert.url || cert.file_url || cert.media_url || cert.link_url || cert.download_url || cert.certification_url || "";
 }
 
+function downloadUrl(url, title = "certificate") {
+  if (!url) return "";
+  try {
+    const next = new URL(url);
+    next.searchParams.set("response-content-disposition", `attachment; filename="${title}"`);
+    return next.toString();
+  } catch {
+    return url;
+  }
+}
+
+async function listStorageCertificates(path) {
+  const list = await listAll(storageRef(storage, path));
+  const files = await Promise.all(list.items.map(async item => ({
+    id: item.fullPath,
+    title: item.name,
+    url: await getDownloadURL(item),
+    fullPath: item.fullPath,
+  })));
+  const nested = await Promise.all(list.prefixes.map(prefix => listStorageCertificates(prefix.fullPath)));
+  return files.concat(...nested);
+}
+
 export default function TeacherProfilePage({ teacher: initial, adminUser, onBack, onStatusChange }) {
   const [teacher, setTeacher] = useState(initial);
   const [certified, setCertified] = useState(initial.certified ?? false);
@@ -78,6 +101,15 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
         });
       }
 
+      const extraUrls = teacher.certification_urls || teacher.certificationUrls || [];
+      if (Array.isArray(extraUrls)) {
+        extraUrls.forEach((url, index) => addCert({
+          id: `certification_url_${index}`,
+          title: fileNameFromUrl(url),
+          url,
+        }));
+      }
+
       try {
         const snap = await getDocs(query(collection(db, "resources"), where("tutor_id", "==", teacherUid)));
         snap.docs.forEach(d => addCert({ id: d.id, ...d.data() }));
@@ -86,13 +118,7 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
       }
 
       try {
-        const list = await listAll(storageRef(storage, `tutor_certifications/${teacherUid}`));
-        const storageCerts = await Promise.all(list.items.map(async item => ({
-          id: item.fullPath,
-          title: item.name,
-          url: await getDownloadURL(item),
-          fullPath: item.fullPath,
-        })));
+        const storageCerts = await listStorageCertificates(`tutor_certifications/${teacherUid}`);
         storageCerts.forEach(addCert);
       } catch (e) {
         console.error("Storage certificates load failed:", e);
@@ -113,6 +139,26 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
       const userRef = doc(db, "users", teacherUid);
       const userSnap = await getDoc(userRef);
       if (userSnap.exists()) await updateDoc(userRef, updates);
+    }
+
+    // create a notification document for the teacher about this status change
+    try {
+      const notifTitle = updates.account_status === "validated" ? "Account Approved" : "Account Rejected";
+      const notifContent = updates.account_status === "validated"
+        ? "Congratulations! Your account has been verified by admin. You now have full access to all features."
+        : "Your account review was updated by admin. Please check your profile for details.";
+      await addDoc(collection(db, "notifications"), {
+        title: notifTitle,
+        content: notifContent,
+        date_time: serverTimestamp(),
+        receiver_id: teacherUid || null,
+        sender_id: adminUser?.uid ?? 'admin',
+        type: updates.account_status === "validated" ? "teacher_approved" : "teacher_rejected",
+        metadata: {},
+        is_read: false,
+      });
+    } catch (e) {
+      console.error("Failed to write approval notification:", e);
     }
   }
 
@@ -145,6 +191,21 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
           rejected_at: serverTimestamp(),
         }),
       ]);
+      // ensure teacher gets a rejection notification with cause (in case updateAccountStatus didn't run notification yet)
+      try {
+        await addDoc(collection(db, "notifications"), {
+          title: "Account Rejected",
+          content: `Your account review was rejected: ${selectedCause}`,
+          date_time: serverTimestamp(),
+          receiver_id: teacherUid || null,
+          sender_id: adminUser?.uid ?? 'admin',
+          type: "teacher_rejected",
+          metadata: { cause: selectedCause },
+          is_read: false,
+        });
+      } catch (e) {
+        console.error("Failed to write rejection notification:", e);
+      }
       onStatusChange?.(teacher.id, "rejected");
       setShowRejectModal(false);
       onBack();
@@ -272,11 +333,13 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
                 <div style={{ fontSize: 13, color: "#94a3b8" }}>No certificates uploaded.</div>
               ) : certificates.map(c => {
                 const url = certificateUrl(c);
+                const title = c.title || c.name || fileNameFromUrl(url) || "Certificate";
                 const CardTag = url ? "a" : "div";
                 return (
                 <CardTag
                   key={c.id}
-                  href={url || undefined}
+                  href={url ? downloadUrl(url, title) : undefined}
+                  download={url ? title : undefined}
                   target={url ? "_blank" : undefined}
                   rel={url ? "noopener noreferrer" : undefined}
                   style={s.certCard}
@@ -287,7 +350,7 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
                   </svg>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: "#1F2937", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {c.title || c.name || fileNameFromUrl(url) || "Certificate"}
+                      {title}
                     </div>
                   </div>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">

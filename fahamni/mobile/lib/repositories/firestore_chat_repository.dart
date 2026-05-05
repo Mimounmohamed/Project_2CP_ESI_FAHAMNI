@@ -473,6 +473,11 @@ class FirestoreChatRepository implements ChatRepository {
     }
 
     if (filter is UserRole) {
+      if (filter == UserRole.student) {
+        return !conversation.isGroup &&
+            (conversation.otherParticipantRole == UserRole.student ||
+             conversation.otherParticipantRole == UserRole.parent);
+      }
       return !conversation.isGroup && conversation.otherParticipantRole == filter;
     }
 

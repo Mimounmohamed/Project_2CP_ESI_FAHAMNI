@@ -1,18 +1,26 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fahamni/Services/notification_service.dart';
+import 'package:fahamni/TeacherDashboard/models/teacher_portal_models.dart';
+import 'package:fahamni/TeacherDashboard/teacher_dashboard.dart';
+import 'package:fahamni/TeacherDashboard/teacher_quote_request_detail_page.dart';
 import 'package:fahamni/StudentHomePage/Student_homepage.dart';
 import 'package:fahamni/Courses/courses_page.dart';
 import 'package:fahamni/feedback/feedback_pages.dart';
 import 'package:fahamni/messaging/chat_page.dart';
 import 'package:fahamni/messaging/conversation_page.dart';
 import 'package:fahamni/models/chat_model.dart';
+import 'package:fahamni/models/quote_model.dart';
+import 'package:fahamni/models/student_model.dart';
 import 'package:fahamni/Account_Settings_Student/account_screen.dart';
+import 'package:fahamni/Account_Settings_Teacher/account_screen.dart' as teacher_account;
 import 'package:fahamni/widgets/customnavbar.dart';
+import 'package:fahamni/TeacherDashboard/widgets/teacher_navbar.dart';
 import 'package:flutter/material.dart';
 import '../models/notification_model.dart';
 import '../widgets/notification_item.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:fahamni/TeacherDashboard/teacher_services_dashboard.dart';
 
 class NotificationPage extends StatefulWidget {
   const NotificationPage({super.key});
@@ -24,12 +32,39 @@ class NotificationPage extends StatefulWidget {
 class _NotificationPageState extends State<NotificationPage> {
   int _selectedTab = 0;
   int _navIndex = 0;
+  bool _isTeacher = false;
 
   final NotificationService _notificationService = NotificationService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   String? get _currentUserId => _auth.currentUser?.uid;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentUserRole();
+  }
+
+  Future<void> _loadCurrentUserRole() async {
+    final String? userId = _currentUserId;
+    if (userId == null) {
+      return;
+    }
+    final DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore
+        .collection('users')
+        .doc(userId)
+        .get();
+    if (!mounted || !snapshot.exists || snapshot.data() == null) {
+      return;
+    }
+    final bool isTeacher = snapshot.data()!['role'] == 'tutor';
+    if (mounted) {
+      setState(() {
+        _isTeacher = isTeacher;
+      });
+    }
+  }
 
   Future<void> _handleNotificationTap(NotificationModel notification) async {
     final String notificationDocId =
@@ -79,6 +114,34 @@ class _NotificationPageState extends State<NotificationPage> {
       return;
     }
 
+    // If this is a join request, open the teacher services dashboard
+    // with the "Join Requests" tab selected.
+    if (notification.type == 'join_request') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const TeacherServicesDashboardScreen(initialTab: 1),
+        ),
+      );
+      return;
+    }
+
+    if (notification.type == 'quote_request') {
+      final TeacherJoinRequestDetail? request = await _buildQuoteRequestDetail(
+        notification,
+      );
+      if (!mounted || request == null) {
+        return;
+      }
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => TeacherQuoteRequestDetailPage(request: request),
+        ),
+      );
+      return;
+    }
+
     if (notification.tutorId.isNotEmpty) {
       Navigator.push(
         context,
@@ -90,6 +153,102 @@ class _NotificationPageState extends State<NotificationPage> {
     }
 
     Navigator.pop(context);
+  }
+
+  Future<TeacherJoinRequestDetail?> _buildQuoteRequestDetail(
+    NotificationModel notification,
+  ) async {
+    if (notification.tutorId.isEmpty) {
+      return null;
+    }
+
+    final QuerySnapshot<Map<String, dynamic>> quoteSnapshot = await _firestore
+        .collection('quotes')
+        .where('tutor_id', isEqualTo: notification.tutorId)
+        .where('status', isEqualTo: 'pending')
+        .get();
+    if (quoteSnapshot.docs.isEmpty) {
+      return null;
+    }
+
+    QueryDocumentSnapshot<Map<String, dynamic>>? selectedDoc;
+    for (final doc in quoteSnapshot.docs) {
+      final String serviceId = (doc.data()['service_id'] ?? '').toString();
+      if (notification.serviceId.isNotEmpty && serviceId == notification.serviceId) {
+        selectedDoc = doc;
+        break;
+      }
+      selectedDoc ??= doc;
+    }
+
+    if (selectedDoc == null) {
+      return null;
+    }
+
+    final QuoteModel quote = QuoteModel.fromMap({
+      ...selectedDoc.data(),
+      'quote_id': selectedDoc.id,
+    });
+
+    final DocumentSnapshot<Map<String, dynamic>> serviceSnapshot =
+        notification.serviceId.isEmpty
+            ? await _firestore.collection('services').doc(quote.serviceId).get()
+            : await _firestore.collection('services').doc(notification.serviceId).get();
+    final Map<String, dynamic> serviceData = serviceSnapshot.data() ?? <String, dynamic>{};
+
+    final DocumentSnapshot<Map<String, dynamic>> studentSnapshot = await _firestore
+        .collection('students')
+        .doc(quote.studentId)
+        .get();
+
+    String studentName = 'Student';
+    String studentLevel = quote.level;
+    String studentAvatar = '';
+    if (studentSnapshot.exists && studentSnapshot.data() != null) {
+      final StudentModel student = StudentModel.fromMap({
+        ...studentSnapshot.data()!,
+        'uid': studentSnapshot.id,
+      });
+      studentName = '${student.firstName} ${student.lastName}'.trim();
+      studentLevel = student.schoolLevel;
+      studentAvatar = student.picture;
+    } else {
+      final DocumentSnapshot<Map<String, dynamic>> childSnapshot = await _firestore
+          .collection('children')
+          .doc(quote.studentId)
+          .get();
+      if (childSnapshot.exists && childSnapshot.data() != null) {
+        final Map<String, dynamic> childData = childSnapshot.data()!;
+        studentName = (childData['name'] ?? 'Student').toString().trim();
+        studentLevel = (childData['level'] ?? quote.level).toString().trim();
+        studentAvatar = (childData['picture'] ?? '').toString();
+      }
+    }
+
+    final String serviceTitle = (serviceData['name'] ?? quote.serviceName).toString();
+    final String subject = (serviceData['subject'] ?? quote.subject).toString();
+    final String teachingMode = (serviceData['mode'] ?? quote.teachingMode).toString();
+    final int sessionsCount = (serviceData['sessions_num'] ?? quote.sessionsCount) is int
+        ? (serviceData['sessions_num'] ?? quote.sessionsCount) as int
+        : quote.sessionsCount;
+    final String sessionDurationLabel = serviceData['duration'] != null
+        ? '${serviceData['duration']} min'
+        : quote.duration;
+
+    return TeacherJoinRequestDetail(
+      quote: quote,
+      studentName: studentName,
+      studentLevel: studentLevel,
+      studentAvatar: studentAvatar,
+      serviceTitle: serviceTitle,
+      description: quote.description.isNotEmpty ? quote.description : quote.objective,
+      subject: subject,
+      teachingMode: teachingMode,
+      sessionsCount: sessionsCount,
+      sessionDurationLabel: sessionDurationLabel,
+      createdAtLabel: 'Now',
+      isChild: studentSnapshot.exists == false,
+    );
   }
 
   @override
@@ -195,10 +354,15 @@ class _NotificationPageState extends State<NotificationPage> {
           ),
         ],
       ),
-      bottomNavigationBar: CustomBottomNavbar(
-        selectedIndex: _navIndex,
-        onTap: _handleBottomNavigation,
-      ),
+      bottomNavigationBar: _isTeacher
+          ? TeacherNavbar(
+              selectedIndex: _navIndex,
+              onTap: _handleTeacherBottomNavigation,
+            )
+          : CustomBottomNavbar(
+              selectedIndex: _navIndex,
+              onTap: _handleBottomNavigation,
+            ),
 
 
     );
@@ -293,6 +457,43 @@ class _NotificationPageState extends State<NotificationPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('This section is coming soon.')),
         );
+    }
+  }
+
+  void _handleTeacherBottomNavigation(int index) {
+    if (index == _navIndex) {
+      return;
+    }
+
+    setState(() => _navIndex = index);
+
+    switch (index) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const TeacherDashboardScreen()),
+        );
+        break;
+      case 1:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const TeacherServicesDashboardScreen(),
+          ),
+        );
+        break;
+      case 2:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ChatPage()),
+        );
+        break;
+      case 3:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const teacher_account.AccountScreen()),
+        );
+        break;
     }
   }
 
