@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { doc, updateDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "./firebase";
+import { doc, updateDoc, collection, query, where, getDocs, addDoc, serverTimestamp, getDoc } from "firebase/firestore";
+import { ref as storageRef, listAll, getDownloadURL } from "firebase/storage";
+import { db, storage } from "./firebase";
 
 const REJECTION_CAUSES = [
   "Invalid or fake identity documents",
@@ -30,6 +31,20 @@ function formatLevel(levels) {
   return levels.map(l => l.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())).join(", ");
 }
 
+function fileNameFromUrl(url) {
+  if (!url) return "Certificate";
+  try {
+    const path = decodeURIComponent(new URL(url).pathname);
+    return path.split("/").pop()?.split("?")[0] || "Certificate";
+  } catch {
+    return url.split("/").pop()?.split("?")[0] || "Certificate";
+  }
+}
+
+function certificateUrl(cert) {
+  return cert.url || cert.file_url || cert.media_url || cert.link_url || cert.download_url || cert.certification_url || "";
+}
+
 export default function TeacherProfilePage({ teacher: initial, adminUser, onBack, onStatusChange }) {
   const [teacher, setTeacher] = useState(initial);
   const [certified, setCertified] = useState(initial.certified ?? false);
@@ -38,19 +53,74 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
   const [certificates, setCertificates] = useState([]);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedCause, setSelectedCause] = useState(null);
+  const teacherUid = teacher.uid || teacher.id || initial.uid || initial.id;
 
   useEffect(() => {
-    if (!initial.uid) return;
-    getDocs(query(collection(db, "resources"), where("tutor_id", "==", initial.uid)))
-      .then(snap => setCertificates(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
-      .catch(() => {});
-  }, [initial.uid]);
+    if (!teacherUid) return;
+    let cancelled = false;
+
+    async function loadCertificates() {
+      const seen = new Set();
+      const next = [];
+      const addCert = (cert) => {
+        const url = certificateUrl(cert);
+        const key = url || cert.fullPath || cert.id || cert.title;
+        if (!key || seen.has(key)) return;
+        seen.add(key);
+        next.push(cert);
+      };
+
+      if (teacher.certification_url) {
+        addCert({
+          id: "certification_url",
+          title: fileNameFromUrl(teacher.certification_url),
+          url: teacher.certification_url,
+        });
+      }
+
+      try {
+        const snap = await getDocs(query(collection(db, "resources"), where("tutor_id", "==", teacherUid)));
+        snap.docs.forEach(d => addCert({ id: d.id, ...d.data() }));
+      } catch (e) {
+        console.error("Certificate resources load failed:", e);
+      }
+
+      try {
+        const list = await listAll(storageRef(storage, `tutor_certifications/${teacherUid}`));
+        const storageCerts = await Promise.all(list.items.map(async item => ({
+          id: item.fullPath,
+          title: item.name,
+          url: await getDownloadURL(item),
+          fullPath: item.fullPath,
+        })));
+        storageCerts.forEach(addCert);
+      } catch (e) {
+        console.error("Storage certificates load failed:", e);
+      }
+
+      if (!cancelled) setCertificates(next);
+    }
+
+    loadCertificates();
+    return () => { cancelled = true; };
+  }, [teacherUid, teacher.certification_url]);
+
+  async function updateAccountStatus(status) {
+    const updates = { account_status: status };
+    await updateDoc(doc(db, "tutors", teacher.id), updates);
+
+    if (teacherUid) {
+      const userRef = doc(db, "users", teacherUid);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) await updateDoc(userRef, updates);
+    }
+  }
 
   async function handleStatus(status) {
     setSaving(true);
     setError(null);
     try {
-      await updateDoc(doc(db, "tutors", teacher.id), { account_status: status });
+      await updateAccountStatus(status);
       onStatusChange?.(teacher.id, status);
       onBack();
     } catch (e) {
@@ -67,7 +137,7 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
     setError(null);
     try {
       await Promise.all([
-        updateDoc(doc(db, "tutors", teacher.id), { account_status: "rejected" }),
+        updateAccountStatus("rejected"),
         addDoc(collection(db, "rejections"), {
           teacher_id: teacher.id,
           admin_id: adminUser?.uid ?? null,
@@ -200,15 +270,24 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
             <div style={s.certList}>
               {certificates.length === 0 ? (
                 <div style={{ fontSize: 13, color: "#94a3b8" }}>No certificates uploaded.</div>
-              ) : certificates.map(c => (
-                <div key={c.id} style={s.certCard}>
+              ) : certificates.map(c => {
+                const url = certificateUrl(c);
+                const CardTag = url ? "a" : "div";
+                return (
+                <CardTag
+                  key={c.id}
+                  href={url || undefined}
+                  target={url ? "_blank" : undefined}
+                  rel={url ? "noopener noreferrer" : undefined}
+                  style={s.certCard}
+                >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="1.8">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                     <polyline points="14 2 14 8 20 8"/>
                   </svg>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: "#1F2937", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {c.title || "Certificate.pdf"}
+                      {c.title || c.name || fileNameFromUrl(url) || "Certificate"}
                     </div>
                   </div>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
@@ -216,8 +295,9 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
                     <polyline points="7 10 12 15 17 10"/>
                     <line x1="12" y1="15" x2="12" y2="3"/>
                   </svg>
-                </div>
-              ))}
+                </CardTag>
+                );
+              })}
             </div>
           </div>
 
@@ -389,6 +469,7 @@ const s = {
   certCard: {
     display: "flex", alignItems: "center", gap: 8, padding: "10px 14px",
     background: "#f8fafc", borderRadius: 10, border: "1px solid #e2e8f0", width: 160,
+    textDecoration: "none",
   },
 
   /* actions */
