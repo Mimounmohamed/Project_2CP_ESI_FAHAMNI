@@ -31,7 +31,7 @@ service firebase.storage {
     }
 
     function canAccessChat(chatId) {
-      return isParticipant(chatId) || isLegacyOwner(chatId);
+      return isAdmin() || isParticipant(chatId) || isLegacyOwner(chatId);
     }
 
     // --- VOICE FEATURE START ---
@@ -43,7 +43,7 @@ service firebase.storage {
 
     // --- ATTACHMENT FEATURE START ---
     match /chats/{chatId}/attachments/{fileId} {
-      allow read, write;
+      allow read, write: if canAccessChat(chatId);
     }
     // --- ATTACHMENT FEATURE END ---
 
