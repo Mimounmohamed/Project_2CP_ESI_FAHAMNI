@@ -34,12 +34,17 @@ class AdminSupportChatService {
     final String docId = 'support_${user.uid}';
     final docRef = _firestore.collection('conversations').doc(docId);
     final now = Timestamp.now();
+    final participants = <String>{
+      user.uid,
+      'admin',
+      ...await _adminParticipantIds(),
+    }.toList();
 
     await docRef.set({
       'conversationId': docId,
       'conversation_id': docId,
       'conversationName': 'App Support',
-      'participants': <String>[user.uid, 'admin'],
+      'participants': participants,
       'isGroup': false,
       'is_support': true,
       'user_uid': user.uid,
@@ -56,7 +61,7 @@ class AdminSupportChatService {
     return ConversationModel(
       conversationId: docId,
       conversationName: 'App Support',
-      participants: <String>[user.uid, 'admin'],
+      participants: participants,
       participantDisplayName: 'App Support',
       participantAvatarUrl:
           'https://ui-avatars.com/api/?name=App%20Support&background=000080&color=ffffff',
@@ -85,5 +90,20 @@ class AdminSupportChatService {
       case UserRole.student:
         return 'student';
     }
+  }
+
+  Future<List<String>> _adminParticipantIds() async {
+    final snapshot = await _firestore.collection('admins').get();
+    return snapshot.docs
+        .expand(
+          (doc) => <String>[
+            doc.id,
+            (doc.data()['uid'] ?? '').toString(),
+            (doc.data()['admin_id'] ?? '').toString(),
+          ],
+        )
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
   }
 }
