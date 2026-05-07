@@ -188,6 +188,7 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
       // If this is a brand-new local conversation, create the Firestore doc first
       if (selected._isNew) {
         const ref = await addDoc(collection(db, "conversations"), {
+          participants:     [selected.user_uid, "admin"],
           user_uid:        selected.user_uid,
           user_name:       selected.user_name,
           user_role:       selected.user_role,
@@ -203,9 +204,20 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
 
       await addDoc(collection(db, "conversations", convId, "messages"), {
         text,
+        content:     text,
+        conversationId: convId,
+        conversation_id: convId,
+        senderId:    adminUser?.uid ?? "admin",
         sender_id:   "admin",
         sender_name: "Admin",
+        receiverId:  selected.user_uid,
+        receiver_id: selected.user_uid,
+        type:        "text",
+        attachments: [],
+        readBy:      [],
+        isRead:      false,
         created_at:  serverTimestamp(),
+        createdAt:   serverTimestamp(),
       });
       await updateDoc(doc(db, "conversations", convId), {
         last_message:    text,

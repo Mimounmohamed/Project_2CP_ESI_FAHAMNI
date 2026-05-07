@@ -38,7 +38,8 @@ service cloud.firestore {
     }
 
     function canAccessConversation(conversationId) {
-      return isConversationParticipant(conversationId) ||
+      return isAdmin() ||
+        isConversationParticipant(conversationId) ||
         isLegacyConversationOwner(conversationId);
     }
 
@@ -145,7 +146,7 @@ service cloud.firestore {
       // ensures only their conversations are returned
       allow read: if signedIn();
       
-      allow create: if requestHasParticipant();
+      allow create: if requestHasParticipant() || isAdmin();
       allow update: if canAccessConversation(conversationId);
       allow delete: if false;
 
@@ -153,8 +154,13 @@ service cloud.firestore {
         // Allow message reads if user is a conversation participant
         allow read: if signedIn() && canAccessConversation(conversationId);
         allow create: if signedIn() && 
-          isConversationParticipantAfter(conversationId) &&
-          request.resource.data.senderId == request.auth.uid;
+          (
+            isAdmin() ||
+            (
+              isConversationParticipantAfter(conversationId) &&
+              request.resource.data.senderId == request.auth.uid
+            )
+          );
         allow update, delete: if false;
       }
     }
