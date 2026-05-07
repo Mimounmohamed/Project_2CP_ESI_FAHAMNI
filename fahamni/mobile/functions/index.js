@@ -757,3 +757,69 @@ exports.addTeacherResource = onCall(async (request) => {
   await resourceRef.set(resource);
   return { success: true, resourceId: resourceRef.id, resource };
 });
+
+// ── Send Estimate ──────────────────────────────────────────────────────────────
+exports.sendEstimate = onCall(
+  { allowUnauthenticated: false, secrets: [mailPass] },
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError("unauthenticated", "Login required.");
+
+    const {
+      pdfBase64,
+      recipientEmail,
+      studentName,
+      teacherName,
+      invoiceNumber,
+      subject,
+      invoiceData,
+    } = request.data;
+
+    if (!pdfBase64 || !recipientEmail || !invoiceNumber) {
+      throw new HttpsError("invalid-argument", "Missing required fields.");
+    }
+
+    const pdfBuffer = Buffer.from(pdfBase64, "base64");
+
+    const transporter = getTransporter();
+    await transporter.sendMail({
+      from: `"Fahamni" <${mailUser.value()}>`,
+      to: recipientEmail,
+      subject: `Your Estimate ${invoiceNumber} — ${subject ?? "Tutoring Session"}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto">
+          <h2 style="color:#000080">Fahamni Estimate</h2>
+          <p>Dear <strong>${studentName ?? "Student"}</strong>,</p>
+          <p>
+            <strong>${teacherName ?? "Your teacher"}</strong> has sent you an estimate
+            for your tutoring sessions. Please find the PDF attached.
+          </p>
+          <p style="color:#6B7280;font-size:13px">
+            Reference: <strong>${invoiceNumber}</strong>
+          </p>
+          <hr style="border:none;border-top:1px solid #E5E7EB;margin:24px 0"/>
+          <p style="color:#9CA3AF;font-size:12px">
+            Fahamni — Mobile Tutoring Application<br/>
+            www.fahamni.app | contact@fahamni.app
+          </p>
+        </div>
+      `,
+      attachments: [
+        {
+          filename: `${invoiceNumber}.pdf`,
+          content: pdfBuffer,
+          contentType: "application/pdf",
+        },
+      ],
+    });
+
+    await admin.firestore().collection("estimates").add({
+      ...invoiceData,
+      sender_uid: uid,
+      status: "sent",
+      sent_at: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return { success: true, invoiceNumber };
+  },
+);

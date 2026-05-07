@@ -2,6 +2,7 @@ import 'package:fahamni/TeacherDashboard/models/teacher_portal_models.dart';
 import 'package:fahamni/TeacherDashboard/teacher_portal_service.dart';
 import 'package:fahamni/TeacherDashboard/widgets/teacher_portal_modals.dart'
     as portal_modals;
+import 'package:fahamni/estimate/send_estimate_page.dart';
 import 'package:fahamni/models/quote_model.dart';
 import 'package:flutter/material.dart';
 import 'teacher_modals.dart';
@@ -267,6 +268,14 @@ class _TeacherQuoteRequestDetailPageState
     }
   }
 
+  void _sendEstimate() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SendEstimatePage(request: widget.request),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final TeacherJoinRequestDetail request = widget.request;
@@ -313,6 +322,9 @@ class _TeacherQuoteRequestDetailPageState
                             case _RequestMenuAction.addResource:
                               _addResource();
                               break;
+                            case _RequestMenuAction.sendEstimate:
+                              _sendEstimate();
+                              break;
                           }
                         },
                         itemBuilder: (context) => const [
@@ -327,6 +339,10 @@ class _TeacherQuoteRequestDetailPageState
                           PopupMenuItem(
                             value: _RequestMenuAction.addResource,
                             child: Text('Add Resource'),
+                          ),
+                          PopupMenuItem(
+                            value: _RequestMenuAction.sendEstimate,
+                            child: Text('Send Estimate'),
                           ),
                         ],
                       ),
@@ -451,7 +467,7 @@ class _TeacherQuoteRequestDetailPageState
   }
 }
 
-enum _RequestMenuAction { createSession, reschedule, addResource }
+enum _RequestMenuAction { createSession, reschedule, addResource, sendEstimate }
 
 class _CardSection extends StatelessWidget {
   const _CardSection({

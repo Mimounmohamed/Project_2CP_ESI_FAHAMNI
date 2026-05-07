@@ -31,7 +31,9 @@
       "Read(//tmp/**)",
       "Bash(npm init *)",
       "Bash(npm install *)",
-      "Read(//c/Users/catal/.claude/projects/c--Users-catal-Fahamni/memory/**)"
+      "Read(//c/Users/catal/.claude/projects/c--Users-catal-Fahamni/memory/**)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\catal\\\\Fahamni\" -Directory)",
+      "Bash(Select-Object Name)"
     ]
   }
 }
