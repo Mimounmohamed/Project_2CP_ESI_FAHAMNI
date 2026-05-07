@@ -188,7 +188,9 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
       // If this is a brand-new local conversation, create the Firestore doc first
       if (selected._isNew) {
         const ref = await addDoc(collection(db, "conversations"), {
-          participants:     [selected.user_uid, "admin"],
+          participants:     [selected.user_uid, adminUser?.uid, "admin"].filter(Boolean),
+          conversationId:   "",
+          conversation_id:  "",
           user_uid:        selected.user_uid,
           user_name:       selected.user_name,
           user_role:       selected.user_role,
@@ -199,6 +201,7 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
           is_closed:       false,
         });
         convId = ref.id;
+        await updateDoc(ref, { conversationId: convId, conversation_id: convId });
         setSelected(prev => ({ ...prev, id: convId, _isNew: false }));
       }
 
