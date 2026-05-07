@@ -3,14 +3,16 @@ import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/tutor_model.dart';
 import '../models/student_model.dart';
 import '../models/parent_model.dart';
-import 'phone_auth_service.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import '../Services/notification_service.dart';
+import '../Services/phone_auth_service.dart';
  
  
 class AuthService {
@@ -56,7 +58,21 @@ class AuthService {
       if (usermodel.role == UserRole.parent && children.isNotEmpty) {
         await saveChildren(parentUid: uid, children: children);
       }
- 
+
+      // Send admin notification for new tutor registration
+      if (usermodel.role == UserRole.tutor) {
+        try {
+          final NotificationService notificationService = NotificationService();
+          await notificationService.sendAdminNewTutorNotification(
+            uid,
+            '${usermodel.firstName} ${usermodel.lastName}'.trim(),
+          );
+        } catch (e) {
+          // Don't fail registration if admin notification fails
+          debugPrint('Failed to send admin notification for new tutor: $e');
+        }
+      }
+
       return usermodel;
     } on FirebaseAuthException catch (e) {
       throw _handleAuthError(e);

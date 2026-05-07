@@ -87,6 +87,84 @@ class NotificationService {
       rethrow;
     }
   }
+
+  /// Send admin notification for new tutor registration
+  Future<void> sendAdminNewTutorNotification(String tutorUid, String tutorName) async {
+    try {
+      final adminIds = await _getAllAdminIds();
+      for (final adminId in adminIds) {
+        final notification = NotificationModel(
+          title: 'New Tutor Registration',
+          content: '$tutorName has registered as a tutor and needs approval.',
+          dateTime: DateTime.now(),
+          isRead: false,
+          notificationId: '',
+          receiverId: adminId,
+          type: 'new_tutor_registration',
+          senderId: tutorUid,
+          tutorId: tutorUid,
+        );
+        await sendNotification(notification);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Send admin notification for new report
+  Future<void> sendAdminNewReportNotification(String reporterName, String reportedName, String reportType) async {
+    try {
+      final adminIds = await _getAllAdminIds();
+      for (final adminId in adminIds) {
+        final notification = NotificationModel(
+          title: 'New Report Submitted',
+          content: '$reporterName reported $reportedName for $reportType.',
+          dateTime: DateTime.now(),
+          isRead: false,
+          notificationId: '',
+          receiverId: adminId,
+          type: 'new_report',
+          senderId: 'system',
+        );
+        await sendNotification(notification);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Send admin notification for service issues
+  Future<void> sendAdminServiceIssueNotification(String serviceName, String tutorName, String issue) async {
+    try {
+      final adminIds = await _getAllAdminIds();
+      for (final adminId in adminIds) {
+        final notification = NotificationModel(
+          title: 'Service Issue Reported',
+          content: 'Issue with "$serviceName" by $tutorName: $issue',
+          dateTime: DateTime.now(),
+          isRead: false,
+          notificationId: '',
+          receiverId: adminId,
+          type: 'service_issue',
+          senderId: 'system',
+        );
+        await sendNotification(notification);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Get all admin IDs for sending notifications
+  Future<List<String>> _getAllAdminIds() async {
+    try {
+      final QuerySnapshot<Map<String, dynamic>> snapshot = await firestore.collection('admins').get();
+      return snapshot.docs.map((doc) => doc.id).toList();
+    } catch (e) {
+      // Fallback: return empty list if admins collection doesn't exist or can't be accessed
+      return [];
+    }
+  }
 }
 
 typedef NotificatinService = NotificationService;

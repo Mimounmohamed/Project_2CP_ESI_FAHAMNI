@@ -34,6 +34,8 @@ class ConversationModel {
   final List<String> media;
   final DateTime createdAt;
   final String status;
+  final bool isDeleted; // Soft delete flag
+  final DateTime? deletedAt; // When the conversation was deleted
 
   ConversationModel({
     required this.conversationId,
@@ -52,6 +54,8 @@ class ConversationModel {
     this.media = const <String>[],
     DateTime? createdAt,
     this.status = 'active',
+    this.isDeleted = false,
+    this.deletedAt,
   }) : _lastMessageTime = lastMessageTime,
        createdAt = createdAt ?? DateTime.now();
 
@@ -72,6 +76,8 @@ class ConversationModel {
     List<String>? media,
     DateTime? createdAt,
     String? status,
+    bool? isDeleted,
+    DateTime? deletedAt,
   }) {
     return ConversationModel(
       conversationId: conversationId ?? this.conversationId,
@@ -91,6 +97,8 @@ class ConversationModel {
       media: media ?? this.media,
       createdAt: createdAt ?? this.createdAt,
       status: status ?? this.status,
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedAt: deletedAt ?? this.deletedAt,
     );
   }
 
@@ -145,6 +153,8 @@ class ConversationModel {
       'status': status,
       'messages': messages.map((MessageModel m) => m.toMap()).toList(),
       'media': media,
+      'isDeleted': isDeleted,
+      'deletedAt': deletedAt != null ? Timestamp.fromDate(deletedAt!) : null,
     };
   }
 
@@ -228,6 +238,8 @@ class ConversationModel {
           _parseDateTime(map['createdAt'] ?? map['created_at']) ??
           DateTime.now(),
       status: map['status']?.toString() ?? 'active',
+      isDeleted: map['isDeleted'] as bool? ?? false,
+      deletedAt: map['deletedAt'] != null ? _parseDateTime(map['deletedAt']) : null,
     );
   }
 }
@@ -303,6 +315,8 @@ class MessageModel {
   // --- ATTACHMENT FEATURE END ---
   final Timestamp createdAt;
   final List<String> readBy;
+  final bool isDeleted; // Soft delete flag
+  final DateTime? deletedAt; // When the message was deleted
 
   const MessageModel({
     required this.id,
@@ -316,6 +330,8 @@ class MessageModel {
     required this.voiceDuration,
     required this.createdAt,
     required this.readBy,
+    this.isDeleted = false,
+    this.deletedAt,
   });
 
   String get messageId => id;
@@ -338,6 +354,8 @@ class MessageModel {
     int? voiceDuration,
     Timestamp? createdAt,
     List<String>? readBy,
+    bool? isDeleted,
+    DateTime? deletedAt,
   }) {
     return MessageModel(
       id: id ?? this.id,
@@ -351,6 +369,8 @@ class MessageModel {
       voiceDuration: voiceDuration ?? this.voiceDuration,
       createdAt: createdAt ?? this.createdAt,
       readBy: readBy ?? this.readBy,
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedAt: deletedAt ?? this.deletedAt,
     );
   }
 
@@ -376,6 +396,8 @@ class MessageModel {
       'sendingDateTime': createdAt,
       'readBy': readBy,
       'isRead': isRead,
+      'isDeleted': isDeleted,
+      'deletedAt': deletedAt?.toIso8601String(),
     };
   }
 
@@ -438,6 +460,8 @@ class MessageModel {
       voiceDuration: resolvedVoiceDuration,
       createdAt: resolvedCreatedAt,
       readBy: resolvedReadBy,
+      isDeleted: map['isDeleted'] as bool? ?? false,
+      deletedAt: map['deletedAt'] != null ? DateTime.tryParse(map['deletedAt'].toString()) : null,
     );
   }
 }

@@ -6,7 +6,6 @@ import 'package:fahamni/Explore_map_pages/map.dart';
 import 'package:fahamni/Account_Settings_Parent/account_screen.dart';
 import 'package:fahamni/ParentDashboread/ParentCoursePage/parent_courses_page.dart';
 import 'package:fahamni/ParentDashboread/ParentHomePage/home_page.dart';
-import 'package:fahamni/ParentDashboread/ParentSchedulePage/parent_schedule_page.dart';
 import 'package:fahamni/StudentHomePage/studenthome_service.dart';
 import 'package:fahamni/feedback/feedback_pages.dart';
 import 'package:fahamni/messaging/chat_page.dart';

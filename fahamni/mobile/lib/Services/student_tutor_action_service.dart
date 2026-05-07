@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 import 'auth_.service.dart';
 import 'chat_service.dart';
@@ -242,6 +243,18 @@ class StudentTutorActionService {
     );
 
     await reportRef.set(report.toMap());
+    
+    // Send admin notification for new report
+    try {
+      await _notificationService.sendAdminNewReportNotification(
+        report.reporterName,
+        report.reportedName,
+        report.type.name,
+      );
+    } catch (e) {
+      // Don't fail the report creation if admin notification fails
+      debugPrint('Failed to send admin notification for report: $e');
+    }
   }
 
   Future<void> createQuoteRequest({

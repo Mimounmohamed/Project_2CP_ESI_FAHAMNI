@@ -186,9 +186,9 @@ class TeacherDashboardService {
           : QuoteStatus.rejected.name,
       'responded_at': Timestamp.fromDate(DateTime.now()),
       'updated_at': Timestamp.now(),
-      if (price != null) 'teacher_price': price,
-      if (sessionsNumber != null) 'teacher_sessions_num': sessionsNumber,
-      if (sessionDurationMinutes != null) 'teacher_session_duration': sessionDurationMinutes,
+      'teacher_price': ?price,
+      'teacher_sessions_num': ?sessionsNumber,
+      'teacher_session_duration': ?sessionDurationMinutes,
     };
 
     bool updated = false;

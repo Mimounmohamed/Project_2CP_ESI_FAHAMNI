@@ -201,6 +201,81 @@ class ChatService {
       return true;
     }
   }
+
+  /// Soft deletes a message by marking it as deleted
+  /// Only the sender can delete their own messages
+  Future<void> deleteMessage({
+    required String messageId,
+    required String conversationId,
+    required String userId,
+  }) async {
+    try {
+      // First, get the message to verify ownership
+      final messages = await _chatRepository.getMessages(conversationId).first;
+      final message = messages.firstWhere(
+        (msg) => msg.id == messageId,
+        orElse: () => throw Exception('Message not found'),
+      );
+
+      // Check if user is the sender
+      if (message.senderId != userId) {
+        throw Exception('You can only delete your own messages');
+      }
+
+      // Check if message is already deleted
+      if (message.isDeleted) {
+        throw Exception('Message is already deleted');
+      }
+
+      // Create updated message with soft delete
+      final updatedMessage = message.copyWith(
+        isDeleted: true,
+        deletedAt: DateTime.now(),
+      );
+
+      // Update the message in Firestore
+      await _chatRepository.updateMessage(updatedMessage);
+    } catch (e) {
+      throw Exception('Failed to delete message: $e');
+    }
+  }
+
+  /// Soft deletes a conversation by marking it as deleted
+  /// Only participants can delete conversations
+  Future<void> deleteConversation({
+    required String conversationId,
+    required String userId,
+  }) async {
+    try {
+      // First, get the conversation to verify participation
+      final conversations = await _chatRepository.getConversations(userId).first;
+      final conversation = conversations.firstWhere(
+        (conv) => conv.conversationId == conversationId,
+        orElse: () => throw Exception('Conversation not found'),
+      );
+
+      // Check if user is a participant
+      if (!conversation.participants.contains(userId)) {
+        throw Exception('You are not a participant in this conversation');
+      }
+
+      // Check if conversation is already deleted
+      if (conversation.isDeleted) {
+        throw Exception('Conversation is already deleted');
+      }
+
+      // Create updated conversation with soft delete
+      final updatedConversation = conversation.copyWith(
+        isDeleted: true,
+        deletedAt: DateTime.now(),
+      );
+
+      // Update the conversation in Firestore
+      await _chatRepository.updateConversation(updatedConversation);
+    } catch (e) {
+      throw Exception('Failed to delete conversation: $e');
+    }
+  }
 }
 
 

@@ -48,6 +48,7 @@ class FirestoreChatRepository implements ChatRepository {
             final List<ConversationModel> validConversations = conversations
                 .whereType<ConversationModel>()
                 .where((conversation) => _matchesFilter(conversation, filter))
+                .where((conversation) => !conversation.isDeleted) // Filter out deleted conversations
                 .toList();
 
             return _deduplicateConversations(validConversations);
@@ -71,6 +72,7 @@ class FirestoreChatRepository implements ChatRepository {
                   'conversationId': conversationId,
                 }),
               )
+              .where((message) => !message.isDeleted) // Filter out deleted messages
               .toList(),
         );
   }
@@ -482,6 +484,25 @@ class FirestoreChatRepository implements ChatRepository {
     }
 
     return true;
+  }
+
+  @override
+  Future<void> updateMessage(MessageModel message) async {
+    final DocumentReference<Map<String, dynamic>> messageRef =
+        _conversationsCollection
+            .doc(message.conversationId)
+            .collection('messages')
+            .doc(message.id);
+
+    await messageRef.update(message.toMap());
+  }
+
+  @override
+  Future<void> updateConversation(ConversationModel conversation) async {
+    final DocumentReference<Map<String, dynamic>> conversationRef =
+        _conversationsCollection.doc(conversation.conversationId);
+
+    await conversationRef.update(conversation.toMap());
   }
 }
 

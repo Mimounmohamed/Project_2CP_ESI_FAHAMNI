@@ -11,7 +11,6 @@ import 'package:fahamni/Login_Screen/LoginScreen.dart';
 import 'package:fahamni/ParentDashboread/ParentCoursePage/parent_courses_page.dart';
 import 'package:fahamni/ParentDashboread/ParentExplorePage/parent_explore_page.dart';
 import 'package:fahamni/ParentDashboread/ParentHomePage/home_page.dart';
-import 'package:fahamni/ParentDashboread/ParentSchedulePage/parent_schedule_page.dart';
 import 'package:fahamni/StudentHomePage/studenthome_service.dart';
 import 'package:fahamni/messaging/chat_page.dart';
 import 'package:fahamni/models/parent_model.dart';

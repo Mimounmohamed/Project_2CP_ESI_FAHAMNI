@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 import 'models/teacher_portal_models.dart';
 import '../Services/notification_service.dart';
@@ -248,31 +249,12 @@ class TeacherPortalService {
         });
         // notify the requester (student or parent who initiated the join request)
         try {
-          final NotificationService _ns = NotificationService();
-          String? senderId;
-          final QuerySnapshot<Map<String, dynamic>> notifSnap = await _firestore
-              .collection('notifications')
-              .where('tutor_id', isEqualTo: currentTutor.uid)
-              .where('service_id', isEqualTo: serviceId)
-              .where('type', isEqualTo: 'join_request')
-              .orderBy('date_time', descending: true)
-              .limit(10)
-              .get();
-          for (final d in notifSnap.docs) {
-            final s = d.data()['sender_id'] as String?;
-            final sid = d.data()['student_id'] as String?;
-            if (s != null && s.isNotEmpty) {
-              senderId = s;
-              break;
-            }
-            if (sid != null && sid == studentId) {
-              // fallback: treat studentId as receiver
-              senderId = sid;
-              break;
-            }
-          }
-          final String receiver = senderId ?? studentId;
-          await _ns.sendNotification(
+          final NotificationService ns = NotificationService();
+          // For join requests, the studentId is the one who should receive the notification
+          // If it was sent by a parent on behalf of a child, the studentId will be the child
+          // If it was sent directly by a student, the studentId will be the sender
+          final String receiver = studentId;
+          await ns.sendNotification(
             NotificationModel(
               title: 'Join request accepted',
               content: '${request.studentName} has been accepted to ${request.serviceTitle}.',
@@ -286,7 +268,10 @@ class TeacherPortalService {
               serviceId: serviceId,
             ),
           );
-        } catch (_) {}
+        } catch (e) {
+          // Log the error but don't fail the operation
+          debugPrint('Failed to send join request acceptance notification: $e');
+        }
       } else {
         await serviceRef.update({
           'pending_ids': FieldValue.arrayRemove([studentId]),
@@ -294,30 +279,10 @@ class TeacherPortalService {
         });
         // notify the requester about rejection
         try {
-          final NotificationService _ns = NotificationService();
-          String? senderId;
-          final QuerySnapshot<Map<String, dynamic>> notifSnap = await _firestore
-              .collection('notifications')
-              .where('tutor_id', isEqualTo: currentTutor.uid)
-              .where('service_id', isEqualTo: serviceId)
-              .where('type', isEqualTo: 'join_request')
-              .orderBy('date_time', descending: true)
-              .limit(10)
-              .get();
-          for (final d in notifSnap.docs) {
-            final s = d.data()['sender_id'] as String?;
-            final sid = d.data()['student_id'] as String?;
-            if (s != null && s.isNotEmpty) {
-              senderId = s;
-              break;
-            }
-            if (sid != null && sid == studentId) {
-              senderId = sid;
-              break;
-            }
-          }
-          final String receiver = senderId ?? studentId;
-          await _ns.sendNotification(
+          final NotificationService ns = NotificationService();
+          // For join requests, the studentId is the one who should receive the notification
+          final String receiver = studentId;
+          await ns.sendNotification(
             NotificationModel(
               title: 'Join request rejected',
               content: '${request.studentName} join request for ${request.serviceTitle} was rejected.',
@@ -331,7 +296,10 @@ class TeacherPortalService {
               serviceId: serviceId,
             ),
           );
-        } catch (_) {}
+        } catch (e) {
+          // Log the error but don't fail the operation
+          debugPrint('Failed to send join request rejection notification: $e');
+        }
       }
       return;
     }

@@ -9,6 +9,7 @@ class MessageRow extends StatelessWidget {
   final MessageModel message;
   final bool isMe;
   final String senderAvatarUrl;
+  final VoidCallback? onLongPress;
   String get formattedTime => DateFormat('hh:mm a').format(message.sendingDateTime);
 
   const MessageRow({
@@ -16,6 +17,7 @@ class MessageRow extends StatelessWidget {
     required this.message,
     required this.isMe,
     required this.senderAvatarUrl,
+    this.onLongPress,
   });
 
   @override
@@ -56,7 +58,10 @@ Widget build(BuildContext context) {
             
             crossAxisAlignment: CrossAxisAlignment.start, 
             children: [
-              MessageBubble(messageModel: message, isme: isMe),
+              GestureDetector(
+                onLongPress: onLongPress,
+                child: MessageBubble(messageModel: message, isme: isMe),
+              ),
               const SizedBox(height: 2),
               Text(formattedTime, style: TextStyle(fontSize: 10, color: Colors.grey)),
             ],
@@ -68,6 +73,5 @@ Widget build(BuildContext context) {
 }
       
 }
-
 
 

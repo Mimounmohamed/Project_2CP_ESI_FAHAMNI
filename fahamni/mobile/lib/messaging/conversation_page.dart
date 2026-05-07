@@ -174,6 +174,44 @@ class _ConversationPageState extends State<ConversationPage> {
     );
   }
 
+  Future<void> _confirmDeleteMessage(BuildContext context, MessageModel message) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final bool shouldDelete = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Delete message'),
+            content: const Text('Are you sure you want to delete this message?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!mounted || !shouldDelete) return;
+
+    final String userId = _auth.currentUser?.uid ?? widget.currentUserId;
+    try {
+      await _chatService.deleteMessage(
+        messageId: message.id,
+        conversationId: widget.conversation.conversationId,
+        userId: userId,
+      );
+    } catch (error) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not delete message: $error')),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -329,6 +367,9 @@ class _ConversationPageState extends State<ConversationPage> {
                       senderAvatarUrl: isMe
                           ? 'https://ui-avatars.com/api/?name=Me&background=000080&color=ffffff'
                           : widget.imageUrl,
+                      onLongPress: isMe
+                          ? () => _confirmDeleteMessage(context, msg)
+                          : null,
                     );
                   },
                 );

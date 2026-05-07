@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import '../models/quote_model.dart';
-import '../models/student_model.dart';
 import '../TeacherDashboard/teacher_dashboard_service.dart';
 import '../TeacherDashboard/models/teacher_portal_models.dart';
 import '../TeacherDashboard/teacher_quote_request_detail_page.dart';

@@ -14,6 +14,10 @@ abstract class ChatRepository {
     required String currentUserId,
     required String otherUserId,
   });
+
+  Future<void> updateMessage(MessageModel message);
+
+  Future<void> updateConversation(ConversationModel conversation);
 }
 
 
