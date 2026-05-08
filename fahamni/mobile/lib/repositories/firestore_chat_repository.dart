@@ -221,8 +221,11 @@ class FirestoreChatRepository implements ChatRepository {
           data['conversationId'] ?? data['conversation_id'] ?? docId,
     });
 
+    final bool isSupportConversation =
+        data['is_support'] == true || data.containsKey('user_uid');
     final bool isGroup =
-        baseConversation.isGroup || baseConversation.participants.length > 2;
+        !isSupportConversation &&
+        (baseConversation.isGroup || baseConversation.participants.length > 2);
     final String otherParticipantId = isGroup
         ? ''
         : baseConversation.participants.firstWhere(
