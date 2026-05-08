@@ -39,32 +39,46 @@ class _ParentCoursesPageState extends State<ParentCoursesPage> {
 
   Future<_CoursesViewData> _loadCourses({String? childId}) async {
     _children = await _childService.fetchLinkedChildren();
-    if (_children.isNotEmpty && childId == null) {
-      _selectedChild ??= _children.first;
-    }
+    final String? selectedChildId = childId ?? _selectedChild?.id;
+    ChildModel? child;
 
-    final ChildModel? child = childId != null
-        ? _children.firstWhere((c) => c.id == childId, orElse: () => _selectedChild ?? _children.first)
-        : _selectedChild;
+    if (_children.isNotEmpty) {
+      child = selectedChildId == null
+          ? _children.first
+          : _children.firstWhere(
+              (c) => c.id == selectedChildId,
+              orElse: () => _children.first,
+            );
+      _selectedChild = child;
+    }
 
     if (child == null) {
       return _CoursesViewData(student: null, courses: <_CourseCardData>[]);
     }
 
-    final List<SessionModel> sessions = await _service.getCourses(<String>[], studentId: child.id);
+    final List<SessionModel> sessions = await _service.getCourses(
+      <String>[],
+      studentId: child.id,
+    );
     sessions.sort((a, b) => _sessionDateTime(a).compareTo(_sessionDateTime(b)));
 
     final List<_CourseCardData> cards = <_CourseCardData>[];
     for (final SessionModel session in sessions) {
       final TutorModel tutor = await _service.getTutorData(session.tutorId);
-      final ServiceModel? service = await _service.getServiceData(session.serviceId);
-      cards.add(_CourseCardData(session: session, tutor: tutor, service: service));
+      final ServiceModel? service = await _service.getServiceData(
+        session.serviceId,
+      );
+      cards.add(
+        _CourseCardData(session: session, tutor: tutor, service: service),
+      );
     }
 
     final Map<String, _CourseCardData> byService = {};
     final DateTime now = DateTime.now();
     for (final _CourseCardData card in cards) {
-      final String key = card.session.serviceId.isNotEmpty ? card.session.serviceId : card.session.sessionId;
+      final String key = card.session.serviceId.isNotEmpty
+          ? card.session.serviceId
+          : card.session.sessionId;
       if (!byService.containsKey(key)) {
         byService[key] = card;
       } else {
@@ -72,37 +86,50 @@ class _ParentCoursesPageState extends State<ParentCoursesPage> {
         final DateTime candidate = _sessionDateTime(card.session);
         final bool candidateUpcoming = candidate.isAfter(now);
         final bool existingUpcoming = existing.isAfter(now);
-        if (candidateUpcoming && (!existingUpcoming || candidate.isBefore(existing))) {
+        if (candidateUpcoming &&
+            (!existingUpcoming || candidate.isBefore(existing))) {
           byService[key] = card;
         }
       }
     }
 
     final List<_CourseCardData> deduped = byService.values.toList()
-      ..sort((a, b) => _sessionDateTime(a.session).compareTo(_sessionDateTime(b.session)));
+      ..sort(
+        (a, b) =>
+            _sessionDateTime(a.session).compareTo(_sessionDateTime(b.session)),
+      );
 
-    return _CoursesViewData(
-      student: child,
-      courses: deduped,
-    );
+    return _CoursesViewData(student: child, courses: deduped);
   }
 
   void _handleNavigation(int index) {
     if (index == _selectedIndex) return;
     if (index == 0) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const Parenthomepage()));
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const Parenthomepage()),
+      );
       return;
     }
     if (index == 1) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ParentExplorePage()));
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const ParentExplorePage()),
+      );
       return;
     }
     if (index == 3) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ChatPage()));
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const ChatPage()),
+      );
       return;
     }
     if (index == 4) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ParentAccountScreen()));
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const ParentAccountScreen()),
+      );
       return;
     }
     setState(() {
@@ -178,7 +205,9 @@ class _ParentCoursesPageState extends State<ParentCoursesPage> {
           }
 
           final _CoursesViewData data = snapshot.data!;
-          final List<_CourseCardData> visibleCourses = data.courses.where((course) {
+          final List<_CourseCardData> visibleCourses = data.courses.where((
+            course,
+          ) {
             switch (_filter) {
               case _CourseFilter.all:
                 return true;
@@ -189,41 +218,6 @@ class _ParentCoursesPageState extends State<ParentCoursesPage> {
                 return course.session.status == SessionStatus.Completed;
             }
           }).toList();
-
-          if (data.courses.isEmpty) {
-            return RefreshIndicator(
-              onRefresh: _refresh,
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(24, 48, 24, 120),
-                children: const [
-                  Icon(
-                    Icons.menu_book_rounded,
-                    size: 64,
-                    color: Color(0xFF000080),
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'No courses yet.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF1F2937),
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Your enrolled sessions will appear here.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
 
           return RefreshIndicator(
             onRefresh: _refresh,
@@ -257,7 +251,8 @@ class _ParentCoursesPageState extends State<ParentCoursesPage> {
                       child: _FilterPill(
                         label: 'All',
                         selected: _filter == _CourseFilter.all,
-                        onTap: () => setState(() => _filter = _CourseFilter.all),
+                        onTap: () =>
+                            setState(() => _filter = _CourseFilter.all),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -265,7 +260,8 @@ class _ParentCoursesPageState extends State<ParentCoursesPage> {
                       child: _FilterPill(
                         label: 'In Progress',
                         selected: _filter == _CourseFilter.inProgress,
-                        onTap: () => setState(() => _filter = _CourseFilter.inProgress),
+                        onTap: () =>
+                            setState(() => _filter = _CourseFilter.inProgress),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -273,13 +269,46 @@ class _ParentCoursesPageState extends State<ParentCoursesPage> {
                       child: _FilterPill(
                         label: 'Done',
                         selected: _filter == _CourseFilter.done,
-                        onTap: () => setState(() => _filter = _CourseFilter.done),
+                        onTap: () =>
+                            setState(() => _filter = _CourseFilter.done),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 18),
-                if (visibleCourses.isEmpty)
+                if (data.courses.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 48),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.menu_book_rounded,
+                          size: 64,
+                          color: Color(0xFF000080),
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'No courses yet.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1F2937),
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          'Your enrolled sessions will appear here.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else if (visibleCourses.isEmpty)
                   const Padding(
                     padding: EdgeInsets.only(top: 48),
                     child: Text(
@@ -339,10 +368,7 @@ class _ParentCoursesPageState extends State<ParentCoursesPage> {
 }
 
 class _CourseCard extends StatelessWidget {
-  const _CourseCard({
-    required this.course,
-    required this.onOpenService,
-  });
+  const _CourseCard({required this.course, required this.onOpenService});
 
   final _CourseCardData course;
   final VoidCallback? onOpenService;
@@ -355,13 +381,14 @@ class _CourseCard extends StatelessWidget {
     final String title = service?.name.isNotEmpty == true
         ? service!.name
         : service?.subject.isNotEmpty == true
-            ? service!.subject
-            : 'Session';
-    
-    final String subjectLabel =
-        service?.subject.isNotEmpty == true ? service!.subject.toUpperCase() : 'COURSE';
-    final String tutorLabel =
-        'Prof. ${tutor.firstName} ${tutor.lastName}'.trim();
+        ? service!.subject
+        : 'Session';
+
+    final String subjectLabel = service?.subject.isNotEmpty == true
+        ? service!.subject.toUpperCase()
+        : 'COURSE';
+    final String tutorLabel = 'Prof. ${tutor.firstName} ${tutor.lastName}'
+        .trim();
     final String sessionsLabel =
         '${service?.sessionsnum ?? 1} ${service?.sessionsnum == 1 ? 'Session' : 'Sessions'}';
     final String durationLabel =
@@ -386,13 +413,15 @@ class _CourseCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(18),
+              ),
               child: SizedBox(
                 height: 135,
                 width: double.infinity,
                 child: Image(
-                        image: _courseCoverImage(service),
-                        fit: BoxFit.cover,
+                  image: _courseCoverImage(service),
+                  fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) => Container(
                     color: const Color(0xFF1F5A4E),
                     alignment: Alignment.center,
@@ -423,7 +452,10 @@ class _CourseCard extends StatelessWidget {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF1F5F9),
                           borderRadius: BorderRadius.circular(12),
@@ -486,7 +518,11 @@ ImageProvider<Object> _courseCoverImage(ServiceModel? service) {
 }
 
 class _FilterPill extends StatelessWidget {
-  const _FilterPill({required this.label, required this.selected, required this.onTap});
+  const _FilterPill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -522,7 +558,11 @@ class _CourseCardData {
   final TutorModel tutor;
   final ServiceModel? service;
 
-  _CourseCardData({required this.session, required this.tutor, required this.service});
+  _CourseCardData({
+    required this.session,
+    required this.tutor,
+    required this.service,
+  });
 }
 
 class _CoursesViewData {
