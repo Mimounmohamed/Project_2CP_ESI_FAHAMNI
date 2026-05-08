@@ -99,6 +99,7 @@ class _ParenthomepageState extends State<Parenthomepage> {
           accountStatus: AccountStatus.validated,
           isSuspended: false,
           childrenUids: const <String>[],
+          favoriteTeachers: const <String>[],
           picture: '',
         );
       });

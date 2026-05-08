@@ -20,8 +20,10 @@ class PhoneVerificationPage extends StatefulWidget {
 }
 
 class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
-  final List<TextEditingController> _controllers =
-      List.generate(6, (_) => TextEditingController());
+  final List<TextEditingController> _controllers = List.generate(
+    6,
+    (_) => TextEditingController(),
+  );
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
   final _authService = AuthService();
   final _emailOtpService = EmailOtpService();
@@ -46,15 +48,22 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
 
   @override
   void dispose() {
-    for (final c in _controllers) { c.dispose(); }
-    for (final f in _focusNodes) { f.dispose(); }
+    for (final c in _controllers) {
+      c.dispose();
+    }
+    for (final f in _focusNodes) {
+      f.dispose();
+    }
     super.dispose();
   }
 
   String get _otpCode => _controllers.map((c) => c.text).join();
 
   Future<void> _sendOtp() async {
-    setState(() { _isSending = true; _errorMessage = null; });
+    setState(() {
+      _isSending = true;
+      _errorMessage = null;
+    });
     await _authService.sendOtp(
       phoneNumber: widget.data['phone'] as String,
       onCodeSent: (verificationId) {
@@ -66,7 +75,10 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
       },
       onError: (error) {
         if (!mounted) return;
-        setState(() { _errorMessage = error; _isSending = false; });
+        setState(() {
+          _errorMessage = error;
+          _isSending = false;
+        });
       },
     );
   }
@@ -80,25 +92,32 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
       setState(() => _errorMessage = 'Please enter the full 6-digit code.');
       return;
     }
-    setState(() { _isVerifying = true; _errorMessage = null; });
+    setState(() {
+      _isVerifying = true;
+      _errorMessage = null;
+    });
     try {
       final userModel = _buildUserModel();
       await _authService.verifyOtpAndRegister(
         verificationId: _verificationId!,
-        smsCode:        _otpCode,
-        email:          widget.data['email'],
-        password:       widget.data['password'],
-        userModel:      userModel,
-        certificationFiles: widget.data['certificationFiles'] as List<PlatformFile>?,
+        smsCode: _otpCode,
+        email: widget.data['email'],
+        password: widget.data['password'],
+        userModel: userModel,
+        certificationFiles:
+            widget.data['certificationFiles'] as List<PlatformFile>?,
       );
-       await FirebaseAuth.instance.authStateChanges().firstWhere((u) => u != null);
-      if (userModel.role == UserRole.parent && widget.data['children'] != null) {
-  final uid = FirebaseAuth.instance.currentUser!.uid;
-  await _authService.saveChildren(
-    parentUid: uid,
-    children: List<Map<String, dynamic>>.from(widget.data['children']),
-  );
-}
+      await FirebaseAuth.instance.authStateChanges().firstWhere(
+        (u) => u != null,
+      );
+      if (userModel.role == UserRole.parent &&
+          widget.data['children'] != null) {
+        final uid = FirebaseAuth.instance.currentUser!.uid;
+        await _authService.saveChildren(
+          parentUid: uid,
+          children: List<Map<String, dynamic>>.from(widget.data['children']),
+        );
+      }
       _goToComplete();
     } catch (e) {
       setState(() => _errorMessage = e.toString());
@@ -108,17 +127,23 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
   }
 
   Future<void> _sendEmailOtp() async {
-    setState(() { _isSending = true; _errorMessage = null; });
+    setState(() {
+      _isSending = true;
+      _errorMessage = null;
+    });
     try {
       await _emailOtpService.sendOtp(
-        email:     widget.data['email'],
+        email: widget.data['email'],
         firstName: widget.data['firstName'],
       );
       if (!mounted) return;
       setState(() => _isSending = false);
     } catch (e) {
       if (!mounted) return;
-      setState(() { _errorMessage = e.toString(); _isSending = false; });
+      setState(() {
+        _errorMessage = e.toString();
+        _isSending = false;
+      });
     }
   }
 
@@ -127,27 +152,34 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
       setState(() => _errorMessage = 'Please enter the full 6-digit code.');
       return;
     }
-    setState(() { _isVerifying = true; _errorMessage = null; });
+    setState(() {
+      _isVerifying = true;
+      _errorMessage = null;
+    });
     try {
       await _emailOtpService.verifyOtp(
         email: widget.data['email'],
-        code:  _otpCode,
+        code: _otpCode,
       );
       final userModel = _buildUserModel();
       await _authService.signUp(
         widget.data['email'],
         widget.data['password'],
         userModel,
-        certificationFiles: widget.data['certificationFiles'] as List<PlatformFile>?,
+        certificationFiles:
+            widget.data['certificationFiles'] as List<PlatformFile>?,
       );
-       await FirebaseAuth.instance.authStateChanges().firstWhere((u) => u != null);
-      if (userModel.role == UserRole.parent && widget.data['children'] != null) {
-  final uid = FirebaseAuth.instance.currentUser!.uid;
-  await _authService.saveChildren(
-    parentUid: uid,
-    children: List<Map<String, dynamic>>.from(widget.data['children']),
-  );
-}
+      await FirebaseAuth.instance.authStateChanges().firstWhere(
+        (u) => u != null,
+      );
+      if (userModel.role == UserRole.parent &&
+          widget.data['children'] != null) {
+        final uid = FirebaseAuth.instance.currentUser!.uid;
+        await _authService.saveChildren(
+          parentUid: uid,
+          children: List<Map<String, dynamic>>.from(widget.data['children']),
+        );
+      }
       _goToComplete();
     } catch (e) {
       setState(() => _errorMessage = e.toString());
@@ -170,7 +202,7 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
       context,
       MaterialPageRoute(
         builder: (_) => RegistrationComplete(
-          email:     widget.data['email'],
+          email: widget.data['email'],
           firstName: widget.data['firstName'],
         ),
       ),
@@ -179,7 +211,7 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
   }
 
   String _defaultPicture() {
-    final role   = widget.data['role']   as UserRole;
+    final role = widget.data['role'] as UserRole;
     final gender = widget.data['gender'] as Gender;
 
     if (role == UserRole.tutor) {
@@ -205,57 +237,73 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
       final city = data['location'] as String? ?? '';
       final location = commune.isNotEmpty ? '$commune, $city' : city;
       return StudentModel(
-        uid: '', firstName: data['firstName'], lastName: data['lastName'],
-        email: data['email'], phone: data['phone'],
-        location: location, gender: data['gender'],
-        birthday: data['birthday'], accountStatus: AccountStatus.validated,
+        uid: '',
+        firstName: data['firstName'],
+        lastName: data['lastName'],
+        email: data['email'],
+        phone: data['phone'],
+        location: location,
+        gender: data['gender'],
+        birthday: data['birthday'],
+        accountStatus: AccountStatus.validated,
         isSuspended: false,
-        schoolLevel:        data['schoolLevel']        ?? '',
+        schoolLevel: data['schoolLevel'] ?? '',
         learningObjectives: data['learningObjectives'] ?? '',
-        preferredSubjects:  List<String>.from(data['preferredSubjects'] ?? []),
-        favoriteTeachers:   List<String>.from(data['favoriteTeachers'] ?? []),
-        Courses:            List<String>.from(data['courses'] ?? []),
+        preferredSubjects: List<String>.from(data['preferredSubjects'] ?? []),
+        favoriteTeachers: List<String>.from(data['favoriteTeachers'] ?? []),
+        Courses: List<String>.from(data['courses'] ?? []),
         picture: data['picture'] ?? _defaultPicture(),
         grade: data['grade'] ?? '',
         speciality: data['speciality'] ?? '',
       );
     } else if (role == UserRole.tutor) {
       final tutorCommune = data['commune'] as String? ?? '';
-      final tutorCity    = data['location'] as String? ?? '';
+      final tutorCity = data['location'] as String? ?? '';
       final tutorLocation = tutorCommune.isNotEmpty
           ? '$tutorCommune, $tutorCity'
           : tutorCity;
       return TutorModel(
-        uid: '', firstName: data['firstName'], lastName: data['lastName'],
-        email: data['email'], phone: data['phone'],
-        location: tutorLocation, gender: data['gender'],
-        birthday: data['birthday'], accountStatus: AccountStatus.pending,
+        uid: '',
+        firstName: data['firstName'],
+        lastName: data['lastName'],
+        email: data['email'],
+        phone: data['phone'],
+        location: tutorLocation,
+        gender: data['gender'],
+        birthday: data['birthday'],
+        accountStatus: AccountStatus.pending,
         isSuspended: false,
-        expertiseDomain:        data['expertiseDomain']        ?? '',
-        levelsTaught:           List<String>.from(data['levelsTaught'] ?? []),
-        teachingMode:           data['teachingMode']           ?? '',
-        isAvailable:            data['isAvailable']            ?? false,
-        certified:              data['certified']              ?? false,
+        expertiseDomain: data['expertiseDomain'] ?? '',
+        levelsTaught: List<String>.from(data['levelsTaught'] ?? []),
+        teachingMode: data['teachingMode'] ?? '',
+        isAvailable: data['isAvailable'] ?? false,
+        certified: data['certified'] ?? false,
         pedagogicalDescription: data['pedagogicalDescription'] ?? '',
-        averageRating:          data['averageRating']          ?? 0.0,
-        yearsOfExperience:      data['yearsOfExperience']      ?? 0,
-        academicDescription:    data['academicDescription']    ?? '',
-        certificationUrl:       data['certificationUrl']       ?? '',
+        averageRating: data['averageRating'] ?? 0.0,
+        yearsOfExperience: data['yearsOfExperience'] ?? 0,
+        academicDescription: data['academicDescription'] ?? '',
+        certificationUrl: data['certificationUrl'] ?? '',
         picture: data['picture'] ?? _defaultPicture(),
       );
     } else {
       final parentCommune = data['commune'] as String? ?? '';
-      final parentCity    = data['location'] as String? ?? '';
+      final parentCity = data['location'] as String? ?? '';
       final parentLocation = parentCommune.isNotEmpty
           ? '$parentCommune, $parentCity'
           : parentCity;
       return ParentModel(
-        uid: '', firstName: data['firstName'], lastName: data['lastName'],
-        email: data['email'], phone: data['phone'],
-        location: parentLocation, gender: data['gender'],
-        birthday: data['birthday'], accountStatus: AccountStatus.validated,
+        uid: '',
+        firstName: data['firstName'],
+        lastName: data['lastName'],
+        email: data['email'],
+        phone: data['phone'],
+        location: parentLocation,
+        gender: data['gender'],
+        birthday: data['birthday'],
+        accountStatus: AccountStatus.validated,
         isSuspended: false,
         childrenUids: List<String>.from(data['childrenUids'] ?? []),
+        favoriteTeachers: <String>[],
         picture: data['picture'] ?? _defaultPicture(),
       );
     }
@@ -285,10 +333,7 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
             children: [
               Container(
                 alignment: Alignment.center,
-                child: Image.asset(
-                  "assets/images/Vector@2x.png",
-                  height: 100,
-                ),
+                child: Image.asset("assets/images/Vector@2x.png", height: 100),
               ),
               const SizedBox(height: 10),
               const Text(
@@ -314,21 +359,25 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
               Text(
                 _isPhoneFlow ? "Phone Verification" : "Email Verification",
                 style: const TextStyle(
-                  fontFamily: 'Inter', color: Color(0xFF0F172A),
-                  fontWeight: FontWeight.w700, fontSize: 28,
+                  fontFamily: 'Inter',
+                  color: Color(0xFF0F172A),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 28,
                 ),
               ),
               const SizedBox(height: 6),
               Text(
                 _isPhoneFlow
                     ? (_isSending
-                        ? "Sending code to ${widget.data['phone']}…"
-                        : "Enter the code sent to ${widget.data['phone']}")
+                          ? "Sending code to ${widget.data['phone']}…"
+                          : "Enter the code sent to ${widget.data['phone']}")
                     : (_isSending
-                        ? "Sending code to ${widget.data['email']}…"
-                        : "Enter the code sent to\n${widget.data['email']}.\nCheck your inbox and spam folder."),
+                          ? "Sending code to ${widget.data['email']}…"
+                          : "Enter the code sent to\n${widget.data['email']}.\nCheck your inbox and spam folder."),
                 style: const TextStyle(
-                  fontFamily: "Inter", fontSize: 16, color: Color(0xff64748B),
+                  fontFamily: "Inter",
+                  fontSize: 16,
+                  color: Color(0xff64748B),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -337,11 +386,14 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: List.generate(6, (index) => OTPBox(
-                    controller: _controllers[index],
-                    focusNode:  _focusNodes[index],
-                    nextFocusNode: index < 5 ? _focusNodes[index + 1] : null,
-                  )),
+                  children: List.generate(
+                    6,
+                    (index) => OTPBox(
+                      controller: _controllers[index],
+                      focusNode: _focusNodes[index],
+                      nextFocusNode: index < 5 ? _focusNodes[index + 1] : null,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 40),
@@ -351,8 +403,10 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
                   child: Text(
                     _errorMessage!,
                     style: const TextStyle(
-                      color: Color(0xFFE53935), fontSize: 14,
-                      fontFamily: "Inter", fontWeight: FontWeight.w500,
+                      color: Color(0xFFE53935),
+                      fontSize: 14,
+                      fontFamily: "Inter",
+                      fontWeight: FontWeight.w500,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -391,14 +445,18 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
                       child: Center(
                         child: isLoading
                             ? const SizedBox(
-                                width: 22, height: 22,
+                                width: 22,
+                                height: 22,
                                 child: CircularProgressIndicator(
-                                  color: Colors.white, strokeWidth: 2.5),
+                                  color: Colors.white,
+                                  strokeWidth: 2.5,
+                                ),
                               )
                             : const Text(
                                 "Verify Code",
                                 style: TextStyle(
-                                  color: Colors.white, fontSize: 16,
+                                  color: Colors.white,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -413,8 +471,10 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
                 child: Text(
                   _isSending ? "Sending…" : "Resend Code",
                   style: const TextStyle(
-                    fontFamily: "Inter", color: Color(0xBF000080),
-                    fontSize: 16, fontWeight: FontWeight.w600,
+                    fontFamily: "Inter",
+                    color: Color(0xBF000080),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -425,4 +485,3 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
     );
   }
 }
-

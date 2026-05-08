@@ -7,6 +7,7 @@ import 'chat_service.dart';
 import 'notification_service.dart';
 import '../models/chat_model.dart';
 import '../models/notification_model.dart';
+import '../models/parent_model.dart';
 import '../models/report_model.dart';
 import '../models/service_model.dart';
 import '../models/student_model.dart';
@@ -49,9 +50,44 @@ class StudentTutorActionService {
     return StudentModel.fromMap({...snapshot.data()!, 'uid': snapshot.id});
   }
 
+  Future<Map<String, dynamic>> _getCurrentUserProfile() async {
+    final User? currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('You need to be signed in first.');
+    }
+
+    // Try student collection first
+    DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore
+        .collection('students')
+        .doc(currentUser.uid)
+        .get();
+    if (snapshot.exists && snapshot.data() != null) {
+      return {
+        'data': {...snapshot.data()!, 'uid': snapshot.id},
+        'collection': 'students',
+      };
+    }
+
+    // Fallback to parent collection
+    snapshot = await _firestore
+        .collection('parents')
+        .doc(currentUser.uid)
+        .get();
+    if (snapshot.exists && snapshot.data() != null) {
+      return {
+        'data': {...snapshot.data()!, 'uid': snapshot.id},
+        'collection': 'parents',
+      };
+    }
+
+    throw Exception('Student profile not found.');
+  }
+
   Future<bool> isFavoriteTutor(String tutorId) async {
-    final StudentModel student = await getCurrentStudent();
-    return student.favoriteTeachers.contains(tutorId);
+    final profile = await _getCurrentUserProfile();
+    final data = profile['data'] as Map<String, dynamic>;
+    final favoriteTeachers = List<String>.from(data['favorite_teachers'] ?? []);
+    return favoriteTeachers.contains(tutorId);
   }
 
   Future<StudentModel?> _tryGetCurrentStudent() async {
@@ -63,17 +99,18 @@ class StudentTutorActionService {
   }
 
   Future<bool> toggleFavoriteTutor(String tutorId) async {
-    final StudentModel student = await getCurrentStudent();
-    final bool isFavorite = student.favoriteTeachers.contains(tutorId);
+    final profile = await _getCurrentUserProfile();
+    final data = profile['data'] as Map<String, dynamic>;
+    final collection = profile['collection'] as String;
+    final uid = data['uid'] as String;
+    final favoriteTeachers = List<String>.from(data['favorite_teachers'] ?? []);
+    final bool isFavorite = favoriteTeachers.contains(tutorId);
 
-    await _firestore.collection('students').doc(student.uid).set(
-      <String, dynamic>{
-        'favorite_teachers': isFavorite
-            ? FieldValue.arrayRemove(<String>[tutorId])
-            : FieldValue.arrayUnion(<String>[tutorId]),
-      },
-      SetOptions(merge: true),
-    );
+    await _firestore.collection(collection).doc(uid).set(<String, dynamic>{
+      'favorite_teachers': isFavorite
+          ? FieldValue.arrayRemove(<String>[tutorId])
+          : FieldValue.arrayUnion(<String>[tutorId]),
+    }, SetOptions(merge: true));
 
     return !isFavorite;
   }
@@ -243,7 +280,7 @@ class StudentTutorActionService {
     );
 
     await reportRef.set(report.toMap());
-    
+
     // Send admin notification for new report
     try {
       await _notificationService.sendAdminNewReportNotification(
