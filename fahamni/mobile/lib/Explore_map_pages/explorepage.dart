@@ -75,10 +75,7 @@ class _ExplorepageState extends State<Explorepage> {
 
   Future<void> _initializeData() async {
     // 1. Wait for location & tutors to load concurrently
-    await Future.wait([
-      _getCurrentLocation(),
-      loadTutorsServices(),
-    ]);
+    await Future.wait([_getCurrentLocation(), loadTutorsServices()]);
 
     // 2. Only calculate distances AFTER both are loaded
     await _getDistances();
@@ -94,9 +91,7 @@ class _ExplorepageState extends State<Explorepage> {
     });
 
     _controller?.animateCamera(
-      CameraUpdate.newLatLng(
-        LatLng(position.latitude, position.longitude),
-      ),
+      CameraUpdate.newLatLng(LatLng(position.latitude, position.longitude)),
     );
   }
 
@@ -151,12 +146,14 @@ class _ExplorepageState extends State<Explorepage> {
       if (tutor.location.isNotEmpty) {
         final Location? location = await _geocodeTutorLocation(tutor.location);
         if (location != null) {
-          final double distance = Geolocator.distanceBetween(
-            _currentPosition!.latitude,
-            _currentPosition!.longitude,
-            location.latitude,
-            location.longitude,
-          ) / 1000;
+          final double distance =
+              Geolocator.distanceBetween(
+                _currentPosition!.latitude,
+                _currentPosition!.longitude,
+                location.latitude,
+                location.longitude,
+              ) /
+              1000;
 
           if (distance < 20.0) {
             count++;
@@ -211,43 +208,47 @@ class _ExplorepageState extends State<Explorepage> {
       for (final TutorModel tutor in teachers) tutor.uid: tutor,
     };
 
-    final List<ServiceModel> previousServices = (await Future.wait<ServiceModel?>(
-      sessions.map((session) => _studentService.getServiceData(session.serviceId)),
-    ))
-        .whereType<ServiceModel>()
-        .toList();
-
-    final _RecommendationContext recommendationContext = _buildRecommendationContext(
-      student: widget.student,
-      sessions: sessions,
-      previousServices: previousServices,
-    );
-
-    final List<_RecommendedTutorEntry> rankedTutors = teachers
-        .map(
-          (teacher) => _RecommendedTutorEntry(
-            tutor: teacher,
-            score: _scoreTutor(teacher, recommendationContext),
+    final List<ServiceModel> previousServices =
+        (await Future.wait<ServiceModel?>(
+          sessions.map(
+            (session) => _studentService.getServiceData(session.serviceId),
           ),
-        )
-        .toList()
-      ..sort(_compareTutorEntries);
+        )).whereType<ServiceModel>().toList();
 
-    final List<_RecommendedServiceEntry> rankedServices = fetchedServices
-        .map((service) {
-          final TutorModel? tutor = tutorById[service.tutorId];
-          if (tutor == null) {
-            return null;
-          }
-          return _RecommendedServiceEntry(
-            service: service,
-            tutor: tutor,
-            score: _scoreService(service, tutor, recommendationContext),
-          );
-        })
-        .whereType<_RecommendedServiceEntry>()
-        .toList()
-      ..sort(_compareServiceEntries);
+    final _RecommendationContext recommendationContext =
+        _buildRecommendationContext(
+          student: widget.student,
+          sessions: sessions,
+          previousServices: previousServices,
+        );
+
+    final List<_RecommendedTutorEntry> rankedTutors =
+        teachers
+            .map(
+              (teacher) => _RecommendedTutorEntry(
+                tutor: teacher,
+                score: _scoreTutor(teacher, recommendationContext),
+              ),
+            )
+            .toList()
+          ..sort(_compareTutorEntries);
+
+    final List<_RecommendedServiceEntry> rankedServices =
+        fetchedServices
+            .map((service) {
+              final TutorModel? tutor = tutorById[service.tutorId];
+              if (tutor == null) {
+                return null;
+              }
+              return _RecommendedServiceEntry(
+                service: service,
+                tutor: tutor,
+                score: _scoreService(service, tutor, recommendationContext),
+              );
+            })
+            .whereType<_RecommendedServiceEntry>()
+            .toList()
+          ..sort(_compareServiceEntries);
 
     setState(() {
       tutors = rankedTutors;
@@ -265,11 +266,6 @@ class _ExplorepageState extends State<Explorepage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xfff9f9f9),
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          iconSize: 24,
-          icon: const Icon(Icons.arrow_back_ios_new_outlined),
-        ),
         title: const Text(
           "Explore",
           style: TextStyle(
@@ -583,13 +579,18 @@ class _ExplorepageState extends State<Explorepage> {
                     itemBuilder: (context, pageIndex) {
                       final int start = pageIndex * 3;
                       final int end = math.min(start + 3, tutors!.length);
-                      final List<_RecommendedTutorEntry> pageTutors =
-                          tutors!.sublist(start, end);
+                      final List<_RecommendedTutorEntry> pageTutors = tutors!
+                          .sublist(start, end);
 
                       return Container(
-                        width: math.min(MediaQuery.of(context).size.width - 32, 420),
+                        width: math.min(
+                          MediaQuery.of(context).size.width - 32,
+                          420,
+                        ),
                         margin: EdgeInsets.only(
-                          right: pageIndex == (tutors!.length / 3).ceil() - 1 ? 0 : 14,
+                          right: pageIndex == (tutors!.length / 3).ceil() - 1
+                              ? 0
+                              : 14,
                         ),
                         child: Column(
                           children: pageTutors
@@ -655,9 +656,12 @@ class _ExplorepageState extends State<Explorepage> {
                         scrollDirection: Axis.horizontal,
                         itemCount: services!.length,
                         itemBuilder: (context, index) {
-                          final _RecommendedServiceEntry entry = services![index];
-                          final double cardWidth =
-                              math.min(MediaQuery.of(context).size.width * 0.84, 350);
+                          final _RecommendedServiceEntry entry =
+                              services![index];
+                          final double cardWidth = math.min(
+                            MediaQuery.of(context).size.width * 0.84,
+                            350,
+                          );
                           return SizedBox(
                             height: 430,
                             width: cardWidth,
@@ -732,7 +736,8 @@ class _ExplorepageState extends State<Explorepage> {
         final matchSubject =
             selectedSubject == null ||
             s.subject.toLowerCase() == selectedSubject!.toLowerCase() ||
-            tutor.expertiseDomain.toLowerCase() == selectedSubject!.toLowerCase();
+            tutor.expertiseDomain.toLowerCase() ==
+                selectedSubject!.toLowerCase();
         final matchPrice =
             selectedPrice == null ||
             s.price <= double.parse(selectedPrice!.replaceAll('<', ''));
@@ -805,7 +810,9 @@ class _ExplorepageState extends State<Explorepage> {
         .map((id) => id.trim())
         .where((value) => value.isNotEmpty)
         .toSet();
-    final Set<String> objectiveKeywords = _extractKeywords(student.learningObjectives);
+    final Set<String> objectiveKeywords = _extractKeywords(
+      student.learningObjectives,
+    );
 
     return _RecommendationContext(
       preferredSubjects: preferredSubjects,
@@ -830,11 +837,17 @@ class _ExplorepageState extends State<Explorepage> {
     if (context.previousTutorIds.contains(tutor.uid)) score += 24;
     if (context.preferredSubjects.contains(expertise)) score += 26;
     if (context.previousSubjects.contains(expertise)) score += 22;
-    if (context.schoolLevel.isNotEmpty && tutorLevels.contains(context.schoolLevel)) {
+    if (context.schoolLevel.isNotEmpty &&
+        tutorLevels.contains(context.schoolLevel)) {
       score += 16;
     }
-    if (context.previousModes.contains(_normalize(tutor.teachingMode))) score += 8;
-    score += _keywordOverlapScore(context.objectiveKeywords, tutorKeywords, maxBonus: 14);
+    if (context.previousModes.contains(_normalize(tutor.teachingMode)))
+      score += 8;
+    score += _keywordOverlapScore(
+      context.objectiveKeywords,
+      tutorKeywords,
+      maxBonus: 14,
+    );
     if (tutor.isAvailable) score += 8;
     score += tutor.averageRating * 3.5;
     score += math.min(tutor.yearsOfExperience.toDouble(), 12);
@@ -865,7 +878,11 @@ class _ExplorepageState extends State<Explorepage> {
         context.previousModes.contains(_normalize(tutor.teachingMode))) {
       score += 8;
     }
-    score += _keywordOverlapScore(context.objectiveKeywords, serviceKeywords, maxBonus: 16);
+    score += _keywordOverlapScore(
+      context.objectiveKeywords,
+      serviceKeywords,
+      maxBonus: 16,
+    );
     if (service.isActive) score += 8;
     score += tutor.averageRating * 3;
     score += math.max(service.maxnum - service.enrollednum, 0) * 0.3;
@@ -879,7 +896,10 @@ class _ExplorepageState extends State<Explorepage> {
     return b.tutor.averageRating.compareTo(a.tutor.averageRating);
   }
 
-  int _compareServiceEntries(_RecommendedServiceEntry a, _RecommendedServiceEntry b) {
+  int _compareServiceEntries(
+    _RecommendedServiceEntry a,
+    _RecommendedServiceEntry b,
+  ) {
     final int scoreCompare = b.score.compareTo(a.score);
     if (scoreCompare != 0) return scoreCompare;
     return b.tutor.averageRating.compareTo(a.tutor.averageRating);
@@ -951,10 +971,7 @@ class _RecommendationContext {
 }
 
 class _RecommendedTutorEntry {
-  const _RecommendedTutorEntry({
-    required this.tutor,
-    required this.score,
-  });
+  const _RecommendedTutorEntry({required this.tutor, required this.score});
 
   final TutorModel tutor;
   final double score;
@@ -973,9 +990,7 @@ class _RecommendedServiceEntry {
 }
 
 class _RecommendedTeacherTile extends StatelessWidget {
-  const _RecommendedTeacherTile({
-    required this.tutor,
-  });
+  const _RecommendedTeacherTile({required this.tutor});
 
   final TutorModel tutor;
 
@@ -1091,10 +1106,7 @@ class _RecommendedTeacherTile extends StatelessWidget {
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 4,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: ShapeDecoration(
                 color: const Color(0xFF000080).withValues(alpha: 0.1),
                 shape: RoundedRectangleBorder(
@@ -1128,5 +1140,3 @@ class _RecommendedTeacherTile extends StatelessWidget {
     );
   }
 }
-
-

@@ -460,7 +460,7 @@ class _CourseCard extends StatelessWidget {
                   GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () {
-                      Navigator.pushReplacement(
+                      Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => TutorProfilePage(tutorId: tutor.uid),

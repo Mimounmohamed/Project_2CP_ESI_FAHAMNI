@@ -1,6 +1,7 @@
 import 'package:fahamni/Account_Settings_Student/account_screen.dart';
 import 'package:fahamni/Courses/courses_page.dart';
 import 'package:fahamni/StudentHomePage/Student_homepage.dart';
+import 'package:fahamni/feedback/feedback_pages.dart';
 import 'package:fahamni/messaging/chat_page.dart';
 import 'package:fahamni/widgets/customnavbar.dart';
 import 'package:flutter/material.dart';
@@ -69,140 +70,150 @@ class _StudentCourseDetailsPageState extends State<StudentCourseDetailsPage>
       body: Column(
         children: [
           // Header Card (Tutor Info)
-          Container(
-            padding: const EdgeInsets.all(12),
-            margin: EdgeInsets.fromLTRB(16, 8, 16, 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF000000).withValues(alpha: 0.05),
-                  blurRadius: 2,
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => TutorProfilePage(tutorId: widget.tutor.uid),
                 ),
-              ],
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  height: 64,
-                  width: 64,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              margin: EdgeInsets.fromLTRB(16, 8, 16, 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF000000).withValues(alpha: 0.05),
+                    blurRadius: 2,
                   ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Image.network(
-                    widget.tutor.picture,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Image.asset(
-                      'assets/images/tutormale.png',
+                ],
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 64,
+                    width: 64,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Image.network(
+                      widget.tutor.picture,
                       fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Image.asset(
+                        'assets/images/tutormale.png',
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${widget.tutor.firstName} ${widget.tutor.lastName}',
-                        style: const TextStyle(
-                          fontFamily: "Lexend",
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        widget.tutor.expertiseDomain,
-                        style: const TextStyle(
-                          fontFamily: "Lexend",
-                          fontWeight: FontWeight.w400,
-                          fontSize: 12,
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SvgPicture.asset(
-                                "assets/images/position.svg",
-                                height: 12,
-                                width: 12,
-                                colorFilter: const ColorFilter.mode(
-                                  Color(0xFF64748B),
-                                  BlendMode.srcIn,
-                                ),
-                              ),
-                              const SizedBox(width: 2),
-                              Text(
-                                widget.tutor.location,
-                                style: const TextStyle(
-                                  fontFamily: "Lexend",
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 10,
-                                  color: Color(0xFF64748B),
-                                ),
-                              ),
-                            ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${widget.tutor.firstName} ${widget.tutor.lastName}',
+                          style: const TextStyle(
+                            fontFamily: "Lexend",
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
                           ),
-                          Text(
-                            widget.tutor.isAvailable ? 'Available' : 'Busy',
-                            style: TextStyle(
-                              fontFamily: "Lexend",
-                              fontWeight: FontWeight.w600,
-                              fontSize: 10,
-                              color: widget.tutor.isAvailable
-                                  ? const Color(0xFF16A34A)
-                                  : const Color(0xFFDC2626),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          widget.tutor.expertiseDomain,
+                          style: const TextStyle(
+                            fontFamily: "Lexend",
+                            fontWeight: FontWeight.w400,
+                            fontSize: 12,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SvgPicture.asset(
+                                  "assets/images/position.svg",
+                                  height: 12,
+                                  width: 12,
+                                  colorFilter: const ColorFilter.mode(
+                                    Color(0xFF64748B),
+                                    BlendMode.srcIn,
+                                  ),
+                                ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  widget.tutor.location,
+                                  style: const TextStyle(
+                                    fontFamily: "Lexend",
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 10,
+                                    color: Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: ShapeDecoration(
-                    color: const Color(0xFF000080).withValues(alpha: 0.1),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
+                            Text(
+                              widget.tutor.isAvailable ? 'Available' : 'Busy',
+                              style: TextStyle(
+                                fontFamily: "Lexend",
+                                fontWeight: FontWeight.w600,
+                                fontSize: 10,
+                                color: widget.tutor.isAvailable
+                                    ? const Color(0xFF16A34A)
+                                    : const Color(0xFFDC2626),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SvgPicture.asset(
-                        "assets/images/star.svg",
-                        height: 12,
-                        width: 12,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: ShapeDecoration(
+                      color: const Color(0xFF000080).withValues(alpha: 0.1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
                       ),
-                      const SizedBox(width: 3),
-                      Text(
-                        widget.tutor.averageRating.toStringAsFixed(1),
-                        style: const TextStyle(
-                          color: Color(0xFF1E293B),
-                          fontSize: 12,
-                          fontFamily: 'Lexend',
-                          fontWeight: FontWeight.w700,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SvgPicture.asset(
+                          "assets/images/star.svg",
+                          height: 12,
+                          width: 12,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 3),
+                        Text(
+                          widget.tutor.averageRating.toStringAsFixed(1),
+                          style: const TextStyle(
+                            color: Color(0xFF1E293B),
+                            fontSize: 12,
+                            fontFamily: 'Lexend',
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           // TabBar
