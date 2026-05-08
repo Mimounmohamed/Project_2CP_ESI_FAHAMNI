@@ -5,6 +5,7 @@ import '../ParentDashboread/ParentHomePage/home_page.dart';
 import '../StudentHomePage/Student_homepage.dart';
 import '../TeacherDashboard/teacher_dashboard.dart';
 import '../TeacherDashboard/teacher_guest_dashboard.dart';
+import '../Services/suspended_account_gate.dart';
 import '../Services/auth_.service.dart';
 import '../models/user_model.dart';
 
@@ -60,6 +61,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
+      if (result.isSuspended) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                SuspendedAccountGate.accountScreenForRole(result.role),
+          ),
+        );
+        return;
+      }
+
       switch (result.role) {
         case UserRole.student:
           Navigator.pushReplacement(
@@ -71,7 +83,8 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => result.accountStatus == AccountStatus.pending
+              builder: (context) =>
+                  result.accountStatus == AccountStatus.pending
                   ? const TeacherGuestDashboardScreen()
                   : const TeacherDashboardScreen(),
             ),
@@ -108,6 +121,17 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       if (!mounted) return;
+
+      if (result.isSuspended) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                SuspendedAccountGate.accountScreenForRole(result.role),
+          ),
+        );
+        return;
+      }
 
       switch (result.role) {
         case UserRole.student:
@@ -601,5 +625,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
-

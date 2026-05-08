@@ -24,20 +24,22 @@ class ChatService {
     String userId, {
     Object? filter,
   }) {
-    return _chatRepository.getConversations(userId, filter: filter).map((conversations) {
+    return _chatRepository.getConversations(userId, filter: filter).map((
+      conversations,
+    ) {
       final List<ConversationModel> sortedConversations =
-          List<ConversationModel>.from(conversations)
-            ..sort((a, b) => _conversationTime(b).compareTo(_conversationTime(a)));
+          List<ConversationModel>.from(conversations)..sort(
+            (a, b) => _conversationTime(b).compareTo(_conversationTime(a)),
+          );
       return sortedConversations;
     });
   }
 
   Stream<List<MessageModel>> getMessages(String conversationId) {
     return _chatRepository.getMessages(conversationId).map((messages) {
-      final List<MessageModel> sortedMessages = List<MessageModel>.from(messages)
-        ..sort(
-          (a, b) => a.sendingDateTime.compareTo(b.sendingDateTime),
-        );
+      final List<MessageModel> sortedMessages = List<MessageModel>.from(
+        messages,
+      )..sort((a, b) => a.sendingDateTime.compareTo(b.sendingDateTime));
       return sortedMessages;
     });
   }
@@ -53,15 +55,20 @@ class ChatService {
     List<File> filesToUpload = const <File>[],
   }) async {
     final String trimmedContent = content.trim();
-    if (trimmedContent.isEmpty && attachments.isEmpty && filesToUpload.isEmpty) return;
+    if (trimmedContent.isEmpty &&
+        attachments.isEmpty &&
+        filesToUpload.isEmpty) {
+      return;
+    }
 
     final List<AttachmentModel> uploadedAttachments = [];
     for (final File file in filesToUpload) {
-      final AttachmentModel uploadedAttachment = await _resourceService.uploadChatAttachment(
-        file: file,
-        conversationId: conversationId,
-        userId: senderId,
-      );
+      final AttachmentModel uploadedAttachment = await _resourceService
+          .uploadChatAttachment(
+            file: file,
+            conversationId: conversationId,
+            userId: senderId,
+          );
       uploadedAttachments.add(uploadedAttachment);
     }
 
@@ -73,8 +80,8 @@ class ChatService {
     final DateTime timestamp = DateTime.now();
     final MessageType messageType = allAttachments.isNotEmpty
         ? allAttachments.any((AttachmentModel attachment) => attachment.isImage)
-            ? MessageType.image
-            : MessageType.file
+              ? MessageType.image
+              : MessageType.file
         : MessageType.text;
 
     final MessageModel message = MessageModel(
@@ -92,7 +99,9 @@ class ChatService {
     );
 
     await _chatRepository.sendMessage(message);
-    if (receiverId != senderId && await _notifAllowed(receiverId, 'new_messages')) {
+    if (receiverId != senderId &&
+        receiverId != 'admin' &&
+        await _notifAllowed(receiverId, 'new_messages')) {
       await _notificationService.sendNotification(
         NotificationModel(
           title: 'New message',
@@ -121,7 +130,9 @@ class ChatService {
   }
 
   /// Gets all attachments from a conversation's messages as a stream
-  Stream<List<AttachmentModel>> getConversationAttachments(String conversationId) {
+  Stream<List<AttachmentModel>> getConversationAttachments(
+    String conversationId,
+  ) {
     return getMessages(conversationId).map((messages) {
       final List<AttachmentModel> allAttachments = [];
       for (final MessageModel message in messages) {
@@ -142,14 +153,20 @@ class ChatService {
   }
 
   /// Gets all file attachments (non-images) from a conversation's messages as a stream
-  Stream<List<AttachmentModel>> getConversationFileAttachments(String conversationId) {
+  Stream<List<AttachmentModel>> getConversationFileAttachments(
+    String conversationId,
+  ) {
     return getConversationAttachments(conversationId).map((attachments) {
-      return attachments.where((attachment) => !attachment.isImage && !attachment.isLink).toList();
+      return attachments
+          .where((attachment) => !attachment.isImage && !attachment.isLink)
+          .toList();
     });
   }
 
   /// Gets all link attachments from a conversation's messages as a stream
-  Stream<List<AttachmentModel>> getConversationLinkAttachments(String conversationId) {
+  Stream<List<AttachmentModel>> getConversationLinkAttachments(
+    String conversationId,
+  ) {
     return getConversationAttachments(conversationId).map((attachments) {
       return attachments.where((attachment) => attachment.isLink).toList();
     });
@@ -179,8 +196,7 @@ class ChatService {
   }
 
   DateTime _conversationTime(ConversationModel conversation) {
-    return conversation.lastMessage?.sendingDateTime ??
-        conversation.createdAt;
+    return conversation.lastMessage?.sendingDateTime ?? conversation.createdAt;
   }
 
   Future<bool> _notifAllowed(String userId, String prefKey) async {
@@ -191,8 +207,8 @@ class ChatService {
       final collection = role == 'tutor'
           ? 'tutors'
           : role == 'parent'
-              ? 'parents'
-              : 'students';
+          ? 'parents'
+          : 'students';
       final doc = await db.collection(collection).doc(userId).get();
       final prefs =
           doc.data()?['notification_prefs'] as Map<String, dynamic>? ?? {};
@@ -277,5 +293,3 @@ class ChatService {
     }
   }
 }
-
-

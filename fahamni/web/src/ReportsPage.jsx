@@ -3,6 +3,7 @@ import { Search, Eye, X } from "lucide-react";
 import { collection, query, where, getDocs, doc, updateDoc, getDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { useTranslation } from "react-i18next";
+import { syncSuspensionState } from "./suspensionNotifications";
 
 const TYPE_STYLE = {
   teacher: { label: "ACCOUNT", color: "#6366f1", bg: "#eef2ff" },
@@ -214,6 +215,7 @@ export default function ReportsPage() {
 
       if (info?.col) {
         await updateDoc(doc(db, info.col, selected.reported_id), { is_suspended: true });
+        await syncSuspensionState(selected.reported_id, true);
         setReportedInfo(r => r ? { ...r, is_suspended: true } : { ...info, is_suspended: true });
       }
       await markReviewed(selected.id);

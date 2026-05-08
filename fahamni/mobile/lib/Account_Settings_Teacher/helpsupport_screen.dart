@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:fahamni/Services/admin_support_chat_service.dart';
+import 'package:fahamni/messaging/admin_support_chat_page.dart';
 
 class HelpSupportScreen extends StatelessWidget {
   const HelpSupportScreen({super.key});
@@ -12,11 +14,7 @@ class HelpSupportScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back,
-            size: 30,
-            color: Colors.black,
-          ),
+          icon: const Icon(Icons.arrow_back, size: 30, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
@@ -60,6 +58,7 @@ class HelpSupportScreen extends StatelessWidget {
               "assets/icons/Icon 1.svg",
               "Contact Support",
               "Chat with our 24/7 support team",
+              onTap: () => _openSupportChat(context),
             ),
             buildTile(
               context,
@@ -82,10 +81,7 @@ class HelpSupportScreen extends StatelessWidget {
               child: Text(
                 "Fahamni Version 2.4.1\n© 2026 Fahamni Learning Inc.",
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF9CA3AF),
-                ),
+                style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
               ),
             ),
             const SizedBox(height: 16),
@@ -95,6 +91,25 @@ class HelpSupportScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _openSupportChat(BuildContext context) async {
+    try {
+      final conversation = await AdminSupportChatService()
+          .ensureSupportConversation();
+      if (!context.mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AdminSupportChatPage(conversation: conversation),
+        ),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+    }
+  }
+
   Widget buildTile(
     BuildContext context,
     String iconPath,
@@ -102,83 +117,85 @@ class HelpSupportScreen extends StatelessWidget {
     String subtitle, {
     Color iconBg = const Color(0xFFEEF2FF),
     Color iconColor = const Color(0xFF000080),
+    VoidCallback? onTap,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: iconBg,
-              borderRadius: BorderRadius.circular(12),
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFF1F5F9)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
             ),
-            child: Center(
-              child: SvgPicture.asset(
-                iconPath,
-                height: 22,
-                width: 22,
-                // ✅ Fixed: colorFilter instead of deprecated color param
-                colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: SvgPicture.asset(
+                  iconPath,
+                  height: 22,
+                  width: 22,
+                  // ✅ Fixed: colorFilter instead of deprecated color param
+                  colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1F2937),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1F2937),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF64748B),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF64748B),
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          InkWell(
-            borderRadius: BorderRadius.circular(20),
-            onTap: () {
-              debugPrint("$title arrow tapped");
-            },
-            child: const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: Color(0xFF9CA3AF),
+                ],
               ),
             ),
-          ),
-        ],
+            InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: onTap,
+              child: const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: Color(0xFF9CA3AF),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
-

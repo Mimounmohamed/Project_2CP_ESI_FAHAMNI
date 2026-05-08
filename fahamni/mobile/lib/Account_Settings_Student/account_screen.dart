@@ -17,7 +17,9 @@ import 'package:fahamni/StudentHomePage/studenthome_service.dart';
 import 'package:fahamni/StudentHomePage/Student_homepage.dart';
 
 class AccountScreen extends StatefulWidget {
-  const AccountScreen({super.key});
+  const AccountScreen({super.key, this.suspendedMode = false});
+
+  final bool suspendedMode;
 
   @override
   State<AccountScreen> createState() => _AccountScreenState();
@@ -63,22 +65,29 @@ class _AccountScreenState extends State<AccountScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel',
-                style: TextStyle(color: Color(0xFF6B7280))),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Color(0xFF6B7280)),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Logout',
-                style: TextStyle(
-                    color: Color(0xFFEF4444),
-                    fontWeight: FontWeight.w700)),
+            child: const Text(
+              'Logout',
+              style: TextStyle(
+                color: Color(0xFFEF4444),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),
     );
 
     if (confirmed == true) {
-      try { await GoogleSignIn().signOut(); } catch (_) {}
+      try {
+        await GoogleSignIn().signOut();
+      } catch (_) {}
       await FirebaseAuth.instance.signOut();
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
@@ -91,8 +100,8 @@ class _AccountScreenState extends State<AccountScreen> {
 
   // ── Subtitle under name: "Grade · Level · Speciality" ───────────────────
   String _studySubtitle() {
-    final grade      = student?.grade ?? '';
-    final level      = student?.schoolLevel ?? '';
+    final grade = student?.grade ?? '';
+    final level = student?.schoolLevel ?? '';
     final speciality = student?.speciality ?? '';
     final base = [grade, level].where((s) => s.isNotEmpty).join(' · ');
     if (base.isNotEmpty && speciality.isNotEmpty) return '$base · $speciality';
@@ -104,11 +113,51 @@ class _AccountScreenState extends State<AccountScreen> {
       return const AssetImage("assets/images/studentmale.png");
     }
     final pic = student!.picture;
-    if (pic.startsWith('http'))    return NetworkImage(pic);
+    if (pic.startsWith('http')) return NetworkImage(pic);
     if (pic.startsWith('assets/')) return AssetImage(pic);
     return student!.gender == Gender.female
         ? const AssetImage("assets/images/studentfemale.png")
         : const AssetImage("assets/images/studentmale.png");
+  }
+
+  void _showSuspendedDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Account Suspended'),
+        content: const Text(
+          'Your account has been suspended. Please contact the admins for help.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _suspendedBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF2F2),
+        border: Border.all(color: const Color(0xFFFECACA)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Text(
+        'Your account is suspended. Please contact the admins.',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: Color(0xFFB91C1C),
+          fontFamily: 'Inter',
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
   }
 
   Widget _buildMenuItem(
@@ -119,10 +168,7 @@ class _AccountScreenState extends State<AccountScreen> {
   ) {
     return InkWell(
       onTap: () async {
-        await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => page),
-        );
+        await Navigator.push(context, MaterialPageRoute(builder: (_) => page));
         _loadStudent();
       },
       child: Container(
@@ -153,8 +199,11 @@ class _AccountScreenState extends State<AccountScreen> {
                 ),
               ),
             ),
-            const Icon(Icons.arrow_forward_ios,
-                size: 16, color: Color(0xFF9CA3AF)),
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: Color(0xFF9CA3AF),
+            ),
           ],
         ),
       ),
@@ -168,6 +217,10 @@ class _AccountScreenState extends State<AccountScreen> {
       bottomNavigationBar: CustomBottomNavbar(
         selectedIndex: _selectedIndex,
         onTap: (int index) {
+          if (widget.suspendedMode && index != 4) {
+            _showSuspendedDialog();
+            return;
+          }
           if (index == _selectedIndex) {
             return;
           }
@@ -191,7 +244,7 @@ class _AccountScreenState extends State<AccountScreen> {
               context,
               MaterialPageRoute(builder: (context) => const ChatPage()),
             );
-          }  else {
+          } else {
             setState(() {
               _selectedIndex = index;
             });
@@ -201,7 +254,8 @@ class _AccountScreenState extends State<AccountScreen> {
       body: SafeArea(
         child: _isLoading
             ? const Center(
-                child: CircularProgressIndicator(color: Color(0xFF000080)))
+                child: CircularProgressIndicator(color: Color(0xFF000080)),
+              )
             : RefreshIndicator(
                 color: const Color(0xFF000080),
                 onRefresh: _loadStudent,
@@ -222,6 +276,10 @@ class _AccountScreenState extends State<AccountScreen> {
                           color: Color(0xFF1F2937),
                         ),
                       ),
+                      if (widget.suspendedMode) ...[
+                        const SizedBox(height: 12),
+                        _suspendedBanner(),
+                      ],
 
                       const SizedBox(height: 24),
 
@@ -279,16 +337,36 @@ class _AccountScreenState extends State<AccountScreen> {
                         ),
                         child: Column(
                           children: [
-                            _buildMenuItem(context, Icons.person_outline,
-                                "Personal Information", const PersonalInfoScreen()),
-                            _buildMenuItem(context, Icons.school_outlined,
-                                "Study Information", const StudyInfoScreen()),
-                            _buildMenuItem(context, Icons.settings_outlined,
-                                "Profile Settings", const ProfileSettingsScreen()),
-                            _buildMenuItem(context, Icons.notifications_none,
-                                "Notifications", const NotificationScreen()),
-                            _buildMenuItem(context, Icons.help_outline,
-                                "Help & Support", const HelpSupportScreen()),
+                            _buildMenuItem(
+                              context,
+                              Icons.person_outline,
+                              "Personal Information",
+                              const PersonalInfoScreen(),
+                            ),
+                            _buildMenuItem(
+                              context,
+                              Icons.school_outlined,
+                              "Study Information",
+                              const StudyInfoScreen(),
+                            ),
+                            _buildMenuItem(
+                              context,
+                              Icons.settings_outlined,
+                              "Profile Settings",
+                              const ProfileSettingsScreen(),
+                            ),
+                            _buildMenuItem(
+                              context,
+                              Icons.notifications_none,
+                              "Notifications",
+                              const NotificationScreen(),
+                            ),
+                            _buildMenuItem(
+                              context,
+                              Icons.help_outline,
+                              "Help & Support",
+                              const HelpSupportScreen(),
+                            ),
                           ],
                         ),
                       ),
@@ -333,4 +411,3 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 }
-

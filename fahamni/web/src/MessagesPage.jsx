@@ -5,7 +5,8 @@ import {
   addDoc, updateDoc, doc, serverTimestamp,
   where, getDocs,
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { db, storage } from "./firebase";
 import { useTranslation } from "react-i18next";
 
 const ROLE_STYLE = {
@@ -13,6 +14,9 @@ const ROLE_STYLE = {
   student: { label: "STUDENT", color: "#0284c7", bg: "#e0f2fe" },
   parent:  { label: "PARENT",  color: "#db2777", bg: "#fce7f3" },
 };
+
+const MAX_ATTACHMENTS = 5;
+const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
 
 function fmtTime(val) {
   if (!val) return "";
@@ -41,6 +45,39 @@ function ConvAvatar({ src, name, size = 42, dark = false }) {
   );
 }
 
+function MessageAttachments({ attachments = [], isAdmin }) {
+  if (!attachments.length) return null;
+  return (
+    <div style={s.attachments}>
+      {attachments.map((att, index) => {
+        const isImage = (att.mimeType ?? "").startsWith("image/");
+        if (isImage) {
+          return (
+            <a key={index} href={att.url} target="_blank" rel="noreferrer">
+              <img src={att.url} alt={att.name ?? "attachment"} style={s.attachmentImage} />
+            </a>
+          );
+        }
+        return (
+          <a
+            key={index}
+            href={att.url}
+            target="_blank"
+            rel="noreferrer"
+            style={{ ...s.attachmentFile, color: isAdmin ? "#fff" : "#1F2937", borderColor: isAdmin ? "rgba(255,255,255,0.35)" : "#e2e8f0" }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            <span>{att.name ?? "Attachment"}</span>
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function MessagesPage({ adminUser, onViewUser, pendingContact, onContactHandled }) {
   const { t } = useTranslation();
   const [conversations, setConversations] = useState([]);
@@ -48,6 +85,7 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
   const [mobileChatOpen, setMobileChatOpen] = useState(false);
   const [messages, setMessages]           = useState([]);
   const [input, setInput]                 = useState("");
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [search, setSearch]               = useState("");
   const [sending, setSending]             = useState(false);
   const [loadingConvs, setLoadingConvs]   = useState(true);
@@ -55,6 +93,7 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
   const [error, setError]                 = useState(null);
   const bottomRef = useRef(null);
   const inputRef  = useRef(null);
+  const fileInputRef = useRef(null);
 
   // ── Real-time conversation list ──
   useEffect(() => {
@@ -142,11 +181,40 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
       });
     }
     setInput("");
+    setSelectedFiles([]);
     onContactHandled?.();
   }, [pendingContact?.uid, loadingConvs]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  function handleFileSelect(e) {
+    const files = Array.from(e.target.files ?? []);
+    const validFiles = files.filter(file => file.size <= MAX_ATTACHMENT_BYTES);
+    setSelectedFiles(prev => [...prev, ...validFiles].slice(0, MAX_ATTACHMENTS));
+    e.target.value = "";
+  }
+
+  function removeSelectedFile(index) {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  }
+
+  async function uploadAttachments(convId) {
+    return Promise.all(selectedFiles.map(async (file, index) => {
+      const safeName = file.name.replace(/[^\w.() -]+/g, "_");
+      const fileRef = ref(storage, `chats/${convId}/attachments/${Date.now()}_${index}_${safeName}`);
+      await uploadBytes(fileRef, file, { contentType: file.type || "application/octet-stream" });
+      return {
+        url: await getDownloadURL(fileRef),
+        name: file.name,
+        size: file.size,
+        sizeBytes: file.size,
+        mimeType: file.type || "application/octet-stream",
+        kind: (file.type || "").startsWith("image/") ? "image" : "file",
+        isLink: false,
+      };
+    }));
+  }
+
   async function sendMessage() {
-    if (!input.trim() || !selected || sending) return;
+    if ((!input.trim() && selectedFiles.length === 0) || !selected || sending) return;
     const text = input.trim();
     setInput("");
     setSending(true);
@@ -156,6 +224,9 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
       // If this is a brand-new local conversation, create the Firestore doc first
       if (selected._isNew) {
         const ref = await addDoc(collection(db, "conversations"), {
+          participants:     [selected.user_uid, adminUser?.uid, "admin"].filter(Boolean),
+          conversationId:   "",
+          conversation_id:  "",
           user_uid:        selected.user_uid,
           user_name:       selected.user_name,
           user_role:       selected.user_role,
@@ -166,19 +237,37 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
           is_closed:       false,
         });
         convId = ref.id;
+        await updateDoc(ref, { conversationId: convId, conversation_id: convId });
         setSelected(prev => ({ ...prev, id: convId, _isNew: false }));
       }
+      const attachments = await uploadAttachments(convId);
+      const type = attachments.length
+        ? attachments.every(att => (att.mimeType ?? "").startsWith("image/")) ? "image" : "file"
+        : "text";
+      const preview = text || (type === "image" ? "Photo" : "Attachment");
 
       await addDoc(collection(db, "conversations", convId, "messages"), {
         text,
+        content:     text,
+        conversationId: convId,
+        conversation_id: convId,
+        senderId:    adminUser?.uid ?? "admin",
         sender_id:   "admin",
         sender_name: "Admin",
+        receiverId:  selected.user_uid,
+        receiver_id: selected.user_uid,
+        type,
+        attachments,
+        readBy:      [],
+        isRead:      false,
         created_at:  serverTimestamp(),
+        createdAt:   serverTimestamp(),
       });
       await updateDoc(doc(db, "conversations", convId), {
-        last_message:    text,
+        last_message:    preview,
         last_message_at: serverTimestamp(),
       });
+      setSelectedFiles([]);
     } catch (e) {
       console.error(e);
       setInput(text);
@@ -244,7 +333,7 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
                 <div
                   key={conv.id}
                   style={{ ...s.convRow, ...(isSelected ? s.convRowSelected : {}) }}
-                  onClick={() => { setSelected(conv); setInput(""); setMobileChatOpen(true); }}
+                  onClick={() => { setSelected(conv); setInput(""); setSelectedFiles([]); setMobileChatOpen(true); }}
                 >
                   <div style={{ position: "relative", flexShrink: 0 }}>
                     <ConvAvatar src={conv.user_picture} name={conv.user_name} size={44} />
@@ -307,11 +396,15 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
                 <div style={s.emptyState}>{t("messages.noMessages")}</div>
               ) : messages.map(msg => {
                 const isAdmin = msg.sender_id === "admin";
+                const text = msg.text ?? msg.content ?? "";
                 return (
                   <div key={msg.id} style={{ ...s.msgRow, justifyContent: isAdmin ? "flex-end" : "flex-start" }}>
                     {!isAdmin && <ConvAvatar src={selected.user_picture} name={selected.user_name} size={36} />}
                     <div style={{ maxWidth: "62%", display: "flex", flexDirection: "column", alignItems: isAdmin ? "flex-end" : "flex-start", gap: 4 }}>
-                      <div style={{ ...s.bubble, ...(isAdmin ? s.bubbleAdmin : s.bubbleUser) }}>{msg.text}</div>
+                      <div style={{ ...s.bubble, ...(isAdmin ? s.bubbleAdmin : s.bubbleUser) }}>
+                        {text && <div>{text}</div>}
+                        <MessageAttachments attachments={msg.attachments} isAdmin={isAdmin} />
+                      </div>
                       <span style={s.msgMeta}>{isAdmin ? t("messages.admin") : selected.user_name} • {fmtTime(msg.created_at)}</span>
                     </div>
                     {isAdmin && <ConvAvatar src={null} name="Admin" size={36} dark />}
@@ -322,7 +415,36 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
             </div>
 
             {/* Input */}
+            {selectedFiles.length > 0 && (
+              <div style={s.selectedFiles}>
+                {selectedFiles.map((file, index) => (
+                  <div key={`${file.name}_${index}`} style={s.selectedFile}>
+                    <span style={s.selectedFileName}>{file.name}</span>
+                    <button type="button" style={s.removeFileBtn} onClick={() => removeSelectedFile(index)} disabled={sending}>x</button>
+                  </div>
+                ))}
+              </div>
+            )}
             <div style={s.inputRow}>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                style={{ display: "none" }}
+                onChange={handleFileSelect}
+                disabled={selected.is_closed || sending}
+              />
+              <button
+                style={{ ...s.attachBtn, opacity: (selected.is_closed || sending) ? 0.45 : 1 }}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={selected.is_closed || sending}
+                title="Attach files"
+                type="button"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 1 1-2.83-2.83l8.49-8.48"/>
+                </svg>
+              </button>
               <input
                 ref={inputRef}
                 style={{ ...s.messageInput, opacity: selected.is_closed ? 0.5 : 1 }}
@@ -333,9 +455,9 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
                 disabled={selected.is_closed}
               />
               <button
-                style={{ ...s.sendBtn, opacity: (!input.trim() || sending || selected.is_closed) ? 0.4 : 1 }}
+                style={{ ...s.sendBtn, opacity: ((!input.trim() && selectedFiles.length === 0) || sending || selected.is_closed) ? 0.4 : 1 }}
                 onClick={sendMessage}
-                disabled={!input.trim() || sending || selected.is_closed}
+                disabled={(!input.trim() && selectedFiles.length === 0) || sending || selected.is_closed}
                 title="Send message"
               >
                 <Send size={18} color="#fff" />
@@ -416,10 +538,35 @@ const s = {
   bubbleUser:  { background: "#fff", border: "1px solid #e2e8f0", color: "#1F2937", borderBottomLeftRadius: 4, boxShadow: "0 1px 4px rgba(0,0,0,0.05)" },
   bubbleAdmin: { background: "#000080", color: "#fff", borderBottomRightRadius: 4 },
   msgMeta: { fontSize: 11, color: "#94a3b8" },
+  attachments: { display: "flex", flexDirection: "column", gap: 8, marginTop: 8 },
+  attachmentImage: { width: 180, maxWidth: "100%", borderRadius: 10, display: "block" },
+  attachmentFile: {
+    display: "flex", alignItems: "center", gap: 8, padding: "8px 10px",
+    border: "1px solid", borderRadius: 10, textDecoration: "none", fontSize: 12, fontWeight: 600,
+  },
 
   inputRow: {
     display: "flex", alignItems: "center", gap: 10,
     padding: "12px 16px", borderTop: "1px solid #f1f5f9", flexShrink: 0, background: "#fafbff",
+  },
+  selectedFiles: {
+    display: "flex", gap: 8, flexWrap: "wrap",
+    padding: "10px 16px 0", background: "#fafbff", borderTop: "1px solid #f1f5f9",
+  },
+  selectedFile: {
+    display: "flex", alignItems: "center", gap: 8, maxWidth: 220,
+    padding: "6px 9px", borderRadius: 10, border: "1px solid #e2e8f0",
+    background: "#fff", fontSize: 12, color: "#1F2937",
+  },
+  selectedFileName: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  removeFileBtn: {
+    border: "none", background: "transparent", color: "#ef4444",
+    cursor: "pointer", fontSize: 13, fontWeight: 700, padding: 0,
+  },
+  attachBtn: {
+    width: 40, height: 40, borderRadius: "50%", border: "1.5px solid #e2e8f0",
+    background: "#fff", color: "#64748b", cursor: "pointer",
+    display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
   messageInput: {
     flex: 1, height: 44, paddingLeft: 18, paddingRight: 14,

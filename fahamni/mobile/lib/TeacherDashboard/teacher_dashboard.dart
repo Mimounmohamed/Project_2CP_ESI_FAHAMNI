@@ -3,6 +3,7 @@ import 'package:fahamni/Account_Settings_Teacher/account_screen.dart'
     as teacher_account;
 import 'package:fahamni/Services/notification_service.dart';
 import 'package:fahamni/Services/guest_mode_protection.dart';
+import 'package:fahamni/Services/suspended_account_gate.dart';
 import 'package:fahamni/TeacherDashboard/models/teacher_portal_models.dart';
 import 'package:fahamni/TeacherDashboard/teacher_dashboard_service.dart';
 import 'package:fahamni/TeacherDashboard/teacher_quote_request_detail_page.dart';
@@ -54,16 +55,18 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   void _startNotificationListener() {
     final String? userId = _auth.currentUser?.uid;
     if (userId != null) {
-      _notificationSubscription = _notificationService.streamNotifications(userId).listen(
-        (notifications) {
-          final bool hasUnread = notifications.any((notification) => !notification.isRead);
-          if (mounted && hasUnread != _hasUnreadNotifications) {
-            setState(() {
-              _hasUnreadNotifications = hasUnread;
-            });
-          }
-        },
-      );
+      _notificationSubscription = _notificationService
+          .streamNotifications(userId)
+          .listen((notifications) {
+            final bool hasUnread = notifications.any(
+              (notification) => !notification.isRead,
+            );
+            if (mounted && hasUnread != _hasUnreadNotifications) {
+              setState(() {
+                _hasUnreadNotifications = hasUnread;
+              });
+            }
+          });
     }
   }
 
@@ -111,7 +114,9 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   }
 
   Future<void> _checkAndNavigateToServices() async {
-    final canAccess = await GuestModeProtection.canAccessTeacherFeature(context);
+    final canAccess = await GuestModeProtection.canAccessTeacherFeature(
+      context,
+    );
     if (canAccess) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
@@ -124,11 +129,13 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   }
 
   Future<void> _checkAndNavigateToChat() async {
-    final canAccess = await GuestModeProtection.canAccessTeacherFeature(context);
+    final canAccess = await GuestModeProtection.canAccessTeacherFeature(
+      context,
+    );
     if (canAccess) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const ChatPage()),
-      );
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const ChatPage()));
     } else {
       setState(() => _selectedIndex = 0);
     }
@@ -142,160 +149,166 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _pageBackground,
-      bottomNavigationBar: TeacherNavbar(
-        selectedIndex: _selectedIndex,
-        onTap: _handleNavigation,
-      ),
-      body: SafeArea(
-        child: FutureBuilder<TeacherDashboardModel>(
-          future: _dashboardFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
+    return SuspendedAccountGate(
+      child: Scaffold(
+        backgroundColor: _pageBackground,
+        bottomNavigationBar: TeacherNavbar(
+          selectedIndex: _selectedIndex,
+          onTap: _handleNavigation,
+        ),
+        body: SafeArea(
+          child: FutureBuilder<TeacherDashboardModel>(
+            future: _dashboardFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-            if (snapshot.hasError) {
-              return _DashboardErrorState(
-                message: snapshot.error.toString(),
-                onRetry: _refreshDashboard,
-              );
-            }
+              if (snapshot.hasError) {
+                return _DashboardErrorState(
+                  message: snapshot.error.toString(),
+                  onRetry: _refreshDashboard,
+                );
+              }
 
-            final TeacherDashboardModel dashboard = snapshot.data!;
-            return RefreshIndicator(
-              color: _primaryBlue,
-              onRefresh: _refreshDashboard,
-              child: CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        _DashboardHeader(
-                          teacherName: dashboard.teacherName,
-                          teacherRoleLabel: dashboard.teacherRoleLabel,
-                          profileImage: dashboard.profileImage,
-                          hasUnreadNotifications: _hasUnreadNotifications,
-                        ),
-                        const SizedBox(height: 22),
-                        _PerformanceCard(
-                          stats: dashboard.stats,
-                          title: dashboard.performanceTitle,
-                        ),
-                        const SizedBox(height: 22),
-                        _SectionHeader(
-                          title: dashboard.todaySessionsTitle,
-                          actionLabel: dashboard.seeAllLabel,
-                          onActionTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const TeacherSchedulePage(),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        if (dashboard.nextSession != null)
-                          _SessionCard(session: dashboard.nextSession!)
-                        else
-                          _EmptyCard(label: dashboard.emptySessionsLabel),
-                        const SizedBox(height: 22),
-                        _SectionHeader(
-                          title: dashboard.myServicesTitle,
-                          actionLabel: dashboard.seeAllLabel,
-                          onActionTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    const TeacherServicesDashboardScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 14),
-                        SizedBox(
-                          height: 300,
-                          child: dashboard.services.isEmpty
-                              ? _EmptyCard(label: dashboard.emptyServicesLabel)
-                              : ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: dashboard.services.length,
-                                  itemBuilder: (context, index) {
-                                    return Padding(
-                                      padding: EdgeInsets.only(
-                                        right:
-                                            index ==
-                                                dashboard.services.length - 1
-                                            ? 0
-                                            : 16,
-                                      ),
-                                      child: _ServiceCard(
-                                        service: dashboard.services[index],
-                                      ),
-                                    );
-                                  },
+              final TeacherDashboardModel dashboard = snapshot.data!;
+              return RefreshIndicator(
+                color: _primaryBlue,
+                onRefresh: _refreshDashboard,
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          _DashboardHeader(
+                            teacherName: dashboard.teacherName,
+                            teacherRoleLabel: dashboard.teacherRoleLabel,
+                            profileImage: dashboard.profileImage,
+                            hasUnreadNotifications: _hasUnreadNotifications,
+                          ),
+                          const SizedBox(height: 22),
+                          _PerformanceCard(
+                            stats: dashboard.stats,
+                            title: dashboard.performanceTitle,
+                          ),
+                          const SizedBox(height: 22),
+                          _SectionHeader(
+                            title: dashboard.todaySessionsTitle,
+                            actionLabel: dashboard.seeAllLabel,
+                            onActionTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const TeacherSchedulePage(),
                                 ),
-                        ),
-                        const SizedBox(height: 22),
-                        _SectionHeader(
-                          title: dashboard.quoteRequestsTitle,
-                          actionLabel: dashboard.seeAllLabel,
-                          onActionTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    const TeacherServicesDashboardScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 14),
-                        if (dashboard.quoteRequests.isEmpty)
-                          _EmptyCard(label: dashboard.emptyQuotesLabel)
-                        else
-                          ...dashboard.quoteRequests.map((request) {
-                            final joinRequest = TeacherJoinRequestDetail(
-                              quote: request.quote,
-                              studentName: request.studentName,
-                              studentLevel: request.studentLevel,
-                              studentAvatar: request.avatarPath,
-                              serviceTitle: request.quote.serviceName.isNotEmpty
-                                  ? request.quote.serviceName
-                                  : request.subtitle,
-                              description: request.objective.isNotEmpty
-                                  ? request.objective
-                                  : request.quote.description,
-                              subject: request.subject.isNotEmpty
-                                  ? request.subject
-                                  : request.quote.subject,
-                              teachingMode: request.quote.teachingMode,
-                              sessionsCount: request.quote.sessionsCount,
-                              sessionDurationLabel: request.duration.isNotEmpty
-                                  ? request.duration
-                                  : request.quote.duration,
-                              createdAtLabel: request.createdAtLabel,
-                              isChild:
-                                  request.quote.level.isEmpty &&
-                                  request.studentLevel.isNotEmpty,
-                            );
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: _QuoteRequestTile(
-                                request: joinRequest,
-                                onChanged: _refreshDashboard,
-                              ),
-                            );
-                          }),
-                      ]),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                          if (dashboard.nextSession != null)
+                            _SessionCard(session: dashboard.nextSession!)
+                          else
+                            _EmptyCard(label: dashboard.emptySessionsLabel),
+                          const SizedBox(height: 22),
+                          _SectionHeader(
+                            title: dashboard.myServicesTitle,
+                            actionLabel: dashboard.seeAllLabel,
+                            onActionTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const TeacherServicesDashboardScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 14),
+                          SizedBox(
+                            height: 300,
+                            child: dashboard.services.isEmpty
+                                ? _EmptyCard(
+                                    label: dashboard.emptyServicesLabel,
+                                  )
+                                : ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: dashboard.services.length,
+                                    itemBuilder: (context, index) {
+                                      return Padding(
+                                        padding: EdgeInsets.only(
+                                          right:
+                                              index ==
+                                                  dashboard.services.length - 1
+                                              ? 0
+                                              : 16,
+                                        ),
+                                        child: _ServiceCard(
+                                          service: dashboard.services[index],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                          ),
+                          const SizedBox(height: 22),
+                          _SectionHeader(
+                            title: dashboard.quoteRequestsTitle,
+                            actionLabel: dashboard.seeAllLabel,
+                            onActionTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      const TeacherServicesDashboardScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 14),
+                          if (dashboard.quoteRequests.isEmpty)
+                            _EmptyCard(label: dashboard.emptyQuotesLabel)
+                          else
+                            ...dashboard.quoteRequests.map((request) {
+                              final joinRequest = TeacherJoinRequestDetail(
+                                quote: request.quote,
+                                studentName: request.studentName,
+                                studentLevel: request.studentLevel,
+                                studentAvatar: request.avatarPath,
+                                serviceTitle:
+                                    request.quote.serviceName.isNotEmpty
+                                    ? request.quote.serviceName
+                                    : request.subtitle,
+                                description: request.objective.isNotEmpty
+                                    ? request.objective
+                                    : request.quote.description,
+                                subject: request.subject.isNotEmpty
+                                    ? request.subject
+                                    : request.quote.subject,
+                                teachingMode: request.quote.teachingMode,
+                                sessionsCount: request.quote.sessionsCount,
+                                sessionDurationLabel:
+                                    request.duration.isNotEmpty
+                                    ? request.duration
+                                    : request.quote.duration,
+                                createdAtLabel: request.createdAtLabel,
+                                isChild:
+                                    request.quote.level.isEmpty &&
+                                    request.studentLevel.isNotEmpty,
+                              );
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: _QuoteRequestTile(
+                                  request: joinRequest,
+                                  onChanged: _refreshDashboard,
+                                ),
+                              );
+                            }),
+                        ]),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          },
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -448,21 +461,21 @@ class _PerformanceCard extends StatelessWidget {
                                     ),
                                   ),
                                   SvgPicture.asset(
-                                   "assets/images/star.svg",
-                                   height: 12,
-                                   width: 12,
-                                   ),
+                                    "assets/images/star.svg",
+                                    height: 12,
+                                    width: 12,
+                                  ),
                                 ],
                               )
                             else
-                            Text(
-                              stat.value,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF1A237E),
+                              Text(
+                                stat.value,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF1A237E),
+                                ),
                               ),
-                            ),
                           ],
                         ),
                       ),

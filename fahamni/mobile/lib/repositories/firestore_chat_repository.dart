@@ -10,7 +10,7 @@ import 'chat_repository.dart';
 
 class FirestoreChatRepository implements ChatRepository {
   FirestoreChatRepository({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
   final Map<String, UserRole?> _userRoleCache = <String, UserRole?>{};
@@ -26,24 +26,21 @@ class FirestoreChatRepository implements ChatRepository {
     return _conversationsCollection
         .where('participants', arrayContains: userId)
         .snapshots()
-        .asyncMap(
-          (snapshot) async {
-            final List<ConversationModel?> conversations = await Future.wait(
-              snapshot.docs.map(
-                (doc) async {
-                  try {
-                    return await _hydrateConversationFromData(
-                      userId: userId,
-                      docId: doc.id,
-                      data: doc.data(),
-                    );
-                  } catch (e) {
-                    debugPrint('Error hydrating conversation ${doc.id}: $e');
-                    return null;
-                  }
-                },
-              ),
-            );
+        .asyncMap((snapshot) async {
+          final List<ConversationModel?> conversations = await Future.wait(
+            snapshot.docs.map((doc) async {
+              try {
+                return await _hydrateConversationFromData(
+                  userId: userId,
+                  docId: doc.id,
+                  data: doc.data(),
+                );
+              } catch (e) {
+                debugPrint('Error hydrating conversation ${doc.id}: $e');
+                return null;
+              }
+            }),
+          );
 
             final List<ConversationModel> validConversations = conversations
                 .whereType<ConversationModel>()
@@ -51,9 +48,8 @@ class FirestoreChatRepository implements ChatRepository {
                 .where((conversation) => !conversation.isDeleted) // Filter out deleted conversations
                 .toList();
 
-            return _deduplicateConversations(validConversations);
-          },
-        );
+          return _deduplicateConversations(validConversations);
+        });
   }
 
   @override
@@ -61,14 +57,18 @@ class FirestoreChatRepository implements ChatRepository {
     return _conversationsCollection
         .doc(conversationId)
         .collection('messages')
-        .orderBy('sendingDateTime')
+        .orderBy('created_at')
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
               .map(
                 (doc) => MessageModel.fromMap({
                   ...doc.data(),
-                  'id': doc.data()['id'] ?? doc.data()['messageId'] ?? doc.data()['message_id'] ?? doc.id,
+                  'id':
+                      doc.data()['id'] ??
+                      doc.data()['messageId'] ??
+                      doc.data()['message_id'] ??
+                      doc.id,
                   'conversationId': conversationId,
                 }),
               )
@@ -89,42 +89,45 @@ class FirestoreChatRepository implements ChatRepository {
     final CollectionReference<Map<String, dynamic>> messagesRef =
         conversationRef.collection('messages');
 
-    final String messageId =
-        message.id.isNotEmpty ? message.id : messagesRef.doc().id;
+    final String messageId = message.id.isNotEmpty
+        ? message.id
+        : messagesRef.doc().id;
 
     final MessageModel messageToSave = message.copyWith(id: messageId);
 
     final WriteBatch batch = _firestore.batch();
 
-    batch.set(
-      messagesRef.doc(messageId),
-      messageToSave.toMap(),
-    );
+    batch.set(messagesRef.doc(messageId), messageToSave.toMap());
 
-    batch.set(
-      conversationRef,
-      {
-        'conversationId': messageToSave.conversationId,
-        'conversation_id':
-            existingConversation['conversation_id'] ?? messageToSave.conversationId,
-        'participants': (existingConversation['participants'] as List<dynamic>?)
-                ?.map((participant) => participant.toString())
-                .toList() ??
-            <String>{
-              messageToSave.senderId,
-              messageToSave.receiverId,
-            }.toList(),
-        'isGroup':
-            existingConversation['isGroup'] ?? existingConversation['is_group'] ?? false,
-        'createdAt': existingConversation['createdAt'] ??
-            Timestamp.fromDate(messageToSave.sendingDateTime),
-        'status': existingConversation['status'] ?? 'active',
-        'lastMessage': messageToSave.toMap(),
-        'lastMessageTime': messageToSave.sendingDateTime,
-        'updatedAt': Timestamp.now(),
+    batch.set(conversationRef, {
+      'conversationId': messageToSave.conversationId,
+      'conversation_id':
+          existingConversation['conversation_id'] ??
+          messageToSave.conversationId,
+      'participants':
+          (existingConversation['participants'] as List<dynamic>?)
+              ?.map((participant) => participant.toString())
+              .toList() ??
+          <String>{messageToSave.senderId, messageToSave.receiverId}.toList(),
+      'isGroup':
+          existingConversation['isGroup'] ??
+          existingConversation['is_group'] ??
+          false,
+      'createdAt':
+          existingConversation['createdAt'] ??
+          Timestamp.fromDate(messageToSave.sendingDateTime),
+      'status': existingConversation['status'] ?? 'active',
+      'lastMessage': messageToSave.toMap(),
+      'lastMessageTime': messageToSave.sendingDateTime,
+      'updatedAt': Timestamp.now(),
+      if (existingConversation['is_support'] == true ||
+          existingConversation.containsKey('user_uid')) ...{
+        'last_message': _messagePreview(messageToSave),
+        'last_message_at': messageToSave.createdAt,
+        if (messageToSave.senderId != 'admin')
+          'unread_admin': FieldValue.increment(1),
       },
-      SetOptions(merge: true),
-    );
+    }, SetOptions(merge: true));
 
     await batch.commit();
   }
@@ -142,12 +145,14 @@ class FirestoreChatRepository implements ChatRepository {
     QueryDocumentSnapshot<Map<String, dynamic>>? bestMatch;
     DateTime? bestMatchTime;
 
-    for (final QueryDocumentSnapshot<Map<String, dynamic>> doc in snapshot.docs) {
+    for (final QueryDocumentSnapshot<Map<String, dynamic>> doc
+        in snapshot.docs) {
       final List<String> participants =
           (doc.data()['participants'] as List<dynamic>? ?? <dynamic>[])
               .map((participant) => participant.toString())
               .toList();
-      final bool isGroup = doc.data()['isGroup'] == true ||
+      final bool isGroup =
+          doc.data()['isGroup'] == true ||
           doc.data()['is_group'] == true ||
           participants.length > 2;
 
@@ -181,8 +186,10 @@ class FirestoreChatRepository implements ChatRepository {
     final DocumentReference<Map<String, dynamic>> conversationRef =
         _conversationsCollection.doc();
     final DateTime now = DateTime.now();
-    final List<String> participants = <String>{currentUserId, otherUserId}.toList()
-      ..sort();
+    final List<String> participants = <String>{
+      currentUserId,
+      otherUserId,
+    }.toList()..sort();
 
     await conversationRef.set({
       'conversationId': conversationRef.id,
@@ -216,15 +223,18 @@ class FirestoreChatRepository implements ChatRepository {
           data['conversationId'] ?? data['conversation_id'] ?? docId,
     });
 
+    final bool isSupportConversation =
+        data['is_support'] == true || data.containsKey('user_uid');
     final bool isGroup =
-        baseConversation.isGroup || baseConversation.participants.length > 2;
+        !isSupportConversation &&
+        (baseConversation.isGroup || baseConversation.participants.length > 2);
     final String otherParticipantId = isGroup
         ? ''
         : baseConversation.participants.firstWhere(
             (participantId) => participantId != userId,
             orElse: () => '',
           );
-    
+
     UserRole? otherParticipantRole;
     if (otherParticipantId.isNotEmpty) {
       otherParticipantRole = await _getUserRole(otherParticipantId);
@@ -236,16 +246,16 @@ class FirestoreChatRepository implements ChatRepository {
             conversation: baseConversation,
           )
         : otherParticipantId.isEmpty
-            ? _ParticipantPresentation.empty()
-            : await _getParticipantPresentation(
-                userId: otherParticipantId,
-                role: otherParticipantRole,
-              );
+        ? _ParticipantPresentation.empty()
+        : await _getParticipantPresentation(
+            userId: otherParticipantId,
+            role: otherParticipantRole,
+          );
 
     final String resolvedConversationName =
         baseConversation.conversationName.trim().isNotEmpty
-            ? baseConversation.conversationName.trim()
-            : participantPresentation.displayName;
+        ? baseConversation.conversationName.trim()
+        : participantPresentation.displayName;
 
     return baseConversation.copyWith(
       conversationName: resolvedConversationName,
@@ -280,14 +290,9 @@ class FirestoreChatRepository implements ChatRepository {
     final List<_ParticipantPresentation> members = (await Future.wait(
       otherParticipantIds.map((participantId) async {
         final UserRole? role = await _getUserRole(participantId);
-        return _getParticipantPresentation(
-          userId: participantId,
-          role: role,
-        );
+        return _getParticipantPresentation(userId: participantId, role: role);
       }),
-    ))
-        .where((member) => member.displayName.trim().isNotEmpty)
-        .toList();
+    )).where((member) => member.displayName.trim().isNotEmpty).toList();
 
     final List<String> memberNames = members
         .map((member) => member.displayName.trim())
@@ -298,8 +303,8 @@ class FirestoreChatRepository implements ChatRepository {
     final String displayName = conversation.conversationName.trim().isNotEmpty
         ? conversation.conversationName.trim()
         : subtitle.isNotEmpty
-            ? subtitle
-            : 'Group Conversation';
+        ? subtitle
+        : 'Group Conversation';
 
     return _ParticipantPresentation(
       displayName: displayName,
@@ -333,7 +338,10 @@ class FirestoreChatRepository implements ChatRepository {
           : (List<String>.from(conversation.participants)..sort()).join('::');
 
       final ConversationModel? existing = deduplicated[key];
-      if (existing == null || _conversationTime(conversation).isAfter(_conversationTime(existing))) {
+      if (existing == null ||
+          _conversationTime(
+            conversation,
+          ).isAfter(_conversationTime(existing))) {
         deduplicated[key] = conversation;
       }
     }
@@ -342,8 +350,19 @@ class FirestoreChatRepository implements ChatRepository {
   }
 
   DateTime _conversationTime(ConversationModel conversation) {
-    return conversation.lastMessage?.sendingDateTime ??
-        conversation.createdAt;
+    return conversation.lastMessage?.sendingDateTime ?? conversation.createdAt;
+  }
+
+  String _messagePreview(MessageModel message) {
+    final String text = message.content.trim();
+    if (text.isNotEmpty) return text;
+    if (message.type == MessageType.voice || message.voiceUrl != null) {
+      return 'Voice message';
+    }
+    if (message.attachments.isNotEmpty) {
+      return message.type == MessageType.image ? 'Photo' : 'Attachment';
+    }
+    return '';
   }
 
   Future<UserRole?> _getUserRole(String userId) async {
@@ -356,7 +375,7 @@ class FirestoreChatRepository implements ChatRepository {
     try {
       final DocumentSnapshot<Map<String, dynamic>> userSnapshot =
           await _firestore.collection('users').doc(userId).get();
-      
+
       if (userSnapshot.exists) {
         final dynamic roleValue = userSnapshot.data()?['role'];
         if (roleValue != null) {
@@ -367,10 +386,10 @@ class FirestoreChatRepository implements ChatRepository {
       if (role == null) {
         final List<MapEntry<String, UserRole>> collectionChecks =
             <MapEntry<String, UserRole>>[
-          const MapEntry<String, UserRole>('tutors', UserRole.tutor),
-          const MapEntry<String, UserRole>('students', UserRole.student),
-          const MapEntry<String, UserRole>('parents', UserRole.parent),
-        ];
+              const MapEntry<String, UserRole>('tutors', UserRole.tutor),
+              const MapEntry<String, UserRole>('students', UserRole.student),
+              const MapEntry<String, UserRole>('parents', UserRole.parent),
+            ];
 
         for (final MapEntry<String, UserRole> check in collectionChecks) {
           final DocumentSnapshot<Map<String, dynamic>> snapshot =
@@ -403,7 +422,11 @@ class FirestoreChatRepository implements ChatRepository {
           final DocumentSnapshot<Map<String, dynamic>> snapshot =
               await _firestore.collection('tutors').doc(userId).get();
           if (!snapshot.exists || snapshot.data() == null) {
-            return _ParticipantPresentation(displayName: 'Tutor', avatarUrl: '', subtitle: '');
+            return _ParticipantPresentation(
+              displayName: 'Tutor',
+              avatarUrl: '',
+              subtitle: '',
+            );
           }
           final TutorModel tutor = TutorModel.fromMap(snapshot.data()!);
           final String fullName =
@@ -424,7 +447,11 @@ class FirestoreChatRepository implements ChatRepository {
           final DocumentSnapshot<Map<String, dynamic>> snapshot =
               await _firestore.collection('students').doc(userId).get();
           if (!snapshot.exists || snapshot.data() == null) {
-            return _ParticipantPresentation(displayName: 'Student', avatarUrl: '', subtitle: '');
+            return _ParticipantPresentation(
+              displayName: 'Student',
+              avatarUrl: '',
+              subtitle: '',
+            );
           }
           final StudentModel student = StudentModel.fromMap(snapshot.data()!);
           final String fullName =
@@ -432,7 +459,8 @@ class FirestoreChatRepository implements ChatRepository {
                   .trim();
           final String subtitle = [
             if (student.schoolLevel.isNotEmpty) student.schoolLevel,
-            if (student.preferredSubjects.isNotEmpty) student.preferredSubjects.first,
+            if (student.preferredSubjects.isNotEmpty)
+              student.preferredSubjects.first,
           ].join(' • ');
           return _ParticipantPresentation(
             displayName: fullName.isNotEmpty ? fullName : 'Student',
@@ -444,7 +472,11 @@ class FirestoreChatRepository implements ChatRepository {
           final DocumentSnapshot<Map<String, dynamic>> snapshot =
               await _firestore.collection('parents').doc(userId).get();
           if (!snapshot.exists || snapshot.data() == null) {
-            return _ParticipantPresentation(displayName: 'Parent', avatarUrl: '', subtitle: '');
+            return _ParticipantPresentation(
+              displayName: 'Parent',
+              avatarUrl: '',
+              subtitle: '',
+            );
           }
           final ParentModel parent = ParentModel.fromMap(snapshot.data()!);
           final String fullName =
@@ -457,7 +489,9 @@ class FirestoreChatRepository implements ChatRepository {
           );
       }
     } catch (e) {
-      debugPrint('Error getting presentation for user $userId (role $role): $e');
+      debugPrint(
+        'Error getting presentation for user $userId (role $role): $e',
+      );
       return _ParticipantPresentation(
         displayName: role.name.toUpperCase(),
         avatarUrl: '',
@@ -478,9 +512,10 @@ class FirestoreChatRepository implements ChatRepository {
       if (filter == UserRole.student) {
         return !conversation.isGroup &&
             (conversation.otherParticipantRole == UserRole.student ||
-             conversation.otherParticipantRole == UserRole.parent);
+                conversation.otherParticipantRole == UserRole.parent);
       }
-      return !conversation.isGroup && conversation.otherParticipantRole == filter;
+      return !conversation.isGroup &&
+          conversation.otherParticipantRole == filter;
     }
 
     return true;

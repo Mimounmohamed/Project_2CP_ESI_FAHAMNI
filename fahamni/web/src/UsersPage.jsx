@@ -3,6 +3,7 @@ import { Search, Eye, User } from "lucide-react";
 import { collection, query, where, getDocs, updateDoc, doc, getCountFromServer } from "firebase/firestore";
 import { db } from "./firebase";
 import { useTranslation } from "react-i18next";
+import { syncSuspensionState } from "./suspensionNotifications";
 
 const PAGE_SIZE = 10;
 
@@ -105,6 +106,7 @@ export default function UsersPage({ onSelect, initialTab }) {
     const next = !u.is_suspended;
     try {
       await updateDoc(doc(db, u.col, u.id), { is_suspended: next });
+      await syncSuspensionState(u.id, next);
       setUsers(prev => prev.map(x => x.id === u.id ? { ...x, is_suspended: next } : x));
       setStats(s => ({ ...s, suspended: (s.suspended ?? 0) + (next ? 1 : -1) }));
     } catch (e) {

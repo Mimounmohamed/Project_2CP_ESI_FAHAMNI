@@ -1,6 +1,7 @@
 import 'package:fahamni/models/chat_model.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
@@ -16,7 +17,7 @@ class MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool hasAttachments = messageModel.attachments.isNotEmpty;
     final bool isVoiceMessage = messageModel.voiceUrl != null;
-    
+
     return Align(
       alignment: isme ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -61,7 +62,10 @@ class MessageBubble extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: messageModel.attachments
-                      .map((attachment) => _buildAttachmentWidget(attachment, isme))
+                      .map(
+                        (attachment) =>
+                            _buildAttachmentWidget(context, attachment, isme),
+                      )
                       .toList(),
                 ),
               ),
@@ -94,83 +98,109 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildAttachmentWidget(AttachmentModel attachment, bool isMe) {
+  Future<void> _openAttachment(
+    BuildContext context,
+    AttachmentModel attachment,
+  ) async {
+    final Uri? uri = Uri.tryParse(attachment.url);
+    if (uri == null ||
+        !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to open attachment.')),
+      );
+    }
+  }
+
+  Widget _buildAttachmentWidget(
+    BuildContext context,
+    AttachmentModel attachment,
+    bool isMe,
+  ) {
     if (attachment.isImage) {
-      return ClipRRect(
+      return InkWell(
+        onTap: () => _openAttachment(context, attachment),
         borderRadius: BorderRadius.circular(8),
-        child: Image.network(
-          attachment.url,
-          width: 200,
-          height: 150,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => Container(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.network(
+            attachment.url,
             width: 200,
             height: 150,
-            color: const Color(0xFFE2E8F0),
-            child: const Icon(Icons.image_not_supported),
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              width: 200,
+              height: 150,
+              color: const Color(0xFFE2E8F0),
+              child: const Icon(Icons.image_not_supported),
+            ),
           ),
         ),
       );
     } else {
-      return Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isMe ? Colors.white.withValues(alpha: 0.2) : const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
+      return InkWell(
+        onTap: () => _openAttachment(context, attachment),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
             color: isMe
-                ? Colors.white.withValues(alpha: 0.3)
-                : const Color(0xFFE2E8F0),
+                ? Colors.white.withValues(alpha: 0.2)
+                : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isMe
+                  ? Colors.white.withValues(alpha: 0.3)
+                  : const Color(0xFFE2E8F0),
+            ),
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.insert_drive_file_outlined,
-              size: 18,
-              color: isMe ? Colors.white : const Color(0xFF000080),
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    attachment.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: isMe ? Colors.white : const Color(0xFF1F2937),
-                    ),
-                  ),
-                  Text(
-                    '${(attachment.size / 1024 / 1024).toStringAsFixed(1)} MB',
-                    style: GoogleFonts.inter(
-                      fontSize: 10,
-                      color: isMe
-                          ? Colors.white.withValues(alpha: 0.7)
-                          : const Color(0xFF64748B),
-                    ),
-                  ),
-                ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.insert_drive_file_outlined,
+                size: 18,
+                color: isMe ? Colors.white : const Color(0xFF000080),
               ),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              Icons.download_outlined,
-              size: 16,
-              color: isMe ? Colors.white : const Color(0xFF000080),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      attachment.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: isMe ? Colors.white : const Color(0xFF1F2937),
+                      ),
+                    ),
+                    Text(
+                      '${(attachment.size / 1024 / 1024).toStringAsFixed(1)} MB',
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        color: isMe
+                            ? Colors.white.withValues(alpha: 0.7)
+                            : const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.open_in_new_outlined,
+                size: 16,
+                color: isMe ? Colors.white : const Color(0xFF000080),
+              ),
+            ],
+          ),
         ),
       );
     }
   }
 }
-
-

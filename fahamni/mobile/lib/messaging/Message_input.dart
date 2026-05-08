@@ -55,7 +55,8 @@ class MessageInput extends StatefulWidget {
     String text,
     List<AttachmentModel> attachments,
     List<File> filesToUpload,
-  )? onSend;
+  )?
+  onSend;
   final VoidCallback? onAiPressed;
   final VoidCallback? onVoicePressed;
   // --- VOICE FEATURE START ---
@@ -300,7 +301,9 @@ class _MessageInputState extends State<MessageInput> {
   }
 
   Future<void> _pickCameraImage() async {
-    final XFile? file = await _imagePicker.pickImage(source: ImageSource.camera);
+    final XFile? file = await _imagePicker.pickImage(
+      source: ImageSource.camera,
+    );
     if (file == null) {
       return;
     }
@@ -312,7 +315,9 @@ class _MessageInputState extends State<MessageInput> {
   }
 
   Future<void> _pickCameraVideo() async {
-    final XFile? file = await _imagePicker.pickVideo(source: ImageSource.camera);
+    final XFile? file = await _imagePicker.pickVideo(
+      source: ImageSource.camera,
+    );
     if (file == null) {
       return;
     }
@@ -600,7 +605,9 @@ class _MessageInputState extends State<MessageInput> {
       });
     }
 
-    _recordingTicker = Timer.periodic(const Duration(seconds: 1), (Timer timer) {
+    _recordingTicker = Timer.periodic(const Duration(seconds: 1), (
+      Timer timer,
+    ) {
       if (!mounted) {
         timer.cancel();
         return;
@@ -641,7 +648,9 @@ class _MessageInputState extends State<MessageInput> {
     await _prepareVoicePreview();
 
     if (autoStopped && mounted) {
-      _showToast('Maximum voice duration reached. Review and send your message.');
+      _showToast(
+        'Maximum voice duration reached. Review and send your message.',
+      );
     }
   }
 
@@ -707,10 +716,7 @@ class _MessageInputState extends State<MessageInput> {
     });
 
     try {
-      await widget.onSendVoice!(
-        _voicePreviewPath!,
-        _voicePreviewDuration,
-      );
+      await widget.onSendVoice!(_voicePreviewPath!, _voicePreviewDuration);
       await _discardVoicePreview(deleteFile: false);
     } finally {
       if (mounted) {
@@ -775,10 +781,7 @@ class _MessageInputState extends State<MessageInput> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: const Duration(seconds: 2),
-        ),
+        SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
       );
   }
 
@@ -831,10 +834,7 @@ class _MessageInputState extends State<MessageInput> {
                         duration: const Duration(milliseconds: 700),
                         curve: Curves.easeInOut,
                         builder: (context, value, child) {
-                          return Opacity(
-                            opacity: value,
-                            child: child,
-                          );
+                          return Opacity(opacity: value, child: child);
                         },
                         onEnd: () {
                           if (mounted && _isRecording) {
@@ -878,10 +878,11 @@ class _MessageInputState extends State<MessageInput> {
                     final Duration position = snapshot.data ?? Duration.zero;
                     final double maxMillis =
                         _voicePreviewDuration.inMilliseconds > 0
-                            ? _voicePreviewDuration.inMilliseconds.toDouble()
-                            : 1;
-                    final double currentMillis =
-                        position.inMilliseconds.clamp(0, maxMillis.toInt()).toDouble();
+                        ? _voicePreviewDuration.inMilliseconds.toDouble()
+                        : 1;
+                    final double currentMillis = position.inMilliseconds
+                        .clamp(0, maxMillis.toInt())
+                        .toDouble();
                     return Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(14),
@@ -906,9 +907,9 @@ class _MessageInputState extends State<MessageInput> {
                               ),
                               Expanded(
                                 child: SliderTheme(
-                                  data: SliderTheme.of(context).copyWith(
-                                    trackHeight: 3,
-                                  ),
+                                  data: SliderTheme.of(
+                                    context,
+                                  ).copyWith(trackHeight: 3),
                                   child: Slider(
                                     value: currentMillis,
                                     max: maxMillis,
@@ -943,9 +944,8 @@ class _MessageInputState extends State<MessageInput> {
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               IconButton(
-                                onPressed: () => _discardVoicePreview(
-                                  deleteFile: true,
-                                ),
+                                onPressed: () =>
+                                    _discardVoicePreview(deleteFile: true),
                                 icon: const Icon(
                                   Icons.delete_outline,
                                   color: Color(0xFFDC2626),
@@ -953,7 +953,9 @@ class _MessageInputState extends State<MessageInput> {
                               ),
                               const SizedBox(width: 8),
                               ElevatedButton(
-                                onPressed: _isVoiceSending ? null : _sendVoicePreview,
+                                onPressed: _isVoiceSending
+                                    ? null
+                                    : _sendVoicePreview,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF000080),
                                   foregroundColor: Colors.white,
@@ -1012,15 +1014,14 @@ class _MessageInputState extends State<MessageInput> {
                                           width: 60,
                                           height: 60,
                                           fit: BoxFit.cover,
-                                          errorBuilder: (
-                                            context,
-                                            error,
-                                            stackTrace,
-                                          ) =>
-                                              const ColoredBox(
-                                                color: Color(0xFFE2E8F0),
-                                                child: Icon(Icons.image_outlined),
-                                              ),
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  const ColoredBox(
+                                                    color: Color(0xFFE2E8F0),
+                                                    child: Icon(
+                                                      Icons.image_outlined,
+                                                    ),
+                                                  ),
                                         ),
                                       ),
                                       if (uploadProgress != null &&
@@ -1077,10 +1078,11 @@ class _MessageInputState extends State<MessageInput> {
                                                 child: SizedBox(
                                                   width: 24,
                                                   height: 24,
-                                                  child: CircularProgressIndicator(
-                                                    value: uploadProgress,
-                                                    strokeWidth: 2.5,
-                                                  ),
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                        value: uploadProgress,
+                                                        strokeWidth: 2.5,
+                                                      ),
                                                 ),
                                               ),
                                           ],
@@ -1192,16 +1194,18 @@ class _MessageInputState extends State<MessageInput> {
                         onPressed: _isSending ? null : _handleSend,
                       ),
                     ),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    onPressed: widget.onAiPressed,
-                    icon: const Icon(
-                      Icons.auto_awesome_rounded,
-                      color: Color(0xFF000080),
-                      size: 22,
+                  if (widget.onAiPressed != null) ...[
+                    const SizedBox(width: 4),
+                    IconButton(
+                      onPressed: widget.onAiPressed,
+                      icon: const Icon(
+                        Icons.auto_awesome_rounded,
+                        color: Color(0xFF000080),
+                        size: 22,
+                      ),
+                      tooltip: 'AI Assistant',
                     ),
-                    tooltip: 'AI Assistant',
-                  ),
+                  ],
                 ],
               ),
             ],
@@ -1254,5 +1258,3 @@ class _AttachmentOptionTile extends StatelessWidget {
   }
 }
 // --- ATTACHMENT FEATURE END ---
-
-

@@ -4,6 +4,7 @@ import { collection, query, where, getDocs, getDoc, updateDoc, doc } from "fireb
 import { ref as storageRef, listAll, getDownloadURL } from "firebase/storage";
 import { db, storage } from "./firebase";
 import ServiceDetailPanel from "./ServiceDetailPanel";
+import { syncSuspensionState } from "./suspensionNotifications";
 
 const MONTHS = ["January","February","March","April","May","June",
                  "July","August","September","October","November","December"];
@@ -306,6 +307,7 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
     const next = !suspended;
     try {
       await updateDoc(doc(db, user.col ?? userCol, user.id ?? user.uid), { is_suspended: next });
+      await syncSuspensionState(user.id ?? user.uid, next);
       setSuspended(next);
       onSuspendChange?.(user.id, next);
     } catch (e) {

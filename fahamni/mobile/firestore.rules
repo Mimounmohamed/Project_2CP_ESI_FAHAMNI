@@ -38,7 +38,8 @@ service cloud.firestore {
     }
 
     function canAccessConversation(conversationId) {
-      return isConversationParticipant(conversationId) ||
+      return isAdmin() ||
+        isConversationParticipant(conversationId) ||
         isLegacyConversationOwner(conversationId);
     }
 
@@ -144,17 +145,22 @@ service cloud.firestore {
       // The client-side query with where(participants contains userId)
       // ensures only their conversations are returned
       allow read: if signedIn();
-
+      
       allow create: if requestHasParticipant() || isAdmin();
-      allow update: if canAccessConversation(conversationId) || isAdmin();
+      allow update: if canAccessConversation(conversationId);
       allow delete: if false;
 
       match /messages/{messageId} {
-        // Allow message reads if user is a conversation participant or admin
-        allow read: if signedIn() && (canAccessConversation(conversationId) || isAdmin());
-        allow create: if isAdmin() || (signedIn() &&
-          isConversationParticipantAfter(conversationId) &&
-          request.resource.data.senderId == request.auth.uid);
+        // Allow message reads if user is a conversation participant
+        allow read: if signedIn() && canAccessConversation(conversationId);
+        allow create: if signedIn() && 
+          (
+            isAdmin() ||
+            (
+              isConversationParticipantAfter(conversationId) &&
+              request.resource.data.senderId == request.auth.uid
+            )
+          );
         allow update, delete: if false;
       }
     }

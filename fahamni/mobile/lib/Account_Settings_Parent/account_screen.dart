@@ -18,7 +18,9 @@ import 'package:fahamni/models/user_model.dart';
 import 'package:fahamni/widgets/customnavbar.dart';
 
 class ParentAccountScreen extends StatefulWidget {
-  const ParentAccountScreen({super.key});
+  const ParentAccountScreen({super.key, this.suspendedMode = false});
+
+  final bool suspendedMode;
 
   @override
   State<ParentAccountScreen> createState() => _ParentAccountScreenState();
@@ -127,6 +129,46 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
         : const AssetImage('assets/images/parentmale.png');
   }
 
+  void _showSuspendedDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Account Suspended'),
+        content: const Text(
+          'Your account has been suspended. Please contact the admins for help.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _suspendedBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF2F2),
+        border: Border.all(color: const Color(0xFFFECACA)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Text(
+        'Your account is suspended. Please contact the admins.',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: Color(0xFFB91C1C),
+          fontFamily: 'Inter',
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
   Widget _buildMenuItem(
     BuildContext context,
     IconData icon,
@@ -184,6 +226,10 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
       bottomNavigationBar: CustomBottomNavbar(
         selectedIndex: _selectedIndex,
         onTap: (int index) {
+          if (widget.suspendedMode && index != 4) {
+            _showSuspendedDialog();
+            return;
+          }
           if (index == _selectedIndex) {
             return;
           }
@@ -238,6 +284,10 @@ class _ParentAccountScreenState extends State<ParentAccountScreen> {
                           color: Color(0xFF1F2937),
                         ),
                       ),
+                      if (widget.suspendedMode) ...[
+                        const SizedBox(height: 12),
+                        _suspendedBanner(),
+                      ],
                       const SizedBox(height: 24),
                       CircleAvatar(
                         radius: 46,

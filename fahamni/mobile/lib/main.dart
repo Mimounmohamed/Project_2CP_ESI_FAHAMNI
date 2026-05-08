@@ -9,6 +9,8 @@ import 'package:fahamni/StudentHomePage/Student_homepage.dart';
 import 'package:fahamni/TeacherDashboard/teacher_dashboard.dart';
 import 'package:fahamni/ParentDashboread/ParentHomePage/home_page.dart';
 import 'package:fahamni/TeacherDashboard/teacher_guest_dashboard.dart';
+import 'package:fahamni/Services/suspended_account_gate.dart';
+import 'package:fahamni/models/user_model.dart';
 
 import 'firebase_options.dart';
 import 'navigation/app_navigation.dart';
@@ -88,9 +90,21 @@ class _AuthGateState extends State<AuthGate> {
       }
 
       final role = doc['role'] as String? ?? 'student';
+      final parsedRole = UserModel.parseRole(role);
       Widget home;
-      
-      if (role == 'tutor') {
+
+      final profileDoc = await FirebaseFirestore.instance
+          .collection(_collectionForRole(parsedRole))
+          .doc(user.uid)
+          .get();
+      if (!mounted) return;
+      final isSuspended =
+          doc.data()?['is_suspended'] == true ||
+          profileDoc.data()?['is_suspended'] == true;
+
+      if (isSuspended) {
+        home = SuspendedAccountGate.accountScreenForRole(parsedRole);
+      } else if (role == 'tutor') {
         // Check if teacher is pending
         final accountStatus = doc['account_status'] as String? ?? 'pending';
         if (accountStatus == 'pending') {
@@ -104,11 +118,22 @@ class _AuthGateState extends State<AuthGate> {
         home = const Studenthomepage();
       }
 
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => home),
-      );
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => home));
     } catch (_) {
       if (mounted) setState(() => _checking = false);
+    }
+  }
+
+  String _collectionForRole(UserRole role) {
+    switch (role) {
+      case UserRole.student:
+        return 'students';
+      case UserRole.tutor:
+        return 'tutors';
+      case UserRole.parent:
+        return 'parents';
     }
   }
 
@@ -124,5 +149,3 @@ class _AuthGateState extends State<AuthGate> {
     return const LoginScreen();
   }
 }
-
-

@@ -12,7 +12,9 @@ import '../TeacherDashboard/teacher_quotes_page.dart';
 import 'settings_menu_screen.dart';
 
 class AccountScreen extends StatefulWidget {
-  const AccountScreen({super.key});
+  const AccountScreen({super.key, this.suspendedMode = false});
+
+  final bool suspendedMode;
 
   @override
   State<AccountScreen> createState() => _AccountScreenState();
@@ -29,6 +31,10 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   void _handleNavigation(int index) {
+    if (widget.suspendedMode && index != 3) {
+      _showSuspendedDialog();
+      return;
+    }
     if (index == 3) return;
     switch (index) {
       case 0:
@@ -38,15 +44,56 @@ class _AccountScreenState extends State<AccountScreen> {
         break;
       case 1:
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const TeacherServicesDashboardScreen()),
+          MaterialPageRoute(
+            builder: (_) => const TeacherServicesDashboardScreen(),
+          ),
         );
         break;
       case 2:
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const ChatPage()),
-        );
+        Navigator.of(
+          context,
+        ).pushReplacement(MaterialPageRoute(builder: (_) => const ChatPage()));
         break;
     }
+  }
+
+  void _showSuspendedDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Account Suspended'),
+        content: const Text(
+          'Your account has been suspended. Please contact the admins for help.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _suspendedBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF2F2),
+        border: Border.all(color: const Color(0xFFFECACA)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        'Your account is suspended. Please contact the admins.',
+        textAlign: TextAlign.center,
+        style: GoogleFonts.inter(
+          color: const Color(0xFFB91C1C),
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
   }
 
   @override
@@ -62,7 +109,9 @@ class _AccountScreenState extends State<AccountScreen> {
           future: _dashboardFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator(color: Color(0xFF000080)));
+              return const Center(
+                child: CircularProgressIndicator(color: Color(0xFF000080)),
+              );
             }
             if (snapshot.hasError) {
               return Center(
@@ -71,16 +120,23 @@ class _AccountScreenState extends State<AccountScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                      const Icon(
+                        Icons.error_outline,
+                        size: 48,
+                        color: Colors.red,
+                      ),
                       const SizedBox(height: 16),
-                      Text(snapshot.error.toString(), textAlign: TextAlign.center),
+                      Text(
+                        snapshot.error.toString(),
+                        textAlign: TextAlign.center,
+                      ),
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: () => setState(() {
                           _dashboardFuture = _service.loadDashboard();
                         }),
                         child: const Text("Retry"),
-                      )
+                      ),
                     ],
                   ),
                 ),
@@ -103,16 +159,24 @@ class _AccountScreenState extends State<AccountScreen> {
                       color: const Color(0xFF1F2937),
                     ),
                   ),
+                  if (widget.suspendedMode) ...[
+                    const SizedBox(height: 12),
+                    _suspendedBanner(),
+                  ],
                   const SizedBox(height: 30),
                   CircleAvatar(
                     radius: 50,
                     backgroundColor: const Color(0xFFE2E8F0),
-                    backgroundImage: tutor.picture.isNotEmpty 
-                      ? NetworkImage(tutor.picture) 
-                      : null,
-                    child: tutor.picture.isEmpty 
-                      ? const Icon(Icons.person, size: 50, color: Color(0xFF64748B)) 
-                      : null,
+                    backgroundImage: tutor.picture.isNotEmpty
+                        ? NetworkImage(tutor.picture)
+                        : null,
+                    child: tutor.picture.isEmpty
+                        ? const Icon(
+                            Icons.person,
+                            size: 50,
+                            color: Color(0xFF64748B),
+                          )
+                        : null,
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -133,45 +197,47 @@ class _AccountScreenState extends State<AccountScreen> {
                     ),
                   ),
                   const SizedBox(height: 30),
-                  
-                  // Performance Overview Card
-                  _PerformanceOverviewCard(stats: dashboard.stats),
-                  
-                  const SizedBox(height: 30),
-                  
-                  // Menu Items
-                  _AccountMenuItem(
-                    icon: Icons.star_border,
-                    title: "FeedBacks",
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => FeedbacksPage(
-                            tutorId: tutor.uid,
-                            tutorName: '${tutor.firstName} ${tutor.lastName}',
+
+                  if (!widget.suspendedMode) ...[
+                    _PerformanceOverviewCard(stats: dashboard.stats),
+                    const SizedBox(height: 30),
+                    _AccountMenuItem(
+                      icon: Icons.star_border,
+                      title: "FeedBacks",
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => FeedbacksPage(
+                              tutorId: tutor.uid,
+                              tutorName: '${tutor.firstName} ${tutor.lastName}',
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-                  _AccountMenuItem(
-                    icon: Icons.description_outlined,
-                    title: "Quote Requests",
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const TeacherQuotesPage()),
-                      );
-                    },
-                  ),
+                        );
+                      },
+                    ),
+                    _AccountMenuItem(
+                      icon: Icons.description_outlined,
+                      title: "Quote Requests",
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const TeacherQuotesPage(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                   _AccountMenuItem(
                     icon: Icons.settings_outlined,
                     title: "Settings",
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const TeacherSettingsPage()),
+                        MaterialPageRoute(
+                          builder: (_) => const TeacherSettingsPage(),
+                        ),
                       );
                     },
                   ),
