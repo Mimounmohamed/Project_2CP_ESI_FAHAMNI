@@ -141,20 +141,20 @@ service cloud.firestore {
 
     match /conversations/{conversationId} {
       // Allow reads for signed-in users
-      // The client-side query with where(participants contains userId) 
+      // The client-side query with where(participants contains userId)
       // ensures only their conversations are returned
       allow read: if signedIn();
-      
-      allow create: if requestHasParticipant();
-      allow update: if canAccessConversation(conversationId);
+
+      allow create: if requestHasParticipant() || isAdmin();
+      allow update: if canAccessConversation(conversationId) || isAdmin();
       allow delete: if false;
 
       match /messages/{messageId} {
-        // Allow message reads if user is a conversation participant
-        allow read: if signedIn() && canAccessConversation(conversationId);
-        allow create: if signedIn() && 
+        // Allow message reads if user is a conversation participant or admin
+        allow read: if signedIn() && (canAccessConversation(conversationId) || isAdmin());
+        allow create: if isAdmin() || (signedIn() &&
           isConversationParticipantAfter(conversationId) &&
-          request.resource.data.senderId == request.auth.uid;
+          request.resource.data.senderId == request.auth.uid);
         allow update, delete: if false;
       }
     }

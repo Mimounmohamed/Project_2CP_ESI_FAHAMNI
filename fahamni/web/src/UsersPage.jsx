@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Search, Eye, User } from "lucide-react";
 import { collection, query, where, getDocs, updateDoc, doc, getCountFromServer } from "firebase/firestore";
 import { db } from "./firebase";
 import { useTranslation } from "react-i18next";
@@ -22,11 +23,12 @@ function formatJoined(val) {
 
 export default function UsersPage({ onSelect, initialTab }) {
   const { t } = useTranslation();
-  const [tab, setTab]       = useState(initialTab ?? "all");
-  const [search, setSearch] = useState("");
-  const [users, setUsers]   = useState(null);
-  const [stats, setStats]   = useState({ total: null, teachers: null, students: null, suspended: null });
-  const [page, setPage]     = useState(1);
+  const [tab, setTab]           = useState(initialTab ?? "all");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [search, setSearch]     = useState("");
+  const [users, setUsers]       = useState(null);
+  const [stats, setStats]       = useState({ total: null, teachers: null, students: null, suspended: null });
+  const [page, setPage]         = useState(1);
   const [toggling, setToggling] = useState(null);
 
   // ── Counts ──────────────────────────────────────────────
@@ -87,6 +89,7 @@ export default function UsersPage({ onSelect, initialTab }) {
   // ── Filter ───────────────────────────────────────────────
   const filtered = (users ?? []).filter(u => {
     if (tab === "active" && u.is_suspended === true) return false;
+    if (roleFilter !== "all" && u.role !== roleFilter) return false;
     const name  = `${u.first_name ?? ""} ${u.last_name ?? ""}`.toLowerCase();
     const email = (u.email ?? "").toLowerCase();
     const q = search.toLowerCase();
@@ -125,10 +128,7 @@ export default function UsersPage({ onSelect, initialTab }) {
       {/* ── Toolbar ── */}
       <div className="page-toolbar">
         <div style={s.searchWrap}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"
-            style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)" }}>
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
+          <Search size={15} color="#94a3b8" style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)" }} />
           <input
             style={s.search}
             placeholder={t("users.searchPlaceholder")}
@@ -136,16 +136,43 @@ export default function UsersPage({ onSelect, initialTab }) {
             onChange={e => { setSearch(e.target.value); setPage(1); }}
           />
         </div>
-        <div className="page-tabs">
-          {["all","active","suspended"].map(tabKey => (
-            <button
-              key={tabKey}
-              style={{ ...s.tabBtn, ...(tab === tabKey ? s.tabActive : {}) }}
-              onClick={() => setTab(tabKey)}
-            >
-              {t(`users.tabs.${tabKey}`)}
-            </button>
-          ))}
+        <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+          {/* Status tabs */}
+          <div className="page-tabs">
+            {["all","active","suspended"].map(tabKey => (
+              <button
+                key={tabKey}
+                style={{ ...s.tabBtn, ...(tab === tabKey ? s.tabActive : {}) }}
+                onClick={() => setTab(tabKey)}
+              >
+                {t(`users.tabs.${tabKey}`)}
+              </button>
+            ))}
+          </div>
+          {/* Role filter */}
+          <div style={s.roleRow}>
+            {[
+              { key:"all",     label:"All Roles",  color:"#6366f1", bg:"#eef2ff" },
+              { key:"teacher", label:"Teacher",    color:"#7c3aed", bg:"#ede9fe" },
+              { key:"student", label:"Student",    color:"#16a34a", bg:"#dcfce7" },
+              { key:"parent",  label:"Parent",     color:"#db2777", bg:"#fce7f3" },
+            ].map(({ key, label, color, bg }) => (
+              <button
+                key={key}
+                onClick={() => { setRoleFilter(key); setPage(1); }}
+                style={{
+                  ...s.roleBtn,
+                  ...(roleFilter === key
+                    ? { background: color, borderColor: color, color: "#fff" }
+                    : { borderColor: "#e2e8f0", color: "#64748b" }
+                  ),
+                }}
+              >
+                {roleFilter === key && <span style={{ width:6, height:6, borderRadius:"50%", background:"#fff", flexShrink:0 }} />}
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -186,12 +213,10 @@ export default function UsersPage({ onSelect, initialTab }) {
                   {u.picture
                     ? <img src={u.picture} alt="avatar" style={s.avatar} />
                     : <div style={s.avatarFallback}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.6">
-                          <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-                        </svg>
+                        <User size={20} color="#fff" strokeWidth={1.6} />
                       </div>
                   }
-                  <div>
+                  <div style={{ minWidth:0, flex:1 }}>
                     <div style={s.name}>{u.first_name} {u.last_name}</div>
                     {joined && <div style={s.joined}>{t("users.joined")} {joined.toUpperCase()}</div>}
                   </div>
@@ -218,10 +243,7 @@ export default function UsersPage({ onSelect, initialTab }) {
                 {/* Actions */}
                 <div style={{ ...s.cell, flex: 1, justifyContent:"center", gap: 14 }}>
                   <button style={s.eyeBtn} title="View profile" onClick={() => onSelect?.(u)}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000080" strokeWidth="1.8">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                      <circle cx="12" cy="12" r="3"/>
-                    </svg>
+                    <Eye size={18} color="#000080" strokeWidth={1.8} />
                   </button>
                   <Toggle
                     on={!suspended}
@@ -319,6 +341,12 @@ const s = {
     background:"#fff", fontSize:13, fontWeight:500, color:"#64748b", cursor:"pointer",
   },
   tabActive: { background:"#000080", borderColor:"#000080", color:"#fff" },
+  roleRow: { display:"flex", gap:6, flexWrap:"wrap" },
+  roleBtn: {
+    display:"flex", alignItems:"center", gap:5,
+    padding:"6px 14px", borderRadius:20, border:"1.5px solid #e2e8f0",
+    background:"#fff", fontSize:12, fontWeight:600, cursor:"pointer",
+  },
 
   statsRow: { display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:14, marginBottom:20 },
   statCard: {
@@ -339,20 +367,20 @@ const s = {
   tableBody: { flex:1, overflowY:"auto" },
 
   row: { display:"flex", alignItems:"center", padding:"13px 24px", borderBottom:"1px solid #f8fafc" },
-  cell: { display:"flex", alignItems:"center" },
+  cell: { display:"flex", alignItems:"center", minWidth:0 },
 
   avatar: { width:40, height:40, borderRadius:"50%", objectFit:"cover", flexShrink:0 },
   avatarFallback: {
     width:40, height:40, borderRadius:"50%", background:"#000080",
     display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0,
   },
-  name:   { fontSize:14, fontWeight:600, color:"#1F2937" },
-  joined: { fontSize:10, color:"#94a3b8", marginTop:2, letterSpacing:"0.04em" },
+  name:   { fontSize:14, fontWeight:600, color:"#1F2937", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" },
+  joined: { fontSize:10, color:"#94a3b8", marginTop:2, letterSpacing:"0.04em", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" },
   roleBadge: {
     fontSize:11, fontWeight:700, borderRadius:6, padding:"3px 10px",
-    letterSpacing:"0.04em",
+    letterSpacing:"0.04em", whiteSpace:"nowrap",
   },
-  email:  { fontSize:13, color:"#64748b" },
+  email:  { fontSize:13, color:"#64748b", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" },
   statusDot: { width:7, height:7, borderRadius:"50%", flexShrink:0 },
   eyeBtn: { background:"none", border:"none", cursor:"pointer", padding:4, display:"flex", alignItems:"center" },
 

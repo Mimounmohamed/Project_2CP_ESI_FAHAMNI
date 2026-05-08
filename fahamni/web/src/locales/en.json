@@ -311,10 +311,14 @@
     "pending": "Pending",
     "rejected": "Rejected",
     "suspended": "Suspended",
-    "activityHeatmap": "Activity Heatmap",
-    "activityHeatmapSub": "Last 12 weeks of platform activity",
-    "less": "Less",
-    "more": "More"
+    "reportStatus": "Report Status",
+    "reportStatusSub": "Distribution by resolution status",
+    "sessionsMonthly": "Sessions per Month",
+    "sessionsMonthySub": "Total sessions scheduled over the last 6 months",
+    "sessions": "Sessions",
+    "dismissed": "Dismissed",
+    "reviewed": "Reviewed",
+    "resolved": "Resolved"
   },
   "common": {
     "loading": "Loading...",

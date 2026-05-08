@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
+import { Search, Eye, User } from "lucide-react";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "./firebase";
 import { useTranslation } from "react-i18next";
 
-const STATUS_MAP = { pending: "pending", approved: "validated", rejected: "rejected" };
-const TABS = ["pending", "approved", "rejected"];
+const STATUS_MAP = { pending: "pending", approved: "validated" };
+const TABS = ["pending", "approved"];
 
 export default function TeachersPage({ onSelect }) {
   const { t } = useTranslation();
@@ -41,10 +42,7 @@ export default function TeachersPage({ onSelect }) {
       {/* Toolbar */}
       <div className="page-toolbar">
         <div style={s.searchWrap}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"
-            style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)" }}>
-            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
+          <Search size={15} color="#94a3b8" style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)" }} />
           <input
             style={s.search}
             placeholder={t("teachers.searchPlaceholder")}
@@ -83,35 +81,29 @@ export default function TeachersPage({ onSelect }) {
             <div style={s.empty}>{t("teachers.loading")}</div>
           ) : filtered.length === 0 ? (
             <div style={s.empty}>{t("teachers.noTeachersFound", { tab: t(`teachers.tabs.${tab}`) })}</div>
-          ) : filtered.map(t => (
-            <div key={t.id} style={s.row}>
+          ) : filtered.map(tchr => (
+            <div key={tchr.id} style={s.row}>
               <div style={{ ...s.cell, flex: 2.5, gap: 12 }}>
-                {t.picture
-                  ? <img src={t.picture} alt="avatar" style={s.avatar} />
+                {tchr.picture
+                  ? <img src={tchr.picture} alt="avatar" style={s.avatar} />
                   : <div style={s.avatarFallback}>
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.6">
-                        <circle cx="12" cy="8" r="4" />
-                        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-                      </svg>
+                      <User size={22} color="#fff" strokeWidth={1.6} />
                     </div>
                 }
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={s.name}>{t.first_name} {t.last_name}</span>
-                  {t.certified && <VerifiedBadge size={15} />}
+                <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0, flex: 1 }}>
+                  <span style={s.name}>{tchr.first_name} {tchr.last_name}</span>
+                  {tchr.certified && <VerifiedBadge size={15} />}
                 </div>
               </div>
-              <div style={{ ...s.cell, flex: 2 }}>
-                <span style={s.email}>{t.email}</span>
+              <div style={{ ...s.cell, flex: 2, minWidth: 0, overflow: "hidden" }}>
+                <span style={s.email}>{tchr.email}</span>
               </div>
               <div style={{ ...s.cell, flex: 1.5 }}>
-                <span style={s.date}>{formatDate(t.created_at)}</span>
+                <span style={s.date}>{formatDate(tchr.created_at)}</span>
               </div>
               <div style={{ ...s.cell, flex: 1, justifyContent: "center" }}>
-                <button style={s.eyeBtn} title="View profile" onClick={() => onSelect(t)}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000080" strokeWidth="1.8">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
+                <button style={s.eyeBtn} title="View profile" onClick={() => onSelect(tchr)}>
+                  <Eye size={20} color="#000080" strokeWidth={1.8} />
                 </button>
               </div>
             </div>
@@ -226,6 +218,7 @@ const s = {
   cell: {
     display: "flex",
     alignItems: "center",
+    minWidth: 0,
   },
   avatar: {
     width: 40,
@@ -247,9 +240,9 @@ const s = {
     fontWeight: 700,
     flexShrink: 0,
   },
-  name:  { fontSize: 14, fontWeight: 600, color: "#1F2937" },
-  email: { fontSize: 13, color: "#64748b" },
-  date:  { fontSize: 13, color: "#64748b" },
+  name:  { fontSize: 14, fontWeight: 600, color: "#1F2937", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  email: { fontSize: 13, color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  date:  { fontSize: 13, color: "#64748b", whiteSpace: "nowrap" },
   eyeBtn: {
     background: "none",
     border: "none",

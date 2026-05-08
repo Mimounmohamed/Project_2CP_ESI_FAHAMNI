@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { MessageSquare, Ban, User, Mail, Phone, Eye, FileText, Download, BookOpen, AlertCircle, Info } from "lucide-react";
 import { collection, query, where, getDocs, getDoc, updateDoc, doc } from "firebase/firestore";
 import { ref as storageRef, listAll, getDownloadURL } from "firebase/storage";
 import { db, storage } from "./firebase";
@@ -80,8 +81,8 @@ function fileNameFromUrl(url) {
 }
 
 const TEACHER_TABS = ["General Info", "Reports", "Services", "Feedbacks"];
-const STUDENT_TABS = ["General Info", "Activity", "Reports"];
-const PARENT_TABS  = ["General Info", "Activity", "Reports"];
+const STUDENT_TABS = ["General Info", "Activity", "Reports", "Quotes"];
+const PARENT_TABS  = ["General Info", "Activity", "Reports", "Quotes"];
 
 const ROLE_STYLE = {
   teacher: { label: "Teacher", color: "#6366f1", bg: "#eef2ff" },
@@ -108,6 +109,7 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
   const [activity, setActivity]           = useState(null);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [children, setChildren]           = useState(null);
+  const [quotes,   setQuotes]             = useState(null);
 
   const tutorUid = user.uid ?? user.id;
   const fullName = `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim();
@@ -279,6 +281,13 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
       .catch(() => setChildren([]));
   }, [isParent, tutorUid]);
 
+  useEffect(() => {
+    if (activeTab !== "Quotes" || quotes !== null || !tutorUid) return;
+    getDocs(query(collection(db, "quotes"), where("client_id", "==", tutorUid)))
+      .then(snap => setQuotes(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
+      .catch(() => setQuotes([]));
+  }, [activeTab, tutorUid, quotes]);
+
   async function markReviewed(report) {
     setUpdatingReport(true);
     try {
@@ -326,9 +335,7 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
             role: user.role,
             picture: user.picture ?? null,
           })}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
+            <MessageSquare size={16} color="#fff" strokeWidth={2} />
             Contact
           </button>
           <button
@@ -336,10 +343,7 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
             disabled={saving}
             onClick={toggleSuspend}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
-            </svg>
+            <Ban size={16} color="#fff" strokeWidth={2} />
             {saving ? "Saving…" : suspended ? "Unsuspend Account" : "Suspend Account"}
           </button>
         </div>
@@ -357,9 +361,7 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
           {user.picture
             ? <img src={user.picture} alt="avatar" style={s.avatar} />
             : <div style={s.avatarFallback}>
-                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.4">
-                  <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-                </svg>
+                <User size={44} color="#fff" strokeWidth={1.4} />
               </div>
           }
 
@@ -368,10 +370,7 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
 
           <div style={s.contactRow}>
             <div style={s.contactIcon}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                <polyline points="22,6 12,13 2,6"/>
-              </svg>
+              <Mail size={14} color="#94a3b8" strokeWidth={2} />
             </div>
             <div>
               <div style={s.contactLabel}>EMAIL ADDRESS</div>
@@ -381,9 +380,7 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
 
           <div style={s.contactRow}>
             <div style={s.contactIcon}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.38 2 2 0 0 1 3.58 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.73a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16l.19.92z"/>
-              </svg>
+              <Phone size={14} color="#94a3b8" strokeWidth={2} />
             </div>
             <div>
               <div style={s.contactLabel}>PHONE NUMBER</div>
@@ -465,10 +462,7 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
                       return (
                         <div key={c.id} style={s.certItem}>
                           <div style={s.certIconWrap}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="1.8">
-                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                              <polyline points="14 2 14 8 20 8"/>
-                            </svg>
+                            <FileText size={20} color="#6366f1" strokeWidth={1.8} />
                           </div>
                           <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
                             <div style={s.certTitle} title={title}>{title}</div>
@@ -476,19 +470,11 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
                           </div>
                           {url ? (
                             <a href={url} target="_blank" rel="noopener noreferrer" style={s.openBtn} title="Open certificate">
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                <polyline points="7 10 12 15 17 10"/>
-                                <line x1="12" y1="15" x2="12" y2="3"/>
-                              </svg>
+                              <Download size={14} color="#94a3b8" strokeWidth={2} />
                             </a>
                           ) : (
                             <button style={s.dlBtn} title="No URL available" disabled>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                <polyline points="7 10 12 15 17 10"/>
-                                <line x1="12" y1="15" x2="12" y2="3"/>
-                              </svg>
+                              <Download size={14} color="#94a3b8" strokeWidth={2} />
                             </button>
                           )}
                         </div>
@@ -566,9 +552,7 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
                 <div style={s.infoCard}>
                   <div style={s.cardHeader}>
                     <div style={s.infoIcon}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5">
-                        <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-                      </svg>
+                      <User size={13} color="#fff" strokeWidth={2.5} />
                     </div>
                     <span style={s.cardTitle}>Linked Children</span>
                   </div>
@@ -582,9 +566,7 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
                         <div style={s.childAvatar}>
                           {child.picture
                             ? <img src={child.picture} alt="" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
-                            : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5">
-                                <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-                              </svg>
+                            : <User size={18} color="#94a3b8" strokeWidth={1.5} />
                           }
                         </div>
                         <div>
@@ -610,18 +592,14 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
                 {reports === null ? (
                   <div style={s.emptyRow}>
                     <div style={s.emptyIcon}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8">
-                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                      </svg>
+                      <AlertCircle size={18} color="#94a3b8" strokeWidth={1.8} />
                     </div>
                     <span style={s.emptyText}>Loading reports…</span>
                   </div>
                 ) : reports.length === 0 ? (
                   <div style={s.emptyRow}>
                     <div style={s.emptyIcon}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                      </svg>
+                      <FileText size={18} color="#94a3b8" strokeWidth={1.8} />
                     </div>
                     <span style={s.emptyText}>No reports filed against this user.</span>
                   </div>
@@ -638,10 +616,7 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
                       <div style={s.reportDate}>{formatShortDate(r.created_at)}</div>
                       <span style={{ ...s.statusPill, color: ss.color, background: ss.bg }}>{ss.label}</span>
                       <button style={s.eyeBtn} title="View full report" onClick={() => setSelectedReport(r)}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000080" strokeWidth="1.8">
-                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                          <circle cx="12" cy="12" r="3"/>
-                        </svg>
+                        <Eye size={18} color="#000080" strokeWidth={1.8} />
                       </button>
                     </div>
                   );
@@ -689,18 +664,14 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
                 {activity === null ? (
                   <div style={s.emptyRow}>
                     <div style={s.emptyIcon}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8">
-                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                      </svg>
+                      <AlertCircle size={18} color="#94a3b8" strokeWidth={1.8} />
                     </div>
                     <span style={s.emptyText}>Loading courses…</span>
                   </div>
                 ) : activity.length === 0 ? (
                   <div style={s.emptyRow}>
                     <div style={s.emptyIcon}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                      </svg>
+                      <BookOpen size={18} color="#94a3b8" strokeWidth={1.8} />
                     </div>
                     <span style={s.emptyText}>No courses enrolled yet.</span>
                   </div>
@@ -709,9 +680,7 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
                     <div style={{ ...s.svcThumb(true), background: "linear-gradient(135deg,#1e3a5f,#2563eb)" }}>
                       {item.service_picture ?? item.thumbnail
                         ? <img src={item.service_picture ?? item.thumbnail} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:10 }} />
-                        : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8">
-                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                          </svg>
+                        : <BookOpen size={22} color="#fff" strokeWidth={1.8} />
                       }
                     </div>
                     <div style={s.svcMid}>
@@ -732,10 +701,7 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
                       </div>
                     </div>
                     <button style={s.eyeBtn} title="View course" onClick={() => setSelectedActivity(item)}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000080" strokeWidth="1.8">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                        <circle cx="12" cy="12" r="3"/>
-                      </svg>
+                      <Eye size={18} color="#000080" strokeWidth={1.8} />
                     </button>
                   </div>
                 ))}
@@ -765,18 +731,14 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
                 {services === null ? (
                   <div style={s.emptyRow}>
                     <div style={s.emptyIcon}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8">
-                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                      </svg>
+                      <AlertCircle size={18} color="#94a3b8" strokeWidth={1.8} />
                     </div>
                     <span style={s.emptyText}>Loading services…</span>
                   </div>
                 ) : services.length === 0 ? (
                   <div style={s.emptyRow}>
                     <div style={s.emptyIcon}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8">
-                        <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-                      </svg>
+                      <Info size={18} color="#94a3b8" strokeWidth={1.8} />
                     </div>
                     <span style={s.emptyText}>No services created by this teacher.</span>
                   </div>
@@ -785,9 +747,7 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
                     <div style={s.svcThumb(svc.is_active)}>
                       {svc.picture
                         ? <img src={svc.picture} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:10 }} />
-                        : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8">
-                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                          </svg>
+                        : <BookOpen size={22} color="#fff" strokeWidth={1.8} />
                       }
                     </div>
                     <div style={s.svcMid}>
@@ -806,10 +766,7 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
                       <span style={s.svcEnrolledLabel}>students</span>
                     </div>
                     <button style={s.eyeBtn} title="View service" onClick={() => setSelectedService(svc)}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000080" strokeWidth="1.8">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                        <circle cx="12" cy="12" r="3"/>
-                      </svg>
+                      <Eye size={18} color="#000080" strokeWidth={1.8} />
                     </button>
                   </div>
                 ))}
@@ -855,18 +812,14 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
                 {feedbacks === null ? (
                   <div style={s.emptyRow}>
                     <div style={s.emptyIcon}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8">
-                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                      </svg>
+                      <AlertCircle size={18} color="#94a3b8" strokeWidth={1.8} />
                     </div>
                     <span style={s.emptyText}>Loading feedbacks…</span>
                   </div>
                 ) : feedbacks.length === 0 ? (
                   <div style={s.emptyRow}>
                     <div style={s.emptyIcon}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                      </svg>
+                      <MessageSquare size={18} color="#94a3b8" strokeWidth={1.8} />
                     </div>
                     <span style={s.emptyText}>No feedbacks yet for this teacher.</span>
                   </div>
@@ -925,7 +878,66 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
             </div>
           )}
 
-          {!["General Info","Reports","Activity","Services","Feedbacks"].includes(activeTab) && (
+          {/* ── Quotes tab ── */}
+          {activeTab === "Quotes" && (
+            <div style={s.tabContent}>
+              <div style={{ ...s.mainCol, gap: 10 }}>
+                {quotes === null ? (
+                  <div style={s.emptyRow}>
+                    <div style={s.emptyIcon}><AlertCircle size={18} color="#94a3b8" strokeWidth={1.8} /></div>
+                    <span style={s.emptyText}>Loading quotes…</span>
+                  </div>
+                ) : quotes.length === 0 ? (
+                  <div style={s.emptyRow}>
+                    <div style={s.emptyIcon}><FileText size={18} color="#94a3b8" strokeWidth={1.8} /></div>
+                    <span style={s.emptyText}>No quotes issued to this client yet.</span>
+                  </div>
+                ) : quotes.map(q => {
+                  const num    = q.quote_number || q.reference || `#${String(q.id).slice(0,8).toUpperCase()}`;
+                  const d      = q.created_at?.toDate ? q.created_at.toDate() : (q.created_at ? new Date(q.created_at) : null);
+                  const date   = d && !isNaN(d) ? formatShortDate(q.created_at) : "—";
+                  const amount = q.total != null ? `${Number(q.total).toLocaleString()} DA` : (q.amount != null ? `${Number(q.amount).toLocaleString()} DA` : "—");
+                  const status = (q.status || "draft").toLowerCase();
+                  const SC = { pending:{bg:"#fef9c3",color:"#854d0e"}, sent:{bg:"#dbeafe",color:"#1d4ed8"}, accepted:{bg:"#dcfce7",color:"#166534"}, paid:{bg:"#d1fae5",color:"#065f46"}, draft:{bg:"#f1f5f9",color:"#64748b"} };
+                  const sc = SC[status] ?? SC.draft;
+                  return (
+                    <div key={q.id} style={{ display:"flex", alignItems:"center", gap:12, background:"#fff", borderRadius:12, border:"1px solid #f1f5f9", padding:"12px 16px", boxShadow:"0 1px 4px rgba(0,0,0,0.04)" }}>
+                      <div style={{ width:38, height:38, borderRadius:10, background:"#f0f4ff", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                        <FileText size={18} color="#6366f1" strokeWidth={1.8} />
+                      </div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:14, fontWeight:700, color:"#1F2937" }}>{num}</div>
+                        {q.description && <div style={{ fontSize:12, color:"#64748b", marginTop:2, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{q.description}</div>}
+                      </div>
+                      <div style={{ fontSize:14, fontWeight:700, color:"#1F2937", flexShrink:0 }}>{amount}</div>
+                      <span style={{ fontSize:10, fontWeight:700, borderRadius:4, padding:"3px 8px", background:sc.bg, color:sc.color, letterSpacing:"0.04em", flexShrink:0 }}>{status.toUpperCase()}</span>
+                      <div style={{ fontSize:12, color:"#94a3b8", flexShrink:0, whiteSpace:"nowrap" }}>{date}</div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Quotes stats sidebar */}
+              <div style={s.statsCard}>
+                <div style={s.statsLabel}>OVERVIEW</div>
+                <div style={s.statsTitle}>Quotes</div>
+                <div style={{ fontSize: 36, fontWeight: 800, color: "#fff", lineHeight: 1.1, marginBottom: 20 }}>
+                  {quotes === null ? "—" : quotes.length}
+                </div>
+                {["pending","sent","accepted","paid"].map(st => {
+                  const count = quotes ? quotes.filter(q => (q.status || "draft").toLowerCase() === st).length : 0;
+                  return (
+                    <div key={st} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+                      <span style={{ fontSize:11, color:"#93c5fd", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.04em" }}>{st}</span>
+                      <span style={{ fontSize:14, fontWeight:700, color:"#fff" }}>{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {!["General Info","Reports","Activity","Services","Feedbacks","Quotes"].includes(activeTab) && (
             <div style={{ color: "#94a3b8", fontSize: 14, paddingTop: 40, textAlign: "center" }}>
               {activeTab} — coming soon.
             </div>
@@ -989,7 +1001,7 @@ function Field({ label, value }) {
   return (
     <div>
       <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.06em", marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 13, fontWeight: 600, color: "#1F2937" }}>{value}</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: "#1F2937", wordBreak: "break-word", overflowWrap: "break-word" }}>{value}</div>
     </div>
   );
 }
@@ -1039,7 +1051,7 @@ const s = {
     width: 80, height: 80, borderRadius: "50%", background: "#000080",
     display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12,
   },
-  name: { fontSize: 16, fontWeight: 700, color: "#1F2937", textAlign: "center", marginBottom: 6 },
+  name: { fontSize: 16, fontWeight: 700, color: "#1F2937", textAlign: "center", marginBottom: 6, wordBreak: "break-word", overflowWrap: "break-word" },
   rolePill: {
     fontSize: 11, fontWeight: 600, color: "#6366f1", background: "#eef2ff",
     borderRadius: 20, padding: "3px 14px", marginBottom: 18,
@@ -1050,10 +1062,10 @@ const s = {
     border: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
   contactLabel: { fontSize: 9, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.06em", marginBottom: 2 },
-  contactValue: { fontSize: 12, fontWeight: 600, color: "#1F2937" },
+  contactValue: { fontSize: 12, fontWeight: 600, color: "#1F2937", wordBreak: "break-all" },
   descSection: { width: "100%", marginTop: 8 },
   descTitle: { fontSize: 12, fontWeight: 700, color: "#1F2937", marginBottom: 6 },
-  descText: { fontSize: 12, color: "#64748b", lineHeight: 1.6 },
+  descText: { fontSize: 12, color: "#64748b", lineHeight: 1.6, wordBreak: "break-word", overflowWrap: "break-word" },
 
   /* right */
   right: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 14, minHeight: 0 },
@@ -1092,7 +1104,7 @@ const s = {
     background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9",
     padding: "16px 20px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
   },
-  descBody: { fontSize: 13, color: "#64748b", lineHeight: 1.7, marginTop: 10 },
+  descBody: { fontSize: 13, color: "#64748b", lineHeight: 1.7, marginTop: 10, wordBreak: "break-word", overflowWrap: "break-word" },
 
   certCard: {
     background: "#fff", borderRadius: 14, border: "1px solid #f1f5f9",
@@ -1153,7 +1165,7 @@ const s = {
     display: "flex", alignItems: "center", justifyContent: "center",
   },
   reportMid: { flex: 1, minWidth: 0 },
-  reportName: { fontSize: 13, fontWeight: 600, color: "#1F2937", marginBottom: 2 },
+  reportName: { fontSize: 13, fontWeight: 600, color: "#1F2937", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
   reportPreview: { fontSize: 12, color: "#94a3b8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
   reportDate: { fontSize: 11, color: "#94a3b8", flexShrink: 0, whiteSpace: "nowrap" },
   statusPill: {
@@ -1210,7 +1222,7 @@ const s = {
   fbName: { fontSize: 14, fontWeight: 700, color: "#1F2937", marginBottom: 4 },
   fbDate: { fontSize: 12, color: "#94a3b8", whiteSpace: "nowrap" },
   fbDots: { display: "flex", flexDirection: "column", gap: 3, padding: "4px 6px", cursor: "pointer" },
-  fbText: { fontSize: 13, color: "#374151", lineHeight: 1.65, paddingTop: 4 },
+  fbText: { fontSize: 13, color: "#374151", lineHeight: 1.65, paddingTop: 4, wordBreak: "break-word", overflowWrap: "break-word" },
 
   /* Modal */
   modalOverlay: {
@@ -1233,6 +1245,6 @@ const s = {
   modalText: {
     fontSize: 14, color: "#374151", lineHeight: 1.7,
     background: "#f8fafc", borderRadius: 10, padding: "14px 16px",
-    border: "1px solid #f1f5f9",
+    border: "1px solid #f1f5f9", wordBreak: "break-word", overflowWrap: "break-word",
   },
 };

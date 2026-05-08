@@ -1,15 +1,8 @@
 import { useState, useEffect } from "react";
+import { User, Mail, Phone, FileText, Download, Check, Info } from "lucide-react";
 import { doc, updateDoc, collection, query, where, getDocs, addDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { ref as storageRef, listAll, getDownloadURL } from "firebase/storage";
 import { db, storage } from "./firebase";
-
-const REJECTION_CAUSES = [
-  "Invalid or fake identity documents",
-  "Name mismatch between profile and documents",
-  "Unclear / unreadable uploaded files",
-  "Qualifications not relevant to the subject taught",
-  "Insufficient academic level",
-];
 
 const MONTHS = ["January","February","March","April","May","June",
                  "July","August","September","October","November","December"];
@@ -68,14 +61,23 @@ async function listStorageCertificates(path) {
   return files.concat(...nested);
 }
 
+const REJECTION_CAUSES = [
+  "Incomplete or missing credentials",
+  "Unverifiable identity documents",
+  "Insufficient teaching qualifications",
+  "Duplicate or fraudulent account",
+  "Does not meet platform requirements",
+];
+
 export default function TeacherProfilePage({ teacher: initial, adminUser, onBack, onStatusChange }) {
   const [teacher, setTeacher] = useState(initial);
   const [certified, setCertified] = useState(initial.certified ?? false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [certificates, setCertificates] = useState([]);
+  const [quotes, setQuotes] = useState(null);
   const [showRejectModal, setShowRejectModal] = useState(false);
-  const [selectedCause, setSelectedCause] = useState(null);
+  const [selectedCause, setSelectedCause] = useState(REJECTION_CAUSES[0]);
   const teacherUid = teacher.uid || teacher.id || initial.uid || initial.id;
 
   useEffect(() => {
@@ -131,6 +133,13 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
     return () => { cancelled = true; };
   }, [teacherUid, teacher.certification_url]);
 
+  useEffect(() => {
+    if (!teacherUid) return;
+    getDocs(query(collection(db, "quotes"), where("tutor_id", "==", teacherUid)))
+      .then(snap => setQuotes(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
+      .catch(() => setQuotes([]));
+  }, [teacherUid]);
+
   async function updateAccountStatus(status) {
     const updates = { account_status: status };
     await updateDoc(doc(db, "tutors", teacher.id), updates);
@@ -178,42 +187,38 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
   }
 
   async function handleConfirmReject() {
-    if (!selectedCause) return;
     setSaving(true);
     setError(null);
     try {
-      await Promise.all([
-        updateAccountStatus("rejected"),
-        addDoc(collection(db, "rejections"), {
-          teacher_id: teacher.id,
-          admin_id: adminUser?.uid ?? null,
-          cause: selectedCause,
-          rejected_at: serverTimestamp(),
-        }),
-      ]);
-      // ensure teacher gets a rejection notification with cause (in case updateAccountStatus didn't run notification yet)
+      await updateDoc(doc(db, "tutors", teacher.id), { account_status: "rejected" });
       try {
         await addDoc(collection(db, "notifications"), {
           title: "Account Rejected",
-          content: `Your account review was rejected: ${selectedCause}`,
+          content: `Your account application was not approved. Reason: ${selectedCause}`,
           date_time: serverTimestamp(),
           receiver_id: teacherUid || null,
-          sender_id: adminUser?.uid ?? 'admin',
+          sender_id: adminUser?.uid ?? "admin",
           type: "teacher_rejected",
           metadata: { cause: selectedCause },
           is_read: false,
         });
+        await addDoc(collection(db, "rejections"), {
+          tutor_id: teacherUid,
+          cause: selectedCause,
+          rejected_at: serverTimestamp(),
+          admin_id: adminUser?.uid ?? "admin",
+        });
       } catch (e) {
-        console.error("Failed to write rejection notification:", e);
+        console.error("Failed to write rejection records:", e);
       }
       onStatusChange?.(teacher.id, "rejected");
-      setShowRejectModal(false);
       onBack();
     } catch (e) {
       console.error(e);
       setError("Failed to reject. Check Firestore rules.");
     } finally {
       setSaving(false);
+      setShowRejectModal(false);
     }
   }
 
@@ -244,9 +249,7 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
           {teacher.picture
             ? <img src={teacher.picture} alt="avatar" style={s.bigAvatar} />
             : <div style={s.bigAvatarFallback}>
-                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.4">
-                  <circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-                </svg>
+                <User size={44} color="#fff" strokeWidth={1.4} />
               </div>
           }
           <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 8 }}>
@@ -256,10 +259,7 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
           <span style={s.teacherBadge}>Teacher</span>
 
           <div style={s.contactRow}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-              <polyline points="22,6 12,13 2,6"/>
-            </svg>
+            <Mail size={14} color="#94a3b8" strokeWidth={2} />
             <div>
               <div style={s.contactLabel}>Email Address</div>
               <div style={s.contactValue}>{teacher.email || "—"}</div>
@@ -267,9 +267,7 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
           </div>
 
           <div style={s.contactRow}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.38 2 2 0 0 1 3.58 1.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.73a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16l.19.92z"/>
-            </svg>
+            <Phone size={14} color="#94a3b8" strokeWidth={2} />
             <div>
               <div style={s.contactLabel}>Phone Number</div>
               <div style={s.contactValue}>{teacher.phone || "—"}</div>
@@ -288,9 +286,7 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
           {/* Detailed info card */}
           <div style={s.infoCard}>
             <div style={s.infoHeader}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="#6366f1" stroke="none">
-                <circle cx="12" cy="12" r="10"/><text x="12" y="17" textAnchor="middle" fill="#fff" fontSize="13" fontWeight="bold">i</text>
-              </svg>
+              <Info size={16} color="#6366f1" />
               <span style={s.infoTitle}>Detailed Information</span>
             </div>
             <div style={s.infoGrid}>
@@ -344,20 +340,13 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
                   rel={url ? "noopener noreferrer" : undefined}
                   style={s.certCard}
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="1.8">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                  </svg>
+                  <FileText size={20} color="#6366f1" strokeWidth={1.8} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: "#1F2937", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {title}
                     </div>
                   </div>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="7 10 12 15 17 10"/>
-                    <line x1="12" y1="15" x2="12" y2="3"/>
-                  </svg>
+                  <Download size={14} color="#94a3b8" strokeWidth={2} />
                 </CardTag>
                 );
               })}
@@ -381,21 +370,42 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
               </div>
             )}
           </div>
+
+          {/* Quotes & Invoices */}
+          <div style={s.certSection}>
+            <div style={s.certTitle}>Quotes &amp; Invoices</div>
+            {quotes === null ? (
+              <div style={{ fontSize: 13, color: "#94a3b8" }}>Loading…</div>
+            ) : quotes.length === 0 ? (
+              <div style={{ fontSize: 13, color: "#94a3b8" }}>No quotes issued yet.</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {quotes.map(q => <QuoteRow key={q.id} quote={q} />)}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── Right actions ── */}
         <div style={s.actions}>
-          <label style={s.certifiedRow}>
-            <div
-              style={{ ...s.certCircle, ...(certified ? s.certCircleOn : {}) }}
-              onClick={toggleCertified}
-            >
-              {certified && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><path d="M20 6L9 17l-5-5"/></svg>}
+          {teacher.account_status === "validated" ? (
+            <label style={s.certifiedRow}>
+              <div
+                style={{ ...s.certCircle, ...(certified ? s.certCircleOn : {}) }}
+                onClick={toggleCertified}
+              >
+                {certified && <Check size={10} color="#fff" strokeWidth={3} />}
+              </div>
+              <span style={{ fontSize: 13, color: "#1F2937", cursor: "pointer" }} onClick={toggleCertified}>
+                Make as Certified
+              </span>
+            </label>
+          ) : (
+            <div style={{ ...s.certifiedRow, opacity: 0.4, cursor: "not-allowed" }}>
+              <div style={s.certCircle} />
+              <span style={{ fontSize: 13, color: "#94a3b8" }}>Make as Certified</span>
             </div>
-            <span style={{ fontSize: 13, color: "#1F2937", cursor: "pointer" }} onClick={toggleCertified}>
-              Make as Certified
-            </span>
-          </label>
+          )}
 
           {error && <div style={{ fontSize: 11, color: "#ef4444", textAlign: "center" }}>{error}</div>}
 
@@ -408,11 +418,12 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
               {saving ? "Saving…" : "Validate"}
             </button>
           )}
-          {teacher.account_status !== "rejected" && (
+
+          {teacher.account_status === "pending" && (
             <button
               style={{ ...s.actionBtn, background: "#ef4444", opacity: saving ? 0.6 : 1 }}
               disabled={saving}
-              onClick={() => { setSelectedCause(null); setShowRejectModal(true); }}
+              onClick={() => setShowRejectModal(true)}
             >
               Reject
             </button>
@@ -421,37 +432,73 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
 
       </div>
 
+      {/* ── Rejection modal ── */}
       {showRejectModal && (
-        <div style={s.overlay}>
-          <div style={s.modal}>
+        <div style={s.overlay} onClick={() => setShowRejectModal(false)}>
+          <div style={s.modal} onClick={e => e.stopPropagation()}>
             <div style={s.modalHeader}>
-              <span style={s.modalTitle}>Rejection Cause</span>
-              <button style={s.closeBtn} onClick={() => setShowRejectModal(false)}>✕</button>
+              <span style={s.modalTitle}>Reject Teacher</span>
+              <button style={s.modalClose} onClick={() => setShowRejectModal(false)}>✕</button>
             </div>
-            <p style={s.modalSub}>Choose the main cause of rejection</p>
+            <div style={{ fontSize: 13, color: "#64748b", marginBottom: 16 }}>
+              Select a reason for rejecting <strong>{`${teacher.first_name ?? ""} ${teacher.last_name ?? ""}`.trim()}</strong>:
+            </div>
             <div style={s.causeList}>
               {REJECTION_CAUSES.map(cause => (
-                <div
-                  key={cause}
-                  style={{ ...s.causeRow, ...(selectedCause === cause ? s.causeRowSelected : {}) }}
-                  onClick={() => setSelectedCause(cause)}
-                >
-                  <span style={s.causeLabel}>{cause}</span>
-                  <div style={{ ...s.radio, ...(selectedCause === cause ? s.radioSelected : {}) }} />
-                </div>
+                <label key={cause} style={s.causeRow}>
+                  <input
+                    type="radio"
+                    name="cause"
+                    value={cause}
+                    checked={selectedCause === cause}
+                    onChange={() => setSelectedCause(cause)}
+                    style={s.radio}
+                  />
+                  <span style={{ fontSize: 13, color: "#374151" }}>{cause}</span>
+                </label>
               ))}
             </div>
-            {error && <div style={{ fontSize: 11, color: "#ef4444", marginTop: 8 }}>{error}</div>}
-            <button
-              style={{ ...s.actionBtn, background: "#ef4444", marginTop: 20, opacity: (!selectedCause || saving) ? 0.5 : 1 }}
-              disabled={!selectedCause || saving}
-              onClick={handleConfirmReject}
-            >
-              {saving ? "Saving…" : "Reject"}
-            </button>
+            <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+              <button
+                style={{ ...s.actionBtn, background: "#f1f5f9", color: "#374151", flex: 1 }}
+                onClick={() => setShowRejectModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                style={{ ...s.actionBtn, background: "#ef4444", flex: 1, opacity: saving ? 0.6 : 1 }}
+                disabled={saving}
+                onClick={handleConfirmReject}
+              >
+                {saving ? "Rejecting…" : "Confirm Reject"}
+              </button>
+            </div>
           </div>
         </div>
       )}
+
+    </div>
+  );
+}
+
+function QuoteRow({ quote }) {
+  const num    = quote.quote_number || quote.reference || `#${String(quote.id).slice(0, 8).toUpperCase()}`;
+  const d      = quote.created_at?.toDate ? quote.created_at.toDate() : (quote.created_at ? new Date(quote.created_at) : null);
+  const date   = d && !isNaN(d) ? `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}` : "—";
+  const amount = quote.total != null ? `${Number(quote.total).toLocaleString()} DA` : (quote.amount != null ? `${Number(quote.amount).toLocaleString()} DA` : "—");
+  const status = (quote.status || "draft").toLowerCase();
+  const SC = { pending: { bg:"#fef9c3",color:"#854d0e" }, sent: { bg:"#dbeafe",color:"#1d4ed8" }, accepted: { bg:"#dcfce7",color:"#166534" }, paid: { bg:"#d1fae5",color:"#065f46" }, draft: { bg:"#f1f5f9",color:"#64748b" } };
+  const sc = SC[status] ?? SC.draft;
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:"#f8fafc", borderRadius:10, border:"1px solid #e2e8f0" }}>
+      <FileText size={16} color="#6366f1" strokeWidth={1.8} style={{ flexShrink:0 }} />
+      <div style={{ flex:1, minWidth:0 }}>
+        <div style={{ fontSize:13, fontWeight:600, color:"#1F2937" }}>{num}</div>
+        {quote.client_name && <div style={{ fontSize:11, color:"#94a3b8" }}>{quote.client_name}</div>}
+      </div>
+      <span style={{ fontSize:12, color:"#64748b", flexShrink:0 }}>{amount}</span>
+      <span style={{ fontSize:10, fontWeight:700, borderRadius:4, padding:"2px 7px", background:sc.bg, color:sc.color, letterSpacing:"0.04em", flexShrink:0 }}>{status.toUpperCase()}</span>
+      <span style={{ fontSize:11, color:"#94a3b8", flexShrink:0 }}>{date}</span>
     </div>
   );
 }
@@ -504,10 +551,10 @@ const s = {
     display: "flex", alignItems: "flex-start", gap: 10, width: "100%", marginBottom: 14,
   },
   contactLabel: { fontSize: 10, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 2 },
-  contactValue: { fontSize: 12, fontWeight: 600, color: "#1F2937" },
+  contactValue: { fontSize: 12, fontWeight: 600, color: "#1F2937", wordBreak: "break-all" },
   descSection: { width: "100%", marginTop: 6 },
   descTitle: { fontSize: 12, fontWeight: 700, color: "#1F2937", marginBottom: 6 },
-  descText: { fontSize: 12, color: "#64748b", lineHeight: 1.6 },
+  descText: { fontSize: 12, color: "#64748b", lineHeight: 1.6, wordBreak: "break-word", overflowWrap: "break-word" },
 
   /* info card */
   infoCard: {
@@ -519,7 +566,7 @@ const s = {
   infoGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px 32px" },
   infoField: {},
   fieldLabel: { fontSize: 10, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 },
-  fieldValue: { fontSize: 13, fontWeight: 600, color: "#1F2937" },
+  fieldValue: { fontSize: 13, fontWeight: 600, color: "#1F2937", wordBreak: "break-word", overflowWrap: "break-word" },
 
   /* certificates */
   certSection: {
@@ -550,31 +597,23 @@ const s = {
 
   /* rejection modal */
   overlay: {
-    position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
-    display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+    position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)",
+    display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100,
   },
   modal: {
-    background: "#fff", borderRadius: 16, padding: "28px 28px 24px",
-    width: 480, maxWidth: "90vw", boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+    background: "#fff", borderRadius: 18, padding: "28px 28px 24px",
+    width: 440, maxWidth: "90vw", boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
+    display: "flex", flexDirection: "column",
   },
-  modalHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 },
-  modalTitle: { fontSize: 18, fontWeight: 700, color: "#1F2937" },
-  closeBtn: {
-    background: "none", border: "none", fontSize: 16, cursor: "pointer", color: "#94a3b8", lineHeight: 1,
-  },
-  modalSub: { fontSize: 13, color: "#64748b", margin: "0 0 16px" },
-  causeList: { display: "flex", flexDirection: "column", gap: 10 },
-  causeRow: {
-    display: "flex", alignItems: "center", justifyContent: "space-between",
-    padding: "12px 14px", borderRadius: 8, border: "1px solid #e2e8f0",
-    cursor: "pointer", background: "#fff", transition: "border-color 0.15s",
-  },
-  causeRowSelected: { borderColor: "#000080" },
-  causeLabel: { fontSize: 13, color: "#1F2937" },
-  radio: {
-    width: 18, height: 18, borderRadius: "50%", border: "2px solid #cbd5e1",
-    flexShrink: 0, boxSizing: "border-box",
+  modalHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 },
+  modalTitle: { fontSize: 17, fontWeight: 700, color: "#1F2937" },
+  modalClose: {
+    width: 28, height: 28, borderRadius: "50%", border: "none",
+    background: "#f1f5f9", cursor: "pointer", fontSize: 13, color: "#64748b",
     display: "flex", alignItems: "center", justifyContent: "center",
   },
-  radioSelected: { border: "5px solid #000080" },
+  causeList: { display: "flex", flexDirection: "column", gap: 10 },
+  causeRow: { display: "flex", alignItems: "center", gap: 10, cursor: "pointer" },
+  radio: { accentColor: "#ef4444", width: 15, height: 15, cursor: "pointer", flexShrink: 0 },
+
 };

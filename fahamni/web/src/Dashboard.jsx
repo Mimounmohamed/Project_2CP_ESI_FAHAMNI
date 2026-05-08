@@ -11,6 +11,12 @@ import StatisticsPage from "./StatisticsPage";
 import SettingsPage from "./SettingsPage";
 import { useTranslation } from "react-i18next";
 import { applyAdminLanguage } from "./i18n";
+import {
+  LayoutGrid, GraduationCap, Users, FileText, MessageSquare,
+  BarChart2, Settings, LogOut, Bell, Search, ArrowLeft,
+  AlertCircle, Check, Flag, Calendar,
+  Menu,
+} from "lucide-react";
 
 
 function fmtNotifTime(ts) {
@@ -25,10 +31,10 @@ function fmtNotifTime(ts) {
 const STATS_KEYS = ["validatedTeachers", "totalUsers", "totalReports", "totalSessions"];
 
 const STATS_CONFIG = [
-  { key: "validatedTeachers", badge: null, borderColor: "#6366f1", iconBg: "#eef2ff", iconColor: "#6366f1", icon: "teacher-check" },
-  { key: "totalUsers",        badge: null, borderColor: null,       iconBg: "#eef2ff", iconColor: "#6366f1", icon: "users" },
-  { key: "totalReports",      badge: null, borderColor: "#ef4444",  iconBg: "#fef2f2", iconColor: "#ef4444", icon: "alert" },
-  { key: "totalSessions",     badge: null, borderColor: null,       iconBg: "#eef2ff", iconColor: "#6366f1", icon: "sessions" },
+  { key: "validatedTeachers", badge: null, borderColor: "#16a34a", iconBg: "#dcfce7", iconColor: "#16a34a", icon: "grad-cap"  },
+  { key: "totalUsers",        badge: null, borderColor: "#2563eb", iconBg: "#eff6ff", iconColor: "#2563eb", icon: "users"    },
+  { key: "totalReports",      badge: null, borderColor: "#ef4444", iconBg: "#fef2f2", iconColor: "#ef4444", icon: "flag"     },
+  { key: "totalSessions",     badge: null, borderColor: "#d97706", iconBg: "#fffbeb", iconColor: "#d97706", icon: "calendar" },
 ];
 
 
@@ -43,9 +49,7 @@ class PageErrorBoundary extends Component {
   render() {
     if (this.state.error) return (
       <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100%", gap:12 }}>
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5">
-          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-        </svg>
+        <AlertCircle size={40} color="#ef4444" strokeWidth={1.5} />
         <div style={{ fontSize:15, fontWeight:600, color:"#1F2937" }}>Something went wrong</div>
         <div style={{ fontSize:13, color:"#94a3b8" }}>{this.state.error?.message}</div>
         <button onClick={() => this.setState({ error:null })} style={{ padding:"8px 24px", background:"#000080", color:"#fff", border:"none", borderRadius:20, cursor:"pointer", fontSize:13, fontWeight:600 }}>
@@ -76,8 +80,9 @@ export default function Dashboard({ user, onLogout }) {
   const [notifTab,    setNotifTab]    = useState("unread");
   const [tutorNotifs, setTutorNotifs] = useState([]);
   const [reportNotifs,setReportNotifs]= useState([]);
+  const notifKey = `admin_notif_read_${user?.uid ?? ""}`;
   const [readIds,     setReadIds]     = useState(() => {
-    try { return new Set(JSON.parse(localStorage.getItem("admin_notif_read") || "[]")); }
+    try { return new Set(JSON.parse(localStorage.getItem(`admin_notif_read_${user?.uid ?? ""}`) || "[]")); }
     catch { return new Set(); }
   });
   const [adminData, setAdminData] = useState(null);
@@ -232,7 +237,18 @@ export default function Dashboard({ user, onLogout }) {
   function markAllRead() {
     const all = new Set([...readIds, ...notifications.map(n => n.id)]);
     setReadIds(all);
-    try { localStorage.setItem("admin_notif_read", JSON.stringify([...all])); } catch {}
+    try { localStorage.setItem(notifKey, JSON.stringify([...all])); } catch {}
+  }
+
+  function handleBellClick() {
+    if (!showNotif) {
+      const all = new Set([...readIds, ...notifications.map(n => n.id)]);
+      if (all.size > readIds.size) {
+        setReadIds(all);
+        try { localStorage.setItem(notifKey, JSON.stringify([...all])); } catch {}
+      }
+    }
+    setShowNotif(v => !v);
   }
 
   // ── Shared nav handler ──
@@ -308,11 +324,7 @@ export default function Dashboard({ user, onLogout }) {
 
         {/* Logout */}
         <button style={s.logoutBtn} onClick={() => { onLogout(); closeSidebar(); }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
+          <LogOut size={16} color="#dc2626" />
           {t("nav.logout")}
         </button>
       </aside>
@@ -322,16 +334,12 @@ export default function Dashboard({ user, onLogout }) {
         {/* Topbar */}
         <header style={s.topbar} className="dash-topbar">
           <button className="hamburger-btn" onClick={() => setSidebarOpen(v => !v)} aria-label="Menu">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F2937" strokeWidth="2">
-              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-            </svg>
+            <Menu size={18} color="#1F2937" />
           </button>
           <div style={{ flex: 1, minWidth: 0 }}>
             {active === "dashboard" && !showNotif && (
               <div style={s.searchWrap}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)" }}>
-                  <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
+                <Search size={15} color="#94a3b8" style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)" }} />
                 <input style={s.search} placeholder={t("topbar.searchPlaceholder")} />
               </div>
             )}
@@ -376,9 +384,7 @@ export default function Dashboard({ user, onLogout }) {
                 onClick={() => setSelectedUser(null)}
                 style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, padding: 0 }}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F2937" strokeWidth="2">
-                  <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
-                </svg>
+                <ArrowLeft size={20} color="#1F2937" />
               </button>
             )}
             {active === "teachers" && !showNotif && selectedTeacher && (
@@ -386,17 +392,12 @@ export default function Dashboard({ user, onLogout }) {
                 onClick={() => setSelectedTeacher(null)}
                 style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, padding: 0 }}
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F2937" strokeWidth="2">
-                  <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
-                </svg>
+                <ArrowLeft size={20} color="#1F2937" />
               </button>
             )}
           </div>
-          <button style={{ ...s.bellBtn, position: "relative" }} onClick={() => setShowNotif(v => !v)}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F2937" strokeWidth="1.8">
-              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-            </svg>
+          <button style={{ ...s.bellBtn, position: "relative" }} onClick={handleBellClick}>
+            <Bell size={20} color="#1F2937" strokeWidth={1.8} />
             {notifications.some(n => !n.read) && (
               <span style={{ position: "absolute", top: 7, right: 7, width: 8, height: 8, borderRadius: "50%", background: "#ef4444", border: "2px solid #fff" }} />
             )}
@@ -473,7 +474,7 @@ export default function Dashboard({ user, onLogout }) {
               teacher={selectedTeacher}
               adminUser={user}
               onBack={() => setSelectedTeacher(null)}
-              onStatusChange={(id, status) => setSelectedTeacher(t => ({ ...t, account_status: status }))}
+              onStatusChange={(id, status) => setSelectedTeacher(prev => ({ ...prev, account_status: status }))}
             />
           )}
 
@@ -512,13 +513,13 @@ export default function Dashboard({ user, onLogout }) {
                   <div style={{ ...s.taskCard, color: "#94a3b8", fontSize: 13 }}>{t("dashboard.loading")}</div>
                 ) : pendingTeachers === 0 ? (
                   <div style={{ ...s.taskCard, gap: 10 }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" style={{ flexShrink: 0 }}><path d="M20 6L9 17l-5-5" /></svg>
+                    <Check size={18} color="#22c55e" style={{ flexShrink: 0 }} />
                     <span style={{ fontSize: 13, color: "#64748b" }}>{t("dashboard.noValidationPending")}</span>
                   </div>
                 ) : (
                   <div style={s.taskCard}>
                     <div style={s.taskIcon}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M3 9h18M9 21V9" /></svg>
+                      <GraduationCap size={20} color="#6366f1" strokeWidth={1.8} />
                     </div>
                     <div style={s.taskText}>
                       <div style={s.taskTitle}>{t("dashboard.teachersAwaiting", { count: pendingTeachers })}</div>
@@ -530,7 +531,7 @@ export default function Dashboard({ user, onLogout }) {
 
                 <div style={s.taskCard}>
                   <div style={s.taskIcon}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                    <MessageSquare size={20} color="#6366f1" strokeWidth={1.8} />
                   </div>
                   <div style={s.taskText}>
                     <div style={s.taskTitle}>{t("nav.messages")}</div>
@@ -543,7 +544,7 @@ export default function Dashboard({ user, onLogout }) {
                   <div style={{ ...s.taskCard, color: "#94a3b8", fontSize: 13 }}>{t("dashboard.loading")}</div>
                 ) : sessionReports.length === 0 ? (
                   <div style={{ ...s.taskCard, gap: 10 }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" style={{ flexShrink: 0 }}><path d="M20 6L9 17l-5-5" /></svg>
+                    <Check size={18} color="#22c55e" style={{ flexShrink: 0 }} />
                     <span style={{ fontSize: 13, color: "#64748b" }}>{t("dashboard.noUrgentReports")}</span>
                   </div>
                 ) : (
@@ -570,7 +571,7 @@ export default function Dashboard({ user, onLogout }) {
                   <div style={{ fontSize: 13, color: "#94a3b8", padding: "8px 0" }}>{t("dashboard.loading")}</div>
                 ) : suspendedUsers.length === 0 ? (
                   <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#64748b", padding: "8px 0" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2"><path d="M20 6L9 17l-5-5" /></svg>
+                    <Check size={16} color="#22c55e" />
                     {t("dashboard.noSuspended")}
                   </div>
                 ) : (
@@ -582,10 +583,7 @@ export default function Dashboard({ user, onLogout }) {
                         onClick={() => { setActive("users"); setUsersInitialTab("suspended"); setShowNotif(false); setSelectedUser(null); }}
                       >
                         <div style={s.suspendedAvatar}>
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5">
-                            <circle cx="12" cy="8" r="4" />
-                            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-                          </svg>
+                          <Users size={24} color="#94a3b8" strokeWidth={1.5} />
                         </div>
                         <div>
                           <div style={s.suspendedName}>{u.name}</div>
@@ -680,56 +678,20 @@ export default function Dashboard({ user, onLogout }) {
 }
 
 // ── Icons ──
-function GridIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>;
-}
-function TeacherIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" /></svg>;
-}
-function UsersIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="8" r="3" /><path d="M2 20c0-3.3 3-6 7-6s7 2.7 7 6" /><circle cx="17" cy="8" r="3" /><path d="M22 20c0-3.3-2-5.5-5-6" /></svg>;
-}
-function ReportsIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="17" x2="12" y2="17" /></svg>;
-}
-function MessagesIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>;
-}
-function SettingsIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>;
-}
-function StatisticsIcon() {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><polyline points="2 20 22 20"/></svg>;
-}
+function GridIcon()       { return <LayoutGrid    size={16} />; }
+function TeacherIcon()    { return <GraduationCap size={16} />; }
+function UsersIcon()      { return <Users         size={16} />; }
+function ReportsIcon()    { return <FileText      size={16} />; }
+function MessagesIcon()   { return <MessageSquare size={16} />; }
+function SettingsIcon()   { return <Settings      size={16} />; }
+function StatisticsIcon() { return <BarChart2     size={16} />; }
+
 function StatIcon({ type, color }) {
-  const p = { width: 22, height: 22, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.8 };
-  if (type === "teacher-check") return (
-    <svg {...p}>
-      <circle cx="10" cy="7" r="4" />
-      <path d="M2 21c0-4 3.6-7 8-7" />
-      <polyline points="16 18 18 20 22 16" />
-    </svg>
-  );
-  if (type === "users") return (
-    <svg {...p}>
-      <circle cx="9" cy="8" r="3" />
-      <path d="M2 20c0-3.3 3-6 7-6s7 2.7 7 6" />
-      <circle cx="17" cy="8" r="3" />
-      <path d="M22 20c0-3.3-2-5.5-5-6" />
-    </svg>
-  );
-  if (type === "alert") return (
-    <svg {...p}>
-      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-      <line x1="12" y1="9" x2="12" y2="13" />
-      <line x1="12" y1="17" x2="12.01" y2="17" />
-    </svg>
-  );
-  if (type === "sessions") return (
-    <svg {...p}>
-      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-    </svg>
-  );
+  const p = { size: 22, color, strokeWidth: 1.8 };
+  if (type === "grad-cap")  return <GraduationCap {...p} />;
+  if (type === "users")     return <Users         {...p} />;
+  if (type === "flag")      return <Flag          {...p} />;
+  if (type === "calendar")  return <Calendar      {...p} />;
   return null;
 }
 

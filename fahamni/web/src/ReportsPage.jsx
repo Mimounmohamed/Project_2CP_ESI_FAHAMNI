@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Search, Eye, X } from "lucide-react";
 import { collection, query, where, getDocs, doc, updateDoc, getDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { useTranslation } from "react-i18next";
@@ -228,10 +229,7 @@ export default function ReportsPage() {
       {/* Toolbar */}
       <div className="page-toolbar">
         <div style={s.searchWrap}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"
-            style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)" }}>
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
+          <Search size={15} color="#94a3b8" style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)" }} />
           <input
             style={s.search}
             placeholder={t("reports.searchPlaceholder")}
@@ -290,7 +288,7 @@ export default function ReportsPage() {
                 {/* Reporter */}
                 <div style={{ ...s.cell, flex: 2.2, gap: 10 }}>
                   <Avatar name={r.reporter_name} picture={r.reporter_picture} />
-                  <div>
+                  <div style={{ minWidth: 0 }}>
                     <div style={s.name}>{r.reporter_name || t("reports.unknown")}</div>
                     {r.reporter_role && <RoleBadge role={r.reporter_role} />}
                   </div>
@@ -304,7 +302,7 @@ export default function ReportsPage() {
                 {/* Reported */}
                 <div style={{ ...s.cell, flex: 2.2, gap: 10 }}>
                   <Avatar name={r.reported_name} picture={r.reported_picture} />
-                  <div>
+                  <div style={{ minWidth: 0 }}>
                     <div style={s.name}>{r.reported_name || t("reports.unknown")}</div>
                     {r.reported_role && <RoleBadge role={r.reported_role} />}
                   </div>
@@ -325,10 +323,7 @@ export default function ReportsPage() {
                 {/* Eye */}
                 <div style={{ ...s.cell, flex: 0.6, justifyContent:"center" }}>
                   <button style={s.eyeBtn} title="View report" onClick={() => setSelected(r)}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000080" strokeWidth="1.8">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                      <circle cx="12" cy="12" r="3"/>
-                    </svg>
+                    <Eye size={20} color="#000080" strokeWidth={1.8} />
                   </button>
                 </div>
               </div>
@@ -348,9 +343,7 @@ export default function ReportsPage() {
             <div style={s.modalHeader}>
               <span style={s.modalTitle}>{t("reports.reportDetails")}</span>
               <button style={s.closeBtn} onClick={() => setSelected(null)}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
+                <X size={16} color="#64748b" />
               </button>
             </div>
 
@@ -542,8 +535,8 @@ const s = {
   tableBody: { flex:1, overflowY:"auto" },
 
   row: { display:"flex", alignItems:"center", padding:"13px 24px", borderBottom:"1px solid #f8fafc" },
-  cell: { display:"flex", alignItems:"center" },
-  name: { fontSize:13, fontWeight:600, color:"#1F2937" },
+  cell: { display:"flex", alignItems:"center", minWidth:0 },
+  name: { fontSize:13, fontWeight:600, color:"#1F2937", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" },
   date: { fontSize:13, color:"#64748b" },
 
   typeBadge:   { fontSize:10, fontWeight:700, borderRadius:6, padding:"3px 10px", letterSpacing:"0.04em" },
@@ -573,11 +566,11 @@ const s = {
 
   modalContent: { background:"#f8fafc", borderRadius:12, padding:"16px", display:"flex", flexDirection:"column", gap:10 },
   descTitle: { fontSize:12, fontWeight:700, color:"#1F2937" },
-  descText:  { fontSize:13, color:"#475569", lineHeight:1.6 },
+  descText:  { fontSize:13, color:"#475569", lineHeight:1.6, wordBreak:"break-word", overflowWrap:"break-word" },
   commentBox: {
     fontSize:13, color:"#475569", lineHeight:1.6,
     background:"#fff", borderRadius:8, padding:"12px 14px",
-    border:"1px solid #e2e8f0",
+    border:"1px solid #e2e8f0", wordBreak:"break-word", overflowWrap:"break-word",
   },
 
   hideToggleBtn: {

@@ -311,10 +311,14 @@
     "pending": "قيد الانتظار",
     "rejected": "مرفوض",
     "suspended": "موقوف",
-    "activityHeatmap": "خريطة النشاط",
-    "activityHeatmapSub": "آخر 12 أسبوعًا من النشاط",
-    "less": "أقل",
-    "more": "أكثر"
+    "reportStatus": "حالة التقارير",
+    "reportStatusSub": "التوزيع حسب حالة الحل",
+    "sessionsMonthly": "الجلسات شهريًا",
+    "sessionsMonthySub": "إجمالي الجلسات المجدولة خلال الأشهر الستة الماضية",
+    "sessions": "الجلسات",
+    "dismissed": "مرفوض",
+    "reviewed": "تمت المراجعة",
+    "resolved": "تم الحل"
   },
   "common": {
     "loading": "جارٍ التحميل...",

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Search, ArrowLeft, User, X, Send, MessageSquare } from "lucide-react";
 import {
   collection, query, orderBy, onSnapshot,
   addDoc, updateDoc, doc, serverTimestamp,
@@ -221,10 +222,7 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
         {/* ── Left: Inbox ── */}
         <div style={{ ...s.inbox }} className={`msg-inbox-panel${mobileChatOpen ? " msg-inbox-hidden" : ""}`}>
           <div style={s.searchWrap}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"
-              style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
+            <Search size={14} color="#94a3b8" style={{ position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
             <input style={s.searchInput} placeholder={t("messages.searchPlaceholder")} value={search} onChange={e => setSearch(e.target.value)} />
           </div>
 
@@ -271,9 +269,7 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
           <div style={s.chat} className={`msg-chat-panel${!mobileChatOpen ? " msg-chat-hidden" : ""}`}>
             {/* Mobile back button */}
             <button className="msg-back-btn" onClick={() => setMobileChatOpen(false)}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
-              </svg>
+              <ArrowLeft size={16} />
               {t("messages.backToInbox")}
             </button>
             {/* Header */}
@@ -293,15 +289,11 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
               </div>
               <div style={s.chatHeaderRight}>
                 <button style={s.viewProfileBtn} onClick={handleViewProfile}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-                  </svg>
+                  <User size={14} />
                   {t("messages.viewProfile")}
                 </button>
                 <button style={s.closeBtn} onClick={closeConversation}>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
+                  <X size={12} strokeWidth={2.5} />
                   {t("messages.closeConversation")}
                 </button>
               </div>
@@ -346,18 +338,13 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
                 disabled={!input.trim() || sending || selected.is_closed}
                 title="Send message"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="22" y1="2" x2="11" y2="13"/>
-                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                </svg>
+                <Send size={18} color="#fff" />
               </button>
             </div>
           </div>
         ) : (
           <div style={s.noSelection}>
-            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" strokeWidth="1">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
+            <MessageSquare size={52} color="#cbd5e1" strokeWidth={1} />
             <span style={{ color: "#94a3b8", fontSize: 14, marginTop: 14, textAlign: "center" }}>
               {t("messages.selectConversation")}
             </span>

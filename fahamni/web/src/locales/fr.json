@@ -311,10 +311,14 @@
     "pending": "En attente",
     "rejected": "Refusés",
     "suspended": "Suspendus",
-    "activityHeatmap": "Carte d'activité",
-    "activityHeatmapSub": "12 dernières semaines d'activité",
-    "less": "Moins",
-    "more": "Plus"
+    "reportStatus": "Statut des rapports",
+    "reportStatusSub": "Répartition par statut de résolution",
+    "sessionsMonthly": "Séances par mois",
+    "sessionsMonthySub": "Séances programmées sur les 6 derniers mois",
+    "sessions": "Séances",
+    "dismissed": "Rejeté",
+    "reviewed": "Examiné",
+    "resolved": "Résolu"
   },
   "common": {
     "loading": "Chargement...",

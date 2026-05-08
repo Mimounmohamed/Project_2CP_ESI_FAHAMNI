@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link, Image, FileText, AlertCircle, ArrowLeft, Ban, ExternalLink, Download, Eye } from "lucide-react";
 import {
   collection, query, where, getDocs, updateDoc, doc, documentId,
 } from "firebase/firestore";
@@ -46,33 +47,16 @@ const SUB_TABS = ["Overview","Resources","Members","Sessions"];
 
 function ResourceIcon({ type, docType }) {
   const color = type === "link" ? "#f59e0b" : type === "media" ? "#8b5cf6" : docType === "pdf" ? "#3b82f6" : "#6366f1";
-  if (type === "link") return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-    </svg>
-  );
-  if (type === "media") return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-      <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
-      <polyline points="21 15 16 10 5 21"/>
-    </svg>
-  );
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14 2 14 8 20 8"/>
-    </svg>
-  );
+  if (type === "link")  return <Link  size={18} color={color} strokeWidth={2} />;
+  if (type === "media") return <Image size={18} color={color} strokeWidth={2} />;
+  return <FileText size={18} color={color} strokeWidth={2} />;
 }
 
 function EmptyRow({ text }) {
   return (
     <div style={s.emptyRow}>
       <div style={s.emptyIcon}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
-          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-        </svg>
+        <AlertCircle size={16} color="#94a3b8" strokeWidth={2} />
       </div>
       <span style={{ fontSize:13, color:"#94a3b8" }}>{text}</span>
     </div>
@@ -172,9 +156,7 @@ export default function ServiceDetailPanel({ service: init, tutorUid, onBack, on
       {/* Back arrow */}
       {onBack && (
         <button style={s.backBtn} onClick={onBack}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6"/>
-          </svg>
+          <ArrowLeft size={16} strokeWidth={2.5} />
           Back
         </button>
       )}
@@ -194,9 +176,7 @@ export default function ServiceDetailPanel({ service: init, tutorUid, onBack, on
           disabled={toggling}
           onClick={toggleActive}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
-          </svg>
+          <Ban size={14} strokeWidth={2} />
           {toggling ? "Saving…" : service.is_active ? "Deactivate Service" : "Activate Service"}
         </button>
       </div>
@@ -289,17 +269,11 @@ export default function ServiceDetailPanel({ service: init, tutorUid, onBack, on
                       {r.content_type === "link"
                         ? (
                           <a href={r.link_url} target="_blank" rel="noreferrer" style={s.dlBtn}>
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
-                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                              <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-                            </svg>
+                            <ExternalLink size={15} color="#94a3b8" strokeWidth={2} />
                           </a>
                         ) : (
                           <a href={r.file_url ?? r.media_url} target="_blank" rel="noreferrer" style={s.dlBtn}>
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                              <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                            </svg>
+                            <Download size={15} color="#94a3b8" strokeWidth={2} />
                           </a>
                         )
                       }
@@ -335,10 +309,7 @@ export default function ServiceDetailPanel({ service: init, tutorUid, onBack, on
                           title="View student profile"
                           onClick={() => onViewUser?.({ ...m, col: "students", role: "student", id: m.id })}
                         >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000080" strokeWidth="1.8">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                            <circle cx="12" cy="12" r="3"/>
-                          </svg>
+                          <Eye size={16} color="#000080" strokeWidth={1.8} />
                         </button>
                       </div>
                     );
@@ -410,10 +381,7 @@ export default function ServiceDetailPanel({ service: init, tutorUid, onBack, on
                   <div style={s.reportDate}>{formatShortDate(r.created_at)}</div>
                   <span style={{ ...s.statusPill, color: ss.color, background: ss.bg }}>{ss.label}</span>
                   <button style={s.eyeBtn} title="View full report" onClick={() => setSelectedReport(r)}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000080" strokeWidth="1.8">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                      <circle cx="12" cy="12" r="3"/>
-                    </svg>
+                    <Eye size={18} color="#000080" strokeWidth={1.8} />
                   </button>
                 </div>
               );
@@ -496,7 +464,7 @@ function Field({ label, value }) {
   return (
     <div>
       <div style={{ fontSize:10, fontWeight:700, color:"#94a3b8", letterSpacing:"0.06em", marginBottom:4 }}>{label}</div>
-      <div style={{ fontSize:13, fontWeight:600, color:"#1F2937" }}>{value}</div>
+      <div style={{ fontSize:13, fontWeight:600, color:"#1F2937", wordBreak:"break-word", overflowWrap:"break-word" }}>{value}</div>
     </div>
   );
 }
@@ -558,7 +526,7 @@ const s = {
     background:"#fff", borderRadius:14, border:"1px solid #f1f5f9",
     padding:"16px 20px", boxShadow:"0 2px 8px rgba(0,0,0,0.04)", marginTop:14,
   },
-  aboutText: { fontSize:13, color:"#64748b", lineHeight:1.7, marginTop:10 },
+  aboutText: { fontSize:13, color:"#64748b", lineHeight:1.7, marginTop:10, wordBreak:"break-word", overflowWrap:"break-word" },
 
   /* Lists */
   list: { display:"flex", flexDirection:"column", gap:10 },
@@ -584,7 +552,7 @@ const s = {
     display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0,
   },
   resourceMid:  { flex:1, minWidth:0 },
-  resourceName: { fontSize:13, fontWeight:600, color:"#1F2937", marginBottom:3 },
+  resourceName: { fontSize:13, fontWeight:600, color:"#1F2937", marginBottom:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" },
   resourceMeta: { fontSize:11, color:"#94a3b8", display:"flex", alignItems:"center" },
   dlBtn: {
     width:32, height:32, borderRadius:8, border:"1px solid #e2e8f0",
@@ -604,7 +572,7 @@ const s = {
     color:"#fff", fontSize:12, fontWeight:700, display:"flex",
     alignItems:"center", justifyContent:"center", flexShrink:0,
   },
-  memberName: { fontSize:13, fontWeight:600, color:"#1F2937" },
+  memberName: { fontSize:13, fontWeight:600, color:"#1F2937", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" },
   memberRole: { fontSize:11, color:"#6366f1", fontWeight:600, marginTop:2 },
   eyeBtn: { background:"none", border:"none", cursor:"pointer", padding:4, display:"flex", alignItems:"center" },
 
@@ -622,7 +590,7 @@ const s = {
     display:"flex", alignItems:"center", justifyContent:"center",
   },
   reportMid:     { flex:1, minWidth:0 },
-  reportName:    { fontSize:13, fontWeight:600, color:"#1F2937", marginBottom:2 },
+  reportName:    { fontSize:13, fontWeight:600, color:"#1F2937", marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" },
   reportPreview: { fontSize:12, color:"#94a3b8", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" },
   reportDate:    { fontSize:11, color:"#94a3b8", flexShrink:0, whiteSpace:"nowrap" },
   statusPill: {
@@ -659,7 +627,7 @@ const s = {
   modalText: {
     fontSize:14, color:"#374151", lineHeight:1.7,
     background:"#f8fafc", borderRadius:10, padding:"14px 16px",
-    border:"1px solid #f1f5f9",
+    border:"1px solid #f1f5f9", wordBreak:"break-word", overflowWrap:"break-word",
   },
   reviewBtn: {
     display:"flex", alignItems:"center", gap:8, marginTop:16,

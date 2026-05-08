@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { Mail, Lock, Eye, EyeOff, Check } from "lucide-react";
 import {
   signInWithEmailAndPassword,
   setPersistence,
@@ -149,7 +150,7 @@ export default function Login() {
                 <label style={styles.label}>{t("login.email")}</label>
                 <div style={styles.inputWrap}>
                   <span style={styles.icon}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/></svg>
+                    <Mail size={16} color="#94a3b8" strokeWidth={1.8} />
                   </span>
                   <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={t("login.emailPlaceholder")} required style={styles.input} />
                 </div>
@@ -159,14 +160,11 @@ export default function Login() {
                 <label style={styles.label}>{t("login.password")}</label>
                 <div style={styles.inputWrap}>
                   <span style={styles.icon}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1.5" fill="#94a3b8"/></svg>
+                    <Lock size={16} color="#94a3b8" strokeWidth={1.8} />
                   </span>
                   <input type={showPw ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required style={styles.input} />
                   <button type="button" onClick={() => setShowPw(v => !v)} style={styles.eyeBtn}>
-                    {showPw
-                      ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                      : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    }
+                    {showPw ? <EyeOff size={16} color="#94a3b8" /> : <Eye size={16} color="#94a3b8" />}
                   </button>
                 </div>
               </div>
@@ -205,9 +203,7 @@ export default function Login() {
               <div style={styles.stepDot} />
             </div>
             <div style={styles.stepIconWrap}>
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#000080" strokeWidth="1.8">
-                <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 7 10-7"/>
-              </svg>
+              <Mail size={26} color="#000080" strokeWidth={1.8} />
             </div>
             <h1 style={{ ...styles.title, fontSize: 22, marginTop: 0, marginBottom: 4 }}>{t("login.checkYourEmail")}</h1>
             <p style={{ ...styles.subtitle, marginBottom: 24, fontSize: 14 }}>
@@ -245,10 +241,7 @@ export default function Login() {
               <div style={{ ...styles.stepDot, ...styles.stepDotActive }} />
             </div>
             <div style={styles.stepIconWrap}>
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#000080" strokeWidth="1.8">
-                <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                <circle cx="12" cy="16" r="1.5" fill="#000080"/>
-              </svg>
+              <Lock size={26} color="#000080" strokeWidth={1.8} />
             </div>
             <h1 style={{ ...styles.title, fontSize: 22, marginTop: 0, marginBottom: 4 }}>{t("login.createNewPassword")}</h1>
             <p style={{ ...styles.subtitle, marginBottom: 20, fontSize: 14 }}>{t("login.mustBe6Chars")}</p>
@@ -257,14 +250,11 @@ export default function Login() {
               <label style={styles.label}>{t("login.newPassword")}</label>
               <div style={styles.inputWrap}>
                 <span style={styles.icon}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <Lock size={16} color="#94a3b8" strokeWidth={1.8} />
                 </span>
                 <input type={showNewPw ? "text" : "password"} value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="••••••••" style={styles.input} />
                 <button type="button" onClick={() => setShowNewPw(v => !v)} style={styles.eyeBtn}>
-                  {showNewPw
-                    ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                    : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                  }
+                  {showNewPw ? <EyeOff size={16} color="#94a3b8" /> : <Eye size={16} color="#94a3b8" />}
                 </button>
               </div>
             </div>
@@ -273,14 +263,11 @@ export default function Login() {
               <label style={styles.label}>{t("login.confirmPassword")}</label>
               <div style={styles.inputWrap}>
                 <span style={styles.icon}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  <Lock size={16} color="#94a3b8" strokeWidth={1.8} />
                 </span>
                 <input type={showConfirmPw ? "text" : "password"} value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="••••••••" style={styles.input} />
                 <button type="button" onClick={() => setShowConfirmPw(v => !v)} style={styles.eyeBtn}>
-                  {showConfirmPw
-                    ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                    : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.8"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                  }
+                  {showConfirmPw ? <EyeOff size={16} color="#94a3b8" /> : <Eye size={16} color="#94a3b8" />}
                 </button>
               </div>
             </div>
@@ -295,7 +282,7 @@ export default function Login() {
           {forgotStep === "done" && (
             <div style={{ textAlign: "center", padding: "12px 0 8px" }}>
               <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#f0fdf4", border: "2px solid #bbf7d0", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                <Check size={24} color="#16a34a" strokeWidth={2.5} />
               </div>
               <h1 style={{ ...styles.title, fontSize: 22 }}>{t("login.passwordReset")}</h1>
               <p style={{ ...styles.subtitle, marginBottom: 24 }}>{t("login.passwordUpdated").split("\n").map((line, i) => <span key={i}>{line}{i === 0 && <br />}</span>)}</p>
