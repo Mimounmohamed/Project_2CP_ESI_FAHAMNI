@@ -39,6 +39,7 @@ class _QuoteRequestPageState extends State<QuoteRequestPage> {
 
   bool _isLoading = true;
   bool _isSubmitting = false;
+  bool _isParentUser = false;
   String? _selectedChildId;
   String? _selectedSubject;
   String? _selectedMode;
@@ -72,6 +73,7 @@ class _QuoteRequestPageState extends State<QuoteRequestPage> {
       }
 
       if (user.role == UserRole.parent) {
+        _isParentUser = true;
         final ParentModel parent = user as ParentModel;
         List<StudentModel> children = await _studentHomeService
             .getLinkedChildren(parent.childrenUids);
@@ -83,6 +85,7 @@ class _QuoteRequestPageState extends State<QuoteRequestPage> {
           _selectedChildId = children.first.uid;
         }
       } else if (user.role == UserRole.student) {
+        _isParentUser = false;
         final StudentModel student = await _studentHomeService.getStudentData();
         _children = <StudentModel>[student];
         _selectedChildId = student.uid;
@@ -126,7 +129,13 @@ class _QuoteRequestPageState extends State<QuoteRequestPage> {
 
     if (_selectedChildId == null || _selectedChildId!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a child first.')),
+        SnackBar(
+          content: Text(
+            _isParentUser
+                ? 'Please select a child first.'
+                : 'Unable to load your student profile.',
+          ),
+        ),
       );
       return;
     }
@@ -244,37 +253,39 @@ class _QuoteRequestPageState extends State<QuoteRequestPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedChildId,
-                    items: _children
-                        .map(
-                          (child) => DropdownMenuItem<String>(
-                            value: child.uid,
-                            child: Text(
-                              child.firstName.isNotEmpty
-                                  ? '${child.firstName} ${child.lastName}'
-                                        .trim()
-                                  : child.uid,
+                  if (_isParentUser) ...[
+                    DropdownButtonFormField<String>(
+                      initialValue: _selectedChildId,
+                      items: _children
+                          .map(
+                            (child) => DropdownMenuItem<String>(
+                              value: child.uid,
+                              child: Text(
+                                child.firstName.isNotEmpty
+                                    ? '${child.firstName} ${child.lastName}'
+                                          .trim()
+                                    : child.uid,
+                              ),
                             ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedChildId = value;
-                      });
-                    },
-                    decoration: InputDecoration(
-                      labelText: 'Select a Child',
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide.none,
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedChildId = value;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        labelText: 'Select a Child',
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
+                    const SizedBox(height: 16),
+                  ],
                   DropdownButtonFormField<String>(
                     initialValue: _selectedSubject,
                     items: _subjectOptions

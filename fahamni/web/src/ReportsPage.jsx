@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Search, Eye, X } from "lucide-react";
-import { collection, query, where, getDocs, doc, updateDoc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, updateDoc, getDoc, deleteDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { useTranslation } from "react-i18next";
 import { syncSuspensionState } from "./suspensionNotifications";
@@ -197,14 +197,14 @@ export default function ReportsPage() {
     finally { setActionLoading(null); }
   }
 
-  async function handleToggleHide() {
+  async function handleDeleteFeedback() {
     if (!reviewDoc) return;
-    setActionLoading("hide");
+    setActionLoading("deleteFeedback");
     try {
-      const nextHidden = !isHidden;
-      await updateDoc(doc(db, reviewDoc.col, reviewDoc.id), { is_hidden: nextHidden });
-      setReviewDoc(d => ({ ...d, data: { ...d.data, is_hidden: nextHidden } }));
-      if (!isHidden) await markReviewed(selected.id); // mark reviewed when hiding
+      await deleteDoc(doc(db, reviewDoc.col, reviewDoc.id));
+      setReviewDoc(null);
+      await markReviewed(selected.id);
+      setActionDone("feedbackDeleted");
     } catch (e) { console.error(e); }
     finally { setActionLoading(null); }
   }
@@ -415,18 +415,16 @@ export default function ReportsPage() {
                       : commentText || t("reports.noCommentText")}
                   </div>
 
-                  {/* Hide / Unhide toggle — only when there's a real Firestore doc to update */}
-                  {hasReviewRef && (
+                  {/* Delete feedback when there's a real Firestore doc to update */}
+                  {hasReviewRef && reviewDoc && (
                     <button
-                      style={{ ...s.hideToggleBtn, ...(isHidden ? s.hideToggleBtnUnhide : s.hideToggleBtnHide) }}
-                      disabled={actionLoading === "hide"}
-                      onClick={handleToggleHide}
+                      style={{ ...s.hideToggleBtn, ...s.hideToggleBtnHide }}
+                      disabled={actionLoading === "deleteFeedback"}
+                      onClick={handleDeleteFeedback}
                     >
-                      {actionLoading === "hide"
+                      {actionLoading === "deleteFeedback"
                         ? t("reports.updating")
-                        : isHidden
-                        ? t("reports.unhideComment")
-                        : t("reports.hideComment")}
+                        : "Delete feedback"}
                     </button>
                   )}
                 </>
@@ -444,6 +442,7 @@ export default function ReportsPage() {
                 {actionDone === "averted"   && t("reports.averted")}
                 {actionDone === "suspended" && t("reports.suspended")}
                 {actionDone === "reviewed"  && "Report marked as reviewed."}
+                {actionDone === "feedbackDeleted" && "Feedback deleted and report marked as reviewed."}
               </div>
             )}
 

@@ -4,6 +4,7 @@ import 'package:fahamni/Services/notification_service.dart';
 import 'package:fahamni/TeacherDashboard/teacher_dashboard.dart';
 import 'package:fahamni/StudentHomePage/Student_homepage.dart';
 import 'package:fahamni/Courses/courses_page.dart';
+import 'package:fahamni/ParentDashboread/ParentCoursePage/parent_courses_page.dart';
 import 'package:fahamni/feedback/feedback_pages.dart';
 import 'package:fahamni/messaging/chat_page.dart';
 import 'package:fahamni/messaging/conversation_page.dart';
@@ -31,6 +32,7 @@ class _NotificationPageState extends State<NotificationPage> {
   int _selectedTab = 0;
   int _navIndex = 0;
   bool _isTeacher = false;
+  bool _isParent = false;
 
   final NotificationService _notificationService = NotificationService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -56,10 +58,13 @@ class _NotificationPageState extends State<NotificationPage> {
     if (!mounted || !snapshot.exists || snapshot.data() == null) {
       return;
     }
-    final bool isTeacher = snapshot.data()!['role'] == 'tutor';
+    final String role = (snapshot.data()!['role'] ?? '').toString();
+    final bool isTeacher = role == 'tutor';
+    final bool isParent = role == 'parent';
     if (mounted) {
       setState(() {
         _isTeacher = isTeacher;
+        _isParent = isParent;
       });
     }
   }
@@ -154,8 +159,18 @@ class _NotificationPageState extends State<NotificationPage> {
     }
 
     // quote accepted/rejected → open the conversation with the tutor
-    if (notification.type == 'quote_response' ||
-        notification.type == 'join_request_response') {
+    if (notification.type == 'join_request_response') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              _isParent ? const ParentCoursesPage() : const CoursesPage(),
+        ),
+      );
+      return;
+    }
+
+    if (notification.type == 'quote_response') {
       if (notification.tutorId.isNotEmpty && _currentUserId != null) {
         final String tutorId = notification.tutorId;
         final String studentId = _currentUserId!;

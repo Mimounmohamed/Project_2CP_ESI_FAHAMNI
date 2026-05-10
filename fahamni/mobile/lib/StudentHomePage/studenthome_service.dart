@@ -264,6 +264,30 @@ class studenthomepage_service {
           );
         }
       }
+
+      final DateTime now = DateTime.now();
+      for (final serviceDoc in enrolledServices.docs) {
+        final String serviceId = serviceDoc.id;
+        final bool hasSession = sessionsById.values.any(
+          (session) => session.serviceId == serviceId,
+        );
+        if (hasSession) continue;
+
+        final data = serviceDoc.data();
+        sessionsById['service_$serviceId'] = SessionModel(
+          sessionId: 'service_$serviceId',
+          serviceId: serviceId,
+          studentIds: <String>[uid],
+          tutorId: (data['tutor_id'] ?? '').toString(),
+          status: SessionStatus.Planned,
+          type: (data['name'] ?? '').toString(),
+          modality: (data['mode'] ?? '').toString(),
+          mode: (data['mode'] ?? '').toString(),
+          date: DateTime(now.year, now.month, now.day),
+          startTime: now,
+          endTime: now,
+        );
+      }
     }
 
     // Path 3: sessions explicitly listed in the student document's courses field.

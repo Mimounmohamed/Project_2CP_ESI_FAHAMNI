@@ -109,6 +109,58 @@ class _ParenthomepageState extends State<Parenthomepage> {
     }
   }
 
+  Widget _notificationButton(String? userId) {
+    Widget button({bool hasUnread = false}) {
+      return IconButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const NotificationPage()),
+          );
+        },
+        icon: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            const ImageIcon(
+              AssetImage('assets/images/bell.png'),
+              color: Colors.black,
+            ),
+            if (hasUnread)
+              Positioned(
+                right: -1,
+                top: -1,
+                child: Container(
+                  width: 9,
+                  height: 9,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFEF4444),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        iconSize: 35,
+      );
+    }
+
+    if (userId == null || userId.isEmpty) {
+      return button();
+    }
+
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: _db
+          .collection('notifications')
+          .where('receiver_id', isEqualTo: userId)
+          .where('is_read', isEqualTo: false)
+          .limit(1)
+          .snapshots(),
+      builder: (context, snapshot) {
+        return button(hasUnread: (snapshot.data?.docs.isNotEmpty ?? false));
+      },
+    );
+  }
+
   ImageProvider<Object> _avatarProvider({
     required String picture,
     required Gender gender,
@@ -157,10 +209,10 @@ class _ParenthomepageState extends State<Parenthomepage> {
     }
 
     if (index == 2) {
-     Navigator.pushReplacement(
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const ParentCoursesPage()),
-    );
+      );
       return;
     }
 
@@ -238,21 +290,7 @@ class _ParenthomepageState extends State<Parenthomepage> {
                           ],
                         ),
                       ),
-                      IconButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const NotificationPage(),
-                            ),
-                          );
-                        },
-                        icon: const ImageIcon(
-                          AssetImage('assets/images/bell.png'),
-                          color: Colors.black,
-                        ),
-                        iconSize: 35,
-                      ),
+                      _notificationButton(parent?.uid),
                     ],
                   ),
                   const SizedBox(height: 16),

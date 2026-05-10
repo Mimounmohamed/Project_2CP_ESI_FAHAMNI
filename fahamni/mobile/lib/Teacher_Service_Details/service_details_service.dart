@@ -275,6 +275,7 @@ class CourseDetailsService {
       accepted: accept,
       serviceId: serviceId,
       subject: subject,
+      isJoinRequest: true,
     );
   }
 

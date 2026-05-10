@@ -7,7 +7,6 @@ import 'chat_service.dart';
 import 'notification_service.dart';
 import '../models/chat_model.dart';
 import '../models/notification_model.dart';
-import '../models/parent_model.dart';
 import '../models/report_model.dart';
 import '../models/service_model.dart';
 import '../models/student_model.dart';
@@ -139,20 +138,7 @@ class StudentTutorActionService {
             '${currentStudent.firstName} ${currentStudent.lastName}'.trim();
         requestStudentLevel = currentStudent.schoolLevel;
       } else {
-        final QuerySnapshot<Map<String, dynamic>> childSnapshot =
-            await _firestore
-                .collection('children')
-                .where('parentUid', isEqualTo: currentUser.uid)
-                .limit(1)
-                .get();
-        if (childSnapshot.docs.isEmpty) {
-          throw Exception('Please select a child before booking this service.');
-        }
-        final childDoc = childSnapshot.docs.first;
-        final childData = childDoc.data();
-        requestStudentId = childDoc.id;
-        requestStudentName = (childData['name'] ?? '').toString().trim();
-        requestStudentLevel = (childData['level'] ?? '').toString().trim();
+        throw Exception('Please select a child before booking this service.');
       }
     }
 
@@ -203,7 +189,7 @@ class StudentTutorActionService {
             notificationId: '',
             receiverId: tutor.uid,
             type: 'join_request',
-            senderId: currentUser.uid,
+            senderId: requestStudentId,
             tutorId: tutor.uid,
             serviceId: service.serviceId,
           ),

@@ -266,6 +266,7 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
       await updateDoc(doc(db, "conversations", convId), {
         last_message:    preview,
         last_message_at: serverTimestamp(),
+        is_closed:       false,
       });
       setSelectedFiles([]);
     } catch (e) {
@@ -432,12 +433,12 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
                 multiple
                 style={{ display: "none" }}
                 onChange={handleFileSelect}
-                disabled={selected.is_closed || sending}
+                disabled={sending}
               />
               <button
-                style={{ ...s.attachBtn, opacity: (selected.is_closed || sending) ? 0.45 : 1 }}
+                style={{ ...s.attachBtn, opacity: sending ? 0.45 : 1 }}
                 onClick={() => fileInputRef.current?.click()}
-                disabled={selected.is_closed || sending}
+                disabled={sending}
                 title="Attach files"
                 type="button"
               >
@@ -447,17 +448,16 @@ export default function MessagesPage({ adminUser, onViewUser, pendingContact, on
               </button>
               <input
                 ref={inputRef}
-                style={{ ...s.messageInput, opacity: selected.is_closed ? 0.5 : 1 }}
-                placeholder={selected.is_closed ? t("messages.closedPlaceholder") : t("messages.inputPlaceholder")}
+                style={s.messageInput}
+                placeholder={t("messages.inputPlaceholder")}
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                disabled={selected.is_closed}
               />
               <button
-                style={{ ...s.sendBtn, opacity: ((!input.trim() && selectedFiles.length === 0) || sending || selected.is_closed) ? 0.4 : 1 }}
+                style={{ ...s.sendBtn, opacity: ((!input.trim() && selectedFiles.length === 0) || sending) ? 0.4 : 1 }}
                 onClick={sendMessage}
-                disabled={(!input.trim() && selectedFiles.length === 0) || sending || selected.is_closed}
+                disabled={(!input.trim() && selectedFiles.length === 0) || sending}
                 title="Send message"
               >
                 <Send size={18} color="#fff" />

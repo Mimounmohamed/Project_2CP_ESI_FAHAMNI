@@ -116,34 +116,38 @@ class TeacherPortalService {
             svc = null;
           }
           final student = notifStudents[sender];
-          joinRequests.add(TeacherJoinRequestDetail(
-            quote: QuoteModel(
-              quoteId: 'notif_${d.id}',
-              studentId: sender,
-              tutorId: tutor.uid,
-              serviceId: serviceId,
-              serviceName: svc?.name ?? '',
+          joinRequests.add(
+            TeacherJoinRequestDetail(
+              quote: QuoteModel(
+                quoteId: 'notif_${d.id}',
+                studentId: sender,
+                tutorId: tutor.uid,
+                serviceId: serviceId,
+                serviceName: svc?.name ?? '',
+                subject: svc?.subject ?? '',
+                level: '',
+                objective: 'Join Request for ${svc?.name ?? ''}',
+                frequency: svc != null ? '${svc.sessionsnum} sessions' : '',
+                duration: svc != null ? '${svc.duration} min' : '',
+                budget: svc != null ? '${svc.price} DA' : '',
+                status: QuoteStatus.pending,
+                createdAt:
+                    (data['date_time'] as Timestamp?)?.toDate() ??
+                    DateTime.now(),
+              ),
+              studentName: _studentName(student),
+              studentLevel: student?.schoolLevel ?? '',
+              studentAvatar: student?.picture ?? '',
+              serviceTitle: svc?.name ?? (data['content'] ?? ''),
+              description: data['content'] ?? '',
               subject: svc?.subject ?? '',
-              level: '',
-              objective: 'Join Request for ${svc?.name ?? ''}',
-              frequency: svc != null ? '${svc.sessionsnum} sessions' : '',
-              duration: svc != null ? '${svc.duration} min' : '',
-              budget: svc != null ? '${svc.price} DA' : '',
-              status: QuoteStatus.pending,
-              createdAt: (data['date_time'] as Timestamp?)?.toDate() ?? DateTime.now(),
+              teachingMode: svc?.mode ?? '',
+              sessionsCount: svc?.sessionsnum ?? 0,
+              sessionDurationLabel: svc != null ? '${svc.duration} min' : '',
+              createdAtLabel: 'Now',
+              isChild: childIds.contains(sender),
             ),
-            studentName: _studentName(student),
-            studentLevel: student?.schoolLevel ?? '',
-            studentAvatar: student?.picture ?? '',
-            serviceTitle: svc?.name ?? (data['content'] ?? ''),
-            description: data['content'] ?? '',
-            subject: svc?.subject ?? '',
-            teachingMode: svc?.mode ?? '',
-            sessionsCount: svc?.sessionsnum ?? 0,
-            sessionDurationLabel: svc != null ? '${svc.duration} min' : '',
-            createdAtLabel: 'Now',
-            isChild: childIds.contains(sender),
-          ));
+          );
         }
       } catch (_) {}
     }
@@ -220,10 +224,8 @@ class TeacherPortalService {
   ) async {
     if (!isChild) return studentId;
     try {
-      final snap =
-          await _firestore.collection('children').doc(studentId).get();
-      final parentUid =
-          (snap.data()?['parentUid'] ?? '').toString().trim();
+      final snap = await _firestore.collection('children').doc(studentId).get();
+      final parentUid = (snap.data()?['parentUid'] ?? '').toString().trim();
       if (parentUid.isNotEmpty) return parentUid;
     } catch (_) {}
     return studentId;
@@ -288,7 +290,7 @@ class TeacherPortalService {
                 ? 'Request Accepted'
                 : 'Request Declined',
             content: status == QuoteStatus.accepted
-                ? 'Your service request for ${request.serviceTitle} has been accepted by the teacher. Check the teacher response in the DM.'
+                ? 'Your service request for ${request.serviceTitle} has been accepted by the teacher.'
                 : 'Your service request for ${request.serviceTitle} was declined by the teacher.',
             dateTime: DateTime.now(),
             isRead: false,
@@ -302,15 +304,6 @@ class TeacherPortalService {
         );
       } catch (e) {
         debugPrint('Failed to send join request notification: $e');
-      }
-      try {
-        await _sendQuoteResponseChatMessage(
-          tutorId: currentTutor.uid,
-          studentId: studentId,
-          status: status,
-        );
-      } catch (e) {
-        debugPrint('Failed to send quote response chat message: $e');
       }
       return;
     }
@@ -463,7 +456,10 @@ class TeacherPortalService {
     required String sessionId,
     required TeacherSessionDraft draft,
   }) async {
-    final sessionDoc = await _firestore.collection('sessions').doc(sessionId).get();
+    final sessionDoc = await _firestore
+        .collection('sessions')
+        .doc(sessionId)
+        .get();
     final DateTime startTime = DateTime(
       draft.date.year,
       draft.date.month,
@@ -863,11 +859,7 @@ class TeacherPortalService {
     batch.set(msgRef, messageData);
     batch.set(
       _firestore.collection('conversations').doc(conversationId),
-      {
-        'lastMessage': messageData,
-        'lastMessageTime': now,
-        'updatedAt': now,
-      },
+      {'lastMessage': messageData, 'lastMessageTime': now, 'updatedAt': now},
       SetOptions(merge: true),
     );
     await batch.commit();
@@ -894,8 +886,9 @@ class TeacherPortalService {
       }
     }
 
-    final DocumentReference<Map<String, dynamic>> convRef =
-        _firestore.collection('conversations').doc();
+    final DocumentReference<Map<String, dynamic>> convRef = _firestore
+        .collection('conversations')
+        .doc();
     await convRef.set({
       'conversationId': convRef.id,
       'participants': [tutorId, studentId],
@@ -936,8 +929,9 @@ class TeacherPortalService {
 
     // Create conversation if none exists
     if (conversationId == null) {
-      final DocumentReference<Map<String, dynamic>> convRef =
-          _firestore.collection('conversations').doc();
+      final DocumentReference<Map<String, dynamic>> convRef = _firestore
+          .collection('conversations')
+          .doc();
       await convRef.set({
         'conversationId': convRef.id,
         'participants': [tutorId, studentId],
@@ -978,11 +972,7 @@ class TeacherPortalService {
     batch.set(msgRef, messageData);
     batch.set(
       _firestore.collection('conversations').doc(conversationId),
-      {
-        'lastMessage': messageData,
-        'lastMessageTime': now,
-        'updatedAt': now,
-      },
+      {'lastMessage': messageData, 'lastMessageTime': now, 'updatedAt': now},
       SetOptions(merge: true),
     );
     await batch.commit();

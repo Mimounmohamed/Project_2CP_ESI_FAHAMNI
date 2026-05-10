@@ -427,12 +427,13 @@ class _TutorProfilePageState extends State<TutorProfilePage>
         studentLevel: selectedStudent?.schoolLevel,
       );
       final String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
+      final String? requestStudentId = selectedStudent?.uid ?? currentUserId;
       if (service != null &&
-          currentUserId != null &&
-          !service.pendingIds.contains(currentUserId) &&
-          !service.studentIds.contains(currentUserId)) {
+          requestStudentId != null &&
+          !service.pendingIds.contains(requestStudentId) &&
+          !service.studentIds.contains(requestStudentId)) {
         setState(() {
-          service.pendingIds.add(currentUserId);
+          service.pendingIds.add(requestStudentId);
         });
       }
       if (!mounted) {
@@ -476,7 +477,10 @@ class _TutorProfilePageState extends State<TutorProfilePage>
     if (children.isEmpty) {
       children = await _studentHomeService.getChildrenForParent(parent.uid);
     }
-    if (children.isEmpty || !mounted) {
+    if (!mounted) {
+      return null;
+    }
+    if (children.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please add or link a child first.')),
       );

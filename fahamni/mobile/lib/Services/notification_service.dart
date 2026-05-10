@@ -4,7 +4,6 @@ import '../models/notification_model.dart';
 class NotificationService {
   final firestore = FirebaseFirestore.instance;
 
-
   //CREATE
   Future<void> sendNotification(NotificationModel notification) async {
     try {
@@ -12,10 +11,7 @@ class NotificationService {
           ? notification.notificationId
           : firestore.collection('notifications').doc().id;
 
-      await firestore
-          .collection('notifications')
-          .doc(notificationId)
-          .set({
+      await firestore.collection('notifications').doc(notificationId).set({
         ...notification.toMap(),
         'notification_id': notificationId,
       });
@@ -28,7 +24,10 @@ class NotificationService {
     final String notificationId = notification.notificationId.isNotEmpty
         ? notification.notificationId
         : firestore.collection('notifications').doc().id;
-    final doc = await firestore.collection('notifications').doc(notificationId).get();
+    final doc = await firestore
+        .collection('notifications')
+        .doc(notificationId)
+        .get();
     if (doc.exists) {
       return;
     }
@@ -51,7 +50,10 @@ class NotificationService {
 
   Future<String> resolveStudentNotificationReceiver(String studentId) async {
     try {
-      final childDoc = await firestore.collection('children').doc(studentId).get();
+      final childDoc = await firestore
+          .collection('children')
+          .doc(studentId)
+          .get();
       final data = childDoc.data();
       if (childDoc.exists && data != null) {
         final parentUid = (data['parentUid'] ?? data['parent_uid'] ?? '')
@@ -71,6 +73,7 @@ class NotificationService {
     required bool accepted,
     String serviceId = '',
     String subject = '',
+    bool isJoinRequest = false,
   }) async {
     try {
       final receiverId = await resolveStudentNotificationReceiver(studentId);
@@ -78,20 +81,20 @@ class NotificationService {
       final context = serviceName.isNotEmpty
           ? ' for $serviceName'
           : subject.isNotEmpty
-              ? ' for $subject'
-              : '';
+          ? ' for $subject'
+          : '';
 
       await sendNotification(
         NotificationModel(
           title: accepted ? 'Request Accepted' : 'Request Declined',
           content: accepted
-              ? 'Your service request$context has been accepted by the teacher. Check the teacher response in the DM.'
+              ? 'Your service request$context has been accepted by the teacher.'
               : 'Your service request$context was declined by the teacher.',
           dateTime: DateTime.now(),
           isRead: false,
           notificationId: '',
           receiverId: receiverId,
-          type: 'quote_response',
+          type: isJoinRequest ? 'join_request_response' : 'quote_response',
           senderId: tutorId,
           tutorId: tutorId,
           serviceId: serviceId,
@@ -181,39 +184,58 @@ class NotificationService {
     List<String> studentIds = const <String>[],
   }) async {
     try {
-      final Set<String> recipients = {...studentIds.where((id) => id.isNotEmpty)};
+      final Set<String> recipients = {
+        ...studentIds.where((id) => id.isNotEmpty),
+      };
 
       if (recipients.isEmpty && serviceId.isNotEmpty) {
-        final serviceDoc = await firestore.collection('services').doc(serviceId).get();
-        recipients.addAll(List<String>.from(serviceDoc.data()?['student_ids'] ?? []));
+        final serviceDoc = await firestore
+            .collection('services')
+            .doc(serviceId)
+            .get();
+        recipients.addAll(
+          List<String>.from(serviceDoc.data()?['student_ids'] ?? []),
+        );
       }
 
       if (recipients.isEmpty && sessionId.isNotEmpty) {
-        final sessionDoc = await firestore.collection('sessions').doc(sessionId).get();
-        recipients.addAll(List<String>.from(sessionDoc.data()?['student_ids'] ?? []));
+        final sessionDoc = await firestore
+            .collection('sessions')
+            .doc(sessionId)
+            .get();
+        recipients.addAll(
+          List<String>.from(sessionDoc.data()?['student_ids'] ?? []),
+        );
         serviceId = serviceId.isNotEmpty
             ? serviceId
             : (sessionDoc.data()?['service_id'] ?? '').toString();
       }
 
-      final resourceTitle = title.trim().isEmpty ? 'learning material' : title.trim();
-      await Future.wait(recipients.map((studentId) async {
-        final receiverId = await resolveStudentNotificationReceiver(studentId);
-        await sendNotification(
-          NotificationModel(
-            title: 'New Resource',
-            content: 'Your teacher shared new learning material: $resourceTitle.',
-            dateTime: DateTime.now(),
-            isRead: false,
-            notificationId: '',
-            receiverId: receiverId,
-            type: 'new_resource',
-            senderId: tutorId,
-            tutorId: tutorId,
-            serviceId: serviceId,
-          ),
-        );
-      }));
+      final resourceTitle = title.trim().isEmpty
+          ? 'learning material'
+          : title.trim();
+      await Future.wait(
+        recipients.map((studentId) async {
+          final receiverId = await resolveStudentNotificationReceiver(
+            studentId,
+          );
+          await sendNotification(
+            NotificationModel(
+              title: 'New Resource',
+              content:
+                  'Your teacher shared new learning material: $resourceTitle.',
+              dateTime: DateTime.now(),
+              isRead: false,
+              notificationId: '',
+              receiverId: receiverId,
+              type: 'new_resource',
+              senderId: tutorId,
+              tutorId: tutorId,
+              serviceId: serviceId,
+            ),
+          );
+        }),
+      );
     } catch (_) {}
   }
 
@@ -232,28 +254,32 @@ class NotificationService {
         ...studentIds.where((id) => id.trim().isNotEmpty),
       };
 
-      await Future.wait(uniqueStudentIds.map((studentId) async {
-        final receiverId = await resolveStudentNotificationReceiver(studentId);
-        final notification = NotificationModel(
-          title: title,
-          content: content,
-          dateTime: DateTime.now(),
-          isRead: false,
-          notificationId: onceKeyPrefix.isEmpty
-              ? ''
-              : '${onceKeyPrefix}_${sessionId}_$receiverId',
-          receiverId: receiverId,
-          type: type,
-          senderId: tutorId,
-          tutorId: tutorId,
-          serviceId: serviceId,
-        );
-        if (onceKeyPrefix.isEmpty) {
-          await sendNotification(notification);
-        } else {
-          await sendNotificationOnce(notification);
-        }
-      }));
+      await Future.wait(
+        uniqueStudentIds.map((studentId) async {
+          final receiverId = await resolveStudentNotificationReceiver(
+            studentId,
+          );
+          final notification = NotificationModel(
+            title: title,
+            content: content,
+            dateTime: DateTime.now(),
+            isRead: false,
+            notificationId: onceKeyPrefix.isEmpty
+                ? ''
+                : '${onceKeyPrefix}_${sessionId}_$receiverId',
+            receiverId: receiverId,
+            type: type,
+            senderId: tutorId,
+            tutorId: tutorId,
+            serviceId: serviceId,
+          );
+          if (onceKeyPrefix.isEmpty) {
+            await sendNotification(notification);
+          } else {
+            await sendNotificationOnce(notification);
+          }
+        }),
+      );
     } catch (_) {}
   }
 
@@ -282,9 +308,13 @@ class NotificationService {
         .where('receiver_id', isEqualTo: userId)
         .orderBy('date_time', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-        .map((doc) => NotificationModel.fromMap(doc.data(), docId: doc.id))
-        .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map(
+                (doc) => NotificationModel.fromMap(doc.data(), docId: doc.id),
+              )
+              .toList(),
+        );
   }
 
   //UPDATE
@@ -311,6 +341,7 @@ class NotificationService {
     }
     await batch.commit();
   }
+
   // DELETE
   Future<void> deleteNotification(String docId) async {
     try {
@@ -321,11 +352,15 @@ class NotificationService {
   }
 
   /// Send teacher approval notification
-  Future<void> sendTeacherApprovalNotification(String teacherUid, String teacherName) async {
+  Future<void> sendTeacherApprovalNotification(
+    String teacherUid,
+    String teacherName,
+  ) async {
     try {
       final notification = NotificationModel(
         title: 'Account Approved',
-        content: 'Congratulations! Your account has been verified by admin. You now have full access to all features.',
+        content:
+            'Congratulations! Your account has been verified by admin. You now have full access to all features.',
         dateTime: DateTime.now(),
         isRead: false,
         notificationId: '',
@@ -340,7 +375,10 @@ class NotificationService {
   }
 
   /// Send admin notification for new tutor registration
-  Future<void> sendAdminNewTutorNotification(String tutorUid, String tutorName) async {
+  Future<void> sendAdminNewTutorNotification(
+    String tutorUid,
+    String tutorName,
+  ) async {
     try {
       final adminIds = await _getAllAdminIds();
       for (final adminId in adminIds) {
@@ -363,7 +401,11 @@ class NotificationService {
   }
 
   /// Send admin notification for new report
-  Future<void> sendAdminNewReportNotification(String reporterName, String reportedName, String reportType) async {
+  Future<void> sendAdminNewReportNotification(
+    String reporterName,
+    String reportedName,
+    String reportType,
+  ) async {
     try {
       final adminIds = await _getAllAdminIds();
       for (final adminId in adminIds) {
@@ -385,7 +427,11 @@ class NotificationService {
   }
 
   /// Send admin notification for service issues
-  Future<void> sendAdminServiceIssueNotification(String serviceName, String tutorName, String issue) async {
+  Future<void> sendAdminServiceIssueNotification(
+    String serviceName,
+    String tutorName,
+    String issue,
+  ) async {
     try {
       final adminIds = await _getAllAdminIds();
       for (final adminId in adminIds) {
@@ -409,7 +455,9 @@ class NotificationService {
   /// Get all admin IDs for sending notifications
   Future<List<String>> _getAllAdminIds() async {
     try {
-      final QuerySnapshot<Map<String, dynamic>> snapshot = await firestore.collection('admins').get();
+      final QuerySnapshot<Map<String, dynamic>> snapshot = await firestore
+          .collection('admins')
+          .get();
       return snapshot.docs.map((doc) => doc.id).toList();
     } catch (e) {
       // Fallback: return empty list if admins collection doesn't exist or can't be accessed
@@ -419,5 +467,3 @@ class NotificationService {
 }
 
 typedef NotificatinService = NotificationService;
-
-

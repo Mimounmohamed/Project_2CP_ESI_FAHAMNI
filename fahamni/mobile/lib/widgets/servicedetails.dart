@@ -1,5 +1,6 @@
 import 'package:fahamni/messaging/chat_page.dart';
 import 'package:fahamni/messaging/conversation_page.dart';
+import 'package:fahamni/Services/auth_.service.dart';
 import 'package:fahamni/Services/student_tutor_action_service.dart';
 import 'package:fahamni/Courses/courses_page.dart';
 import 'package:fahamni/feedback/feedback_pages.dart';
@@ -9,9 +10,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import '../StudentHomePage/Student_homepage.dart';
 import 'package:fahamni/Account_Settings_Student/account_screen.dart';
+import '../StudentHomePage/studenthome_service.dart';
 import '../models/child_model.dart';
+import '../models/parent_model.dart';
 import '../models/service_model.dart';
+import '../models/student_model.dart';
 import '../models/tutor_model.dart';
+import '../models/user_model.dart';
 
 class Servicedetails extends StatefulWidget {
   final TutorModel tutor;
@@ -32,6 +37,8 @@ class _ServicedetailsState extends State<Servicedetails> {
   int _selectedIndex = 1;
   final StudentTutorActionService _studentTutorActionService =
       StudentTutorActionService();
+  final AuthService _authService = AuthService();
+  final studenthomepage_service _studentHomeService = studenthomepage_service();
   bool _isActionLoading = false;
   String? _currentUserId;
 
@@ -89,12 +96,28 @@ class _ServicedetailsState extends State<Servicedetails> {
     });
 
     try {
+      StudentModel? selectedStudent;
+      final UserModel? currentUser = await _authService.getCurrentUserProfile();
+      if (currentUser?.role == UserRole.parent &&
+          widget.selectedChild == null) {
+        selectedStudent = await _pickChildForParent();
+        if (selectedStudent == null) {
+          return;
+        }
+      }
+
       await _studentTutorActionService.createBookingRequest(
         tutor: widget.tutor,
         service: widget.service,
-        studentId: widget.selectedChild?.id,
-        studentName: widget.selectedChild?.name,
-        studentLevel: widget.selectedChild?.level,
+        studentId: widget.selectedChild?.id ?? selectedStudent?.uid,
+        studentName:
+            widget.selectedChild?.name ??
+            (selectedStudent == null
+                ? null
+                : '${selectedStudent.firstName} ${selectedStudent.lastName}'
+                      .trim()),
+        studentLevel:
+            widget.selectedChild?.level ?? selectedStudent?.schoolLevel,
       );
       if (!mounted) {
         return;
@@ -103,7 +126,7 @@ class _ServicedetailsState extends State<Servicedetails> {
       // Update local UI state for immediate feedback
       setState(() {
         final String? requestStudentId =
-            widget.selectedChild?.id ?? _currentUserId;
+            widget.selectedChild?.id ?? selectedStudent?.uid ?? _currentUserId;
         if (requestStudentId != null &&
             !widget.service.pendingIds.contains(requestStudentId)) {
           widget.service.pendingIds.add(requestStudentId);
@@ -129,6 +152,49 @@ class _ServicedetailsState extends State<Servicedetails> {
         });
       }
     }
+  }
+
+  Future<StudentModel?> _pickChildForParent() async {
+    final UserModel? profile = await _authService.getCurrentUserProfile();
+    if (profile?.role != UserRole.parent) {
+      return null;
+    }
+
+    final ParentModel parent = profile as ParentModel;
+    List<StudentModel> children = await _studentHomeService.getLinkedChildren(
+      parent.childrenUids,
+    );
+    if (children.isEmpty) {
+      children = await _studentHomeService.getChildrenForParent(parent.uid);
+    }
+    if (!mounted) {
+      return null;
+    }
+    if (children.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please add or link a child first.')),
+      );
+      return null;
+    }
+
+    return showDialog<StudentModel>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Select a child'),
+        children: children
+            .map(
+              (child) => SimpleDialogOption(
+                onPressed: () => Navigator.of(context).pop(child),
+                child: Text(
+                  child.firstName.isNotEmpty
+                      ? '${child.firstName} ${child.lastName}'.trim()
+                      : child.uid,
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
   }
 
   @override

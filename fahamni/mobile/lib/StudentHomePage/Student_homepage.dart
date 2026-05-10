@@ -1,4 +1,5 @@
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fahamni/StudentHomePage/studenthome_service.dart';
 import 'package:fahamni/Explore_map_pages/explorepage.dart';
 import 'package:fahamni/feedback/feedback_pages.dart';
@@ -133,6 +134,58 @@ class _StudenthomepageState extends State<Studenthomepage> {
     }
   }
 
+  Widget _notificationButton(String? userId) {
+    Widget button({bool hasUnread = false}) {
+      return IconButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const NotificationPage()),
+          );
+        },
+        icon: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            const ImageIcon(
+              AssetImage('assets/images/bell.png'),
+              color: Colors.black,
+            ),
+            if (hasUnread)
+              Positioned(
+                right: -1,
+                top: -1,
+                child: Container(
+                  width: 9,
+                  height: 9,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFEF4444),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        iconSize: 35,
+      );
+    }
+
+    if (userId == null || userId.isEmpty) {
+      return button();
+    }
+
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('notifications')
+          .where('receiver_id', isEqualTo: userId)
+          .where('is_read', isEqualTo: false)
+          .limit(1)
+          .snapshots(),
+      builder: (context, snapshot) {
+        return button(hasUnread: (snapshot.data?.docs.isNotEmpty ?? false));
+      },
+    );
+  }
+
   ImageProvider _resolveStudentAvatar(StudentModel s) {
     final pic = s.picture;
     if (pic.startsWith('http')) return NetworkImage(pic);
@@ -206,21 +259,7 @@ class _StudenthomepageState extends State<Studenthomepage> {
                           ],
                         ),
                       ),
-                      IconButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const NotificationPage(),
-                            ),
-                          );
-                        },
-                        icon: ImageIcon(
-                          AssetImage('assets/images/bell.png'),
-                          color: Colors.black,
-                        ),
-                        iconSize: 35,
-                      ),
+                      _notificationButton(student?.uid),
                     ],
                   ),
                   SizedBox(height: 5),
@@ -445,7 +484,7 @@ class _StudenthomepageState extends State<Studenthomepage> {
                   ),
                   SizedBox(
                     height: 100,
-                    child: favoriteTutors?.length == 0
+                    child: (favoriteTutors?.isEmpty ?? true)
                         ? const Center(
                             child: Text(
                               'NO Favorite Teachers :(',
