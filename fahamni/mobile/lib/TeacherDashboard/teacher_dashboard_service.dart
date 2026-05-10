@@ -186,10 +186,10 @@ class TeacherDashboardService {
           : QuoteStatus.rejected.name,
       'responded_at': Timestamp.fromDate(DateTime.now()),
       'updated_at': Timestamp.now(),
-      'teacher_price': ?price,
-      'teacher_sessions_num': ?sessionsNumber,
-      'teacher_session_duration': ?sessionDurationMinutes,
     };
+    if (price != null) payload['teacher_price'] = price;
+    if (sessionsNumber != null) payload['teacher_sessions_num'] = sessionsNumber;
+    if (sessionDurationMinutes != null) payload['teacher_session_duration'] = sessionDurationMinutes;
 
     bool updated = false;
     for (final String collectionName in <String>['quote_requests', 'quotes']) {
@@ -764,5 +764,46 @@ class TeacherDashboardService {
   Future<List<QuoteModel>> loadAllQuotes() async {
     final TutorModel tutor = await _loadCurrentTutor();
     return _loadQuotes(tutor.uid, onlyPending: false);
+  }
+
+  /// Loads all quotes (all statuses, both collections) with student details.
+  Future<List<TeacherDashboardQuoteRequest>> loadAllQuoteDetails() async {
+    final TutorModel tutor = await _loadCurrentTutor();
+
+    Future<List<QuoteModel>> fetchFrom(String col) async {
+      final snap = await _firestore
+          .collection(col)
+          .where('tutor_id', isEqualTo: tutor.uid)
+          .get();
+      return snap.docs.map((doc) {
+        return QuoteModel.fromMap({
+          ...doc.data(),
+          'quote_id': doc.data()['quote_id'] ?? doc.id,
+        });
+      }).toList();
+    }
+
+    final List<QuoteModel> fromRequests = await fetchFrom('quote_requests');
+    final List<QuoteModel> fromQuotes = await fetchFrom('quotes');
+
+    // Deduplicate: prefer quote_requests entry; key by studentId+tutorId+serviceId
+    final Map<String, QuoteModel> byKey = {};
+    for (final q in [...fromRequests, ...fromQuotes]) {
+      final key = _quoteRequestKey(q);
+      final existing = byKey[key];
+      if (existing == null || _isNewerQuote(q, existing)) {
+        byKey[key] = q;
+      }
+    }
+
+    final List<QuoteModel> all = byKey.values.toList()
+      ..sort((a, b) {
+        final aDate = a.createdAt ?? a.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bDate = b.createdAt ?? b.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bDate.compareTo(aDate);
+      });
+
+    final Map<String, StudentModel> students = await _loadStudentsForQuotes(all);
+    return all.map((q) => _toQuoteRequestCard(q, students[q.studentId])).toList();
   }
 }

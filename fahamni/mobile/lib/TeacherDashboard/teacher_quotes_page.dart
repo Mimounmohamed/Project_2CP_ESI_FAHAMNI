@@ -30,9 +30,9 @@ class _TeacherQuotesPageState extends State<TeacherQuotesPage>
   Future<void> _loadQuotes() async {
     setState(() => _isLoading = true);
     try {
-      final dashboard = await _service.loadDashboard();
+      final details = await _service.loadAllQuoteDetails();
       setState(() {
-        _allRequests = dashboard.quoteRequests.map((request) {
+        _allRequests = details.map((request) {
           return TeacherJoinRequestDetail(
             quote: request.quote,
             studentName: request.studentName,

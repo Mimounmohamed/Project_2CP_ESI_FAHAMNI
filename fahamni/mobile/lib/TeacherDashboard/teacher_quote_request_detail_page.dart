@@ -1,7 +1,5 @@
 import 'package:fahamni/TeacherDashboard/models/teacher_portal_models.dart';
 import 'package:fahamni/TeacherDashboard/teacher_portal_service.dart';
-import 'package:fahamni/TeacherDashboard/widgets/teacher_portal_modals.dart'
-    as portal_modals;
 import 'package:fahamni/estimate/send_estimate_page.dart';
 import 'package:fahamni/models/quote_model.dart';
 import 'package:flutter/material.dart';
@@ -31,44 +29,19 @@ class _TeacherQuoteRequestDetailPageState
   bool _busy = false;
 
   Future<void> _accept() async {
-    final double? price = await portal_modals.QuoteRespondModal.show(context);
-    if (price == null) {
-      return;
-    }
-
-    setState(() {
-      _busy = true;
-    });
-
-    try {
-      await _service.respondToQuote(
-        request: widget.request,
-        status: QuoteStatus.accepted,
-        response: TeacherQuoteResponseDraft(
-          priceLabel: price.toStringAsFixed(0),
-          sessionsCount: widget.request.sessionsCount,
+    // Go directly to the estimate page. The quote is accepted when the teacher
+    // fills in price/sessions and taps "Send Estimate".
+    final bool? sent = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => SendEstimatePage(
+          request: widget.request,
+          acceptQuoteOnSend: true,
         ),
-      );
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Quote sent to ${widget.request.studentName}.')),
-      );
+      ),
+    );
+    if (!mounted) return;
+    if (sent == true) {
       Navigator.of(context).pop(true);
-    } catch (error) {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
-    } finally {
-      if (mounted) {
-        setState(() {
-          _busy = false;
-        });
-      }
     }
   }
 

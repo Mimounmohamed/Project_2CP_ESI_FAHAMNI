@@ -4,14 +4,24 @@ import 'package:flutter/services.dart';
 import 'package:printing/printing.dart';
 
 import '../TeacherDashboard/models/teacher_portal_models.dart';
+import '../TeacherDashboard/teacher_portal_service.dart';
+import '../models/quote_model.dart';
 import 'estimate_model.dart';
 import 'estimate_pdf_generator.dart';
 import 'estimate_service.dart';
 
 class SendEstimatePage extends StatefulWidget {
-  const SendEstimatePage({super.key, required this.request});
+  const SendEstimatePage({
+    super.key,
+    required this.request,
+    this.acceptQuoteOnSend = false,
+  });
 
   final TeacherJoinRequestDetail request;
+
+  /// When true, accepting the quote (calling respondToQuote) is done
+  /// automatically when the estimate is successfully sent.
+  final bool acceptQuoteOnSend;
 
   @override
   State<SendEstimatePage> createState() => _SendEstimatePageState();
@@ -26,12 +36,16 @@ class _SendEstimatePageState extends State<SendEstimatePage> {
   static const _border = Color(0xFFE5E7EB);
 
   final _estimateService = EstimateService();
+  final _portalService = TeacherPortalService();
 
-  final _studentEmailCtrl = TextEditingController();
-  final _studentPhoneCtrl = TextEditingController();
-  final _teacherPhoneCtrl = TextEditingController();
+  // Editable by teacher
   final _priceCtrl = TextEditingController();
   final _sessionsCtrl = TextEditingController();
+
+  // Auto-filled, read-only
+  String _studentEmail = '';
+  String _studentPhone = '';
+  String _teacherPhone = '';
 
   bool _loading = true;
   bool _sending = false;
@@ -47,9 +61,6 @@ class _SendEstimatePageState extends State<SendEstimatePage> {
 
   @override
   void dispose() {
-    _studentEmailCtrl.dispose();
-    _studentPhoneCtrl.dispose();
-    _teacherPhoneCtrl.dispose();
     _priceCtrl.dispose();
     _sessionsCtrl.dispose();
     super.dispose();
@@ -63,22 +74,36 @@ class _SendEstimatePageState extends State<SendEstimatePage> {
 
       final tutorUid = currentUser.uid;
       _teacherEmail = currentUser.email ?? '';
-      _teacherName = currentUser.displayName ?? widget.request.studentName;
+      _teacherName = currentUser.displayName ?? '';
 
+      // Run all independent fetches in parallel.
+      // Each call uses .catchError so a single failure never blocks the rest.
+      final empty = <String, String>{};
       final results = await Future.wait([
-        _estimateService.fetchStudentContact(widget.request.quote.studentId),
-        _estimateService.fetchTeacherPhone(tutorUid),
-        _estimateService.generateInvoiceNumber(),
+        _estimateService
+            .fetchStudentContact(widget.request.quote.studentId)
+            .catchError((_) => empty),
+        _estimateService
+            .fetchTeacherInfo(tutorUid)
+            .catchError((_) => empty),
+        _estimateService
+            .fetchExistingInvoiceNumber(
+                widget.request.quote.quoteId, tutorUid)
+            .catchError((_) => null),
       ]);
 
       final studentContact = results[0] as Map<String, String>;
-      final teacherPhone = results[1] as String;
-      final invoiceNumber = results[2] as String;
+      final teacherInfo = results[1] as Map<String, String>;
+      final existingInvoice = results[2] as String?;
 
-      _invoiceNumber = invoiceNumber;
-      _studentEmailCtrl.text = studentContact['email'] ?? '';
-      _studentPhoneCtrl.text = studentContact['phone'] ?? '';
-      _teacherPhoneCtrl.text = teacherPhone;
+      // Generate a new invoice number only when none was previously saved.
+      _invoiceNumber = existingInvoice ?? await _estimateService.generateInvoiceNumber();
+
+      _studentEmail = studentContact['email'] ?? '';
+      _studentPhone = studentContact['phone'] ?? '';
+      _teacherPhone = teacherInfo['phone'] ?? '';
+      final fetchedName = teacherInfo['name'] ?? '';
+      if (fetchedName.isNotEmpty) _teacherName = fetchedName;
 
       final rawPrice = widget.request.quote.responsePrice;
       final parsedPrice = double.tryParse(rawPrice) ?? 0.0;
@@ -87,11 +112,12 @@ class _SendEstimatePageState extends State<SendEstimatePage> {
       final sessions = widget.request.quote.responseSessionsCount > 0
           ? widget.request.quote.responseSessionsCount
           : widget.request.sessionsCount;
-      _sessionsCtrl.text = sessions.toString();
+      _sessionsCtrl.text = sessions > 0 ? sessions.toString() : '';
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error loading data: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading data: $e')),
+        );
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -114,9 +140,11 @@ class _SendEstimatePageState extends State<SendEstimatePage> {
       );
       return null;
     }
-    if (_studentEmailCtrl.text.trim().isEmpty) {
+    if (_studentEmail.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Student email is required to send.')),
+        const SnackBar(
+          content: Text('Student email not found. Cannot send estimate.'),
+        ),
       );
       return null;
     }
@@ -124,13 +152,15 @@ class _SendEstimatePageState extends State<SendEstimatePage> {
     return EstimateData(
       invoiceNumber: _invoiceNumber ?? 'EST-DRAFT',
       date: DateTime.now(),
+      quoteId: widget.request.quote.quoteId,
+      studentId: widget.request.quote.studentId,
       studentName: widget.request.studentName,
-      studentEmail: _studentEmailCtrl.text.trim(),
-      studentPhone: _studentPhoneCtrl.text.trim(),
+      studentEmail: _studentEmail,
+      studentPhone: _studentPhone,
       studentLevel: widget.request.studentLevel,
       teacherName: _teacherName,
       teacherEmail: _teacherEmail,
-      teacherPhone: _teacherPhoneCtrl.text.trim(),
+      teacherPhone: _teacherPhone,
       subject: widget.request.subject,
       description: widget.request.description,
       teachingMode: widget.request.teachingMode,
@@ -156,7 +186,35 @@ class _SendEstimatePageState extends State<SendEstimatePage> {
 
     setState(() => _sending = true);
     try {
+      // If this send also needs to accept the quote, do it first.
+      if (widget.acceptQuoteOnSend) {
+        await _portalService.respondToQuote(
+          request: widget.request,
+          status: QuoteStatus.accepted,
+          response: TeacherQuoteResponseDraft(
+            priceLabel: data.pricePerSession.toStringAsFixed(0),
+            sessionsCount: data.sessionsCount,
+          ),
+        );
+      }
+
+      final pdfBytes = await EstimatePdfGenerator.generate(data);
       await _estimateService.sendEstimate(data);
+
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        try {
+          await _portalService.sendEstimatePdfToChat(
+            tutorId: currentUser.uid,
+            studentId: widget.request.quote.studentId,
+            pdfBytes: pdfBytes,
+            invoiceNumber: data.invoiceNumber,
+          );
+        } catch (e) {
+          debugPrint('Chat PDF upload failed: $e');
+        }
+      }
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -165,7 +223,7 @@ class _SendEstimatePageState extends State<SendEstimatePage> {
           ),
         ),
       );
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -230,16 +288,18 @@ class _SendEstimatePageState extends State<SendEstimatePage> {
                             value: widget.request.studentName,
                           ),
                           const SizedBox(height: 12),
-                          _editableField(
-                            label: 'Email *',
-                            controller: _studentEmailCtrl,
-                            keyboard: TextInputType.emailAddress,
+                          _readOnlyField(
+                            label: 'Email',
+                            value: _studentEmail.isNotEmpty
+                                ? _studentEmail
+                                : '—',
                           ),
                           const SizedBox(height: 12),
-                          _editableField(
+                          _readOnlyField(
                             label: 'Phone',
-                            controller: _studentPhoneCtrl,
-                            keyboard: TextInputType.phone,
+                            value: _studentPhone.isNotEmpty
+                                ? _studentPhone
+                                : '—',
                           ),
                           const SizedBox(height: 12),
                           _readOnlyField(
@@ -261,10 +321,11 @@ class _SendEstimatePageState extends State<SendEstimatePage> {
                             value: _teacherEmail,
                           ),
                           const SizedBox(height: 12),
-                          _editableField(
+                          _readOnlyField(
                             label: 'Phone',
-                            controller: _teacherPhoneCtrl,
-                            keyboard: TextInputType.phone,
+                            value: _teacherPhone.isNotEmpty
+                                ? _teacherPhone
+                                : '—',
                           ),
                         ],
                       ),

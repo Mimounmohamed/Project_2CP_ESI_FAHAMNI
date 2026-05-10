@@ -46,6 +46,41 @@ class EstimateService {
     });
   }
 
+  /// Returns the invoice number of an already-sent estimate for [quoteId],
+  /// or null if no estimate has been sent yet.
+  ///
+  /// [senderUid] is required to satisfy the Firestore security rule that
+  /// restricts estimate reads to the sender. We query only by sender_uid
+  /// (single-field — no composite index needed) and filter by quote_id
+  /// client-side.
+  Future<String?> fetchExistingInvoiceNumber(
+    String quoteId,
+    String senderUid,
+  ) async {
+    if (quoteId.isEmpty ||
+        senderUid.isEmpty ||
+        quoteId.startsWith('pending_') ||
+        quoteId.startsWith('notif_')) {
+      return null;
+    }
+    try {
+      final snap = await _db
+          .collection('estimates')
+          .where('sender_uid', isEqualTo: senderUid)
+          .get();
+      for (final doc in snap.docs) {
+        if ((doc.data()['quote_id'] ?? '') == quoteId) {
+          final invoice = doc.data()['invoice_number'];
+          if (invoice is String && invoice.isNotEmpty) return invoice;
+        }
+      }
+    } catch (_) {
+      // Any Firestore error (permission, index missing, etc.) is non-fatal;
+      // a fresh invoice number will be generated instead.
+    }
+    return null;
+  }
+
   /// Fetches contact info (email, phone) for a student or child by ID.
   Future<Map<String, String>> fetchStudentContact(String studentId) async {
     if (studentId.isEmpty) return {};
@@ -86,5 +121,24 @@ class EstimateService {
     if (tutorUid.isEmpty) return '';
     final snap = await _db.collection('tutors').doc(tutorUid).get();
     return (snap.data()?['phone'] ?? '').toString();
+  }
+
+  /// Fetches teacher name and phone from users + tutors collections.
+  Future<Map<String, String>> fetchTeacherInfo(String tutorUid) async {
+    if (tutorUid.isEmpty) return {};
+    final results = await Future.wait([
+      _db.collection('users').doc(tutorUid).get(),
+      _db.collection('tutors').doc(tutorUid).get(),
+    ]);
+    final userData = results[0].data() ?? {};
+    final tutorData = results[1].data() ?? {};
+    final merged = {...userData, ...tutorData};
+    final firstName = (merged['first_name'] ?? '').toString().trim();
+    final lastName = (merged['last_name'] ?? '').toString().trim();
+    final name = '$firstName $lastName'.trim();
+    return {
+      'name': name,
+      'phone': (merged['phone'] ?? '').toString(),
+    };
   }
 }

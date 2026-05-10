@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { User, Mail, Phone, FileText, Download, Check, Info } from "lucide-react";
+import { User, Mail, Phone, FileText, Download, Check, Info, Eye, X } from "lucide-react";
 import { doc, updateDoc, collection, query, where, getDocs, addDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { ref as storageRef, listAll, getDownloadURL } from "firebase/storage";
 import { db, storage } from "./firebase";
@@ -38,14 +38,21 @@ function certificateUrl(cert) {
   return cert.url || cert.file_url || cert.media_url || cert.link_url || cert.download_url || cert.certification_url || "";
 }
 
-function downloadUrl(url, title = "certificate") {
-  if (!url) return "";
+async function handleDownload(url, title = "certificate") {
+  if (!url) return;
   try {
-    const next = new URL(url);
-    next.searchParams.set("response-content-disposition", `attachment; filename="${title}"`);
-    return next.toString();
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const objUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = objUrl;
+    a.download = title;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(objUrl);
   } catch {
-    return url;
+    window.open(url, "_blank");
   }
 }
 
@@ -76,6 +83,7 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
   const [error, setError] = useState(null);
   const [certificates, setCertificates] = useState([]);
   const [quotes, setQuotes] = useState(null);
+  const [selectedQuote, setSelectedQuote] = useState(null);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [selectedCause, setSelectedCause] = useState(REJECTION_CAUSES[0]);
   const teacherUid = teacher.uid || teacher.id || initial.uid || initial.id;
@@ -135,9 +143,79 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
 
   useEffect(() => {
     if (!teacherUid) return;
-    getDocs(query(collection(db, "quotes"), where("tutor_id", "==", teacherUid)))
-      .then(snap => setQuotes(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
-      .catch(() => setQuotes([]));
+    let cancelled = false;
+    async function loadQuotes() {
+      try {
+        const [quotesSnap, requestsSnap, estimatesSnap] = await Promise.all([
+          getDocs(query(collection(db, "quotes"),         where("tutor_id",   "==", teacherUid))),
+          getDocs(query(collection(db, "quote_requests"), where("tutor_id",   "==", teacherUid))),
+          getDocs(query(collection(db, "estimates"),      where("sender_uid", "==", teacherUid))),
+        ]);
+
+        // quote_requests covered by an estimate (matched by quote_id field on estimate)
+        const coveredByEstimate = new Set(
+          estimatesSnap.docs.map(d => d.data().quote_id).filter(Boolean)
+        );
+
+        const docsMap = new Map();
+
+        // 1. Estimates win — include all of them
+        estimatesSnap.docs.forEach(d => {
+          const data = { id: d.id, _source: "estimates", ...d.data() };
+          if (!data.quote_number && data.invoice_number) data.quote_number = data.invoice_number;
+          if (!data.client_name  && data.student_name)   data.client_name  = data.student_name;
+          if (!data.status) data.status = "sent";
+          docsMap.set(`estimates:${d.id}`, data);
+        });
+
+        // 2. quote_requests not covered by an estimate
+        requestsSnap.docs.forEach(d => {
+          if (coveredByEstimate.has(d.id)) return;
+          const data = { id: d.id, _source: "quote_requests", ...d.data() };
+          if (!data.status) data.status = "pending";
+          docsMap.set(`quote_requests:${d.id}`, data);
+        });
+
+        // 3. quotes: suppress those whose student|tutor|service key already exists
+        const existingKeys = new Set(
+          [...docsMap.values()]
+            .map(d => {
+              const sid = d.student_id || "";
+              const tid = d.tutor_id || d.sender_uid || "";
+              const svc = d.service_id || "";
+              return sid && tid ? `${sid}|${tid}|${svc}` : null;
+            })
+            .filter(Boolean)
+        );
+
+        quotesSnap.docs.forEach(d => {
+          const raw = d.data();
+          const k = raw.student_id && raw.tutor_id
+            ? `${raw.student_id}|${raw.tutor_id}|${raw.service_id || ""}`
+            : null;
+          if (k && existingKeys.has(k)) return;
+          const data = { id: d.id, _source: "quotes", ...raw };
+          if (!data.status) data.status = "pending";
+          docsMap.set(`quotes:${d.id}`, data);
+        });
+
+        const merged = [...docsMap.values()].sort((a, b) => {
+          const aT = a.sent_at?.toDate?.() ?? a.created_at?.toDate?.() ?? (a.created_at ? new Date(a.created_at) : null);
+          const bT = b.sent_at?.toDate?.() ?? b.created_at?.toDate?.() ?? (b.created_at ? new Date(b.created_at) : null);
+          if (!aT && !bT) return 0;
+          if (!aT) return 1;
+          if (!bT) return -1;
+          return bT - aT;
+        });
+
+        if (!cancelled) setQuotes(merged);
+      } catch (e) {
+        console.error("Failed to load quotes:", e);
+        if (!cancelled) setQuotes([]);
+      }
+    }
+    loadQuotes();
+    return () => { cancelled = true; };
   }, [teacherUid]);
 
   async function updateAccountStatus(status) {
@@ -330,15 +408,11 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
               ) : certificates.map(c => {
                 const url = certificateUrl(c);
                 const title = c.title || c.name || fileNameFromUrl(url) || "Certificate";
-                const CardTag = url ? "a" : "div";
                 return (
-                <CardTag
+                <div
                   key={c.id}
-                  href={url ? downloadUrl(url, title) : undefined}
-                  download={url ? title : undefined}
-                  target={url ? "_blank" : undefined}
-                  rel={url ? "noopener noreferrer" : undefined}
-                  style={s.certCard}
+                  onClick={() => url && handleDownload(url, title)}
+                  style={{ ...s.certCard, cursor: url ? "pointer" : "default" }}
                 >
                   <FileText size={20} color="#6366f1" strokeWidth={1.8} />
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -347,7 +421,7 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
                     </div>
                   </div>
                   <Download size={14} color="#94a3b8" strokeWidth={2} />
-                </CardTag>
+                </div>
                 );
               })}
             </div>
@@ -380,7 +454,7 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
               <div style={{ fontSize: 13, color: "#94a3b8" }}>No quotes issued yet.</div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {quotes.map(q => <QuoteRow key={q.id} quote={q} />)}
+                {quotes.map(q => <QuoteRow key={`${q._source}:${q.id}`} quote={q} onView={() => setSelectedQuote(q)} />)}
               </div>
             )}
           </div>
@@ -432,6 +506,97 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
 
       </div>
 
+      {/* ── Quote detail modal ── */}
+      {selectedQuote && (() => {
+        const isInvoice = selectedQuote._source === "estimates";
+        const rawDate   = isInvoice ? (selectedQuote.sent_at || selectedQuote.created_at) : selectedQuote.created_at;
+        const modalDate = rawDate?.toDate
+          ? rawDate.toDate().toLocaleDateString("en-GB")
+          : (rawDate ? new Date(rawDate).toLocaleDateString("en-GB") : "—");
+        const st = (selectedQuote.status || "draft").toLowerCase();
+        const SC = { pending:{bg:"#fef9c3",color:"#854d0e"}, sent:{bg:"#dbeafe",color:"#1d4ed8"}, accepted:{bg:"#dcfce7",color:"#166534"}, rejected:{bg:"#fee2e2",color:"#991b1b"}, paid:{bg:"#d1fae5",color:"#065f46"}, expired:{bg:"#f1f5f9",color:"#64748b"}, draft:{bg:"#f1f5f9",color:"#64748b"} };
+        const sc = SC[st] ?? SC.draft;
+        const fields = [
+          ["Student",            selectedQuote.client_name || selectedQuote.student_name || "—"],
+          ...(isInvoice && selectedQuote.student_email ? [["Student Email", selectedQuote.student_email]] : []),
+          ["Teacher",            selectedQuote.teacher_name || "—"],
+          ...(isInvoice && selectedQuote.teacher_email ? [["Teacher Email", selectedQuote.teacher_email]] : []),
+          ["Subject",            selectedQuote.subject || "—"],
+          ["Sessions",           selectedQuote.sessions_count != null ? `${selectedQuote.sessions_count} session(s)` : "—"],
+          ["Duration / Session", selectedQuote.session_duration || "—"],
+          ["Price / Session",    selectedQuote.price_per_session != null ? `${Number(selectedQuote.price_per_session).toLocaleString()} DA` : "—"],
+          ["Total",              selectedQuote.total != null ? `${Number(selectedQuote.total).toLocaleString()} DA` : "—"],
+          ["Teaching Mode",      selectedQuote.teaching_mode || selectedQuote.teachingMode || "—"],
+        ];
+        return (
+          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center" }}
+               onClick={() => setSelectedQuote(null)}>
+            <div style={{ background:"#fff", borderRadius:16, padding:28, width:500, maxWidth:"92vw", maxHeight:"85vh", overflowY:"auto", boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }}
+                 onClick={e => e.stopPropagation()}>
+              {/* header */}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+                <div>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <div style={{ fontSize:16, fontWeight:800, color:"#1F2937" }}>
+                      {selectedQuote.quote_number || selectedQuote.reference || (isInvoice ? "Invoice" : "Estimate")}
+                    </div>
+                    {isInvoice && <span style={{ fontSize:10, fontWeight:700, background:"#dcfce7", color:"#166534", borderRadius:4, padding:"2px 7px", letterSpacing:"0.04em" }}>INVOICE</span>}
+                  </div>
+                  <div style={{ fontSize:11, color:"#94a3b8", marginTop:2 }}>{modalDate}</div>
+                </div>
+                <button onClick={() => setSelectedQuote(null)} style={{ background:"none", border:"none", cursor:"pointer", padding:4 }}>
+                  <X size={20} color="#94a3b8" />
+                </button>
+              </div>
+
+              {/* status badge */}
+              <span style={{ fontSize:11, fontWeight:700, borderRadius:4, padding:"3px 10px", background:sc.bg, color:sc.color, letterSpacing:"0.04em" }}>{st.toUpperCase()}</span>
+
+              {/* fields */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginTop:18 }}>
+                {fields.map(([label, value]) => (
+                  <div key={label} style={{ background:"#f8fafc", borderRadius:10, padding:"10px 14px" }}>
+                    <div style={{ fontSize:10, fontWeight:700, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:4 }}>{label}</div>
+                    <div style={{ fontSize:13, fontWeight:600, color:"#1F2937", wordBreak:"break-all" }}>{value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* description */}
+              {selectedQuote.description && (
+                <div style={{ background:"#f8fafc", borderRadius:10, padding:"10px 14px", marginTop:14 }}>
+                  <div style={{ fontSize:10, fontWeight:700, color:"#94a3b8", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:4 }}>Description</div>
+                  <div style={{ fontSize:13, color:"#374151", lineHeight:1.6 }}>{selectedQuote.description}</div>
+                </div>
+              )}
+
+              {/* invoice sent notice / PDF download */}
+              {isInvoice ? (
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:20, padding:"12px 16px", background:"#f0fdf4", border:"1px solid #bbf7d0", borderRadius:10 }}>
+                  <div style={{ width:28, height:28, borderRadius:"50%", background:"#dcfce7", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <Check size={14} color="#166534" strokeWidth={2.5} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize:12, fontWeight:700, color:"#166534" }}>Invoice sent</div>
+                    <div style={{ fontSize:11, color:"#4ade80" }}>
+                      Delivered to {selectedQuote.student_email || selectedQuote.client_name || "student"} on {modalDate}
+                    </div>
+                  </div>
+                </div>
+              ) : selectedQuote.pdf_url ? (
+                <button
+                  onClick={() => handleDownload(selectedQuote.pdf_url, `${selectedQuote.quote_number || "estimate"}.pdf`)}
+                  style={{ display:"flex", alignItems:"center", gap:8, marginTop:20, width:"100%", padding:"12px 16px", background:"#000080", color:"#fff", border:"none", borderRadius:10, cursor:"pointer", fontWeight:700, fontSize:13, justifyContent:"center" }}
+                >
+                  <Download size={16} />
+                  Download Estimate PDF
+                </button>
+              ) : null}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── Rejection modal ── */}
       {showRejectModal && (
         <div style={s.overlay} onClick={() => setShowRejectModal(false)}>
@@ -481,24 +646,35 @@ export default function TeacherProfilePage({ teacher: initial, adminUser, onBack
   );
 }
 
-function QuoteRow({ quote }) {
-  const num    = quote.quote_number || quote.reference || `#${String(quote.id).slice(0, 8).toUpperCase()}`;
-  const d      = quote.created_at?.toDate ? quote.created_at.toDate() : (quote.created_at ? new Date(quote.created_at) : null);
-  const date   = d && !isNaN(d) ? `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}` : "—";
-  const amount = quote.total != null ? `${Number(quote.total).toLocaleString()} DA` : (quote.amount != null ? `${Number(quote.amount).toLocaleString()} DA` : "—");
-  const status = (quote.status || "draft").toLowerCase();
-  const SC = { pending: { bg:"#fef9c3",color:"#854d0e" }, sent: { bg:"#dbeafe",color:"#1d4ed8" }, accepted: { bg:"#dcfce7",color:"#166534" }, paid: { bg:"#d1fae5",color:"#065f46" }, draft: { bg:"#f1f5f9",color:"#64748b" } };
+function QuoteRow({ quote, onView }) {
+  const isInvoice = quote._source === "estimates";
+  const num       = quote.quote_number || quote.reference || `#${String(quote.id).slice(0, 8).toUpperCase()}`;
+  const rawDate   = isInvoice ? (quote.sent_at || quote.created_at) : quote.created_at;
+  const d         = rawDate?.toDate ? rawDate.toDate() : (rawDate ? new Date(rawDate) : null);
+  const date      = d && !isNaN(d) ? `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}` : "—";
+  const amount    = quote.total != null ? `${Number(quote.total).toLocaleString()} DA` : (quote.amount != null ? `${Number(quote.amount).toLocaleString()} DA` : "—");
+  const status    = (quote.status || "draft").toLowerCase();
+  const SC = { pending:{bg:"#fef9c3",color:"#854d0e"}, sent:{bg:"#dbeafe",color:"#1d4ed8"}, accepted:{bg:"#dcfce7",color:"#166534"}, rejected:{bg:"#fee2e2",color:"#991b1b"}, paid:{bg:"#d1fae5",color:"#065f46"}, expired:{bg:"#f1f5f9",color:"#64748b"}, draft:{bg:"#f1f5f9",color:"#64748b"} };
   const sc = SC[status] ?? SC.draft;
   return (
     <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:"#f8fafc", borderRadius:10, border:"1px solid #e2e8f0" }}>
-      <FileText size={16} color="#6366f1" strokeWidth={1.8} style={{ flexShrink:0 }} />
+      <FileText size={16} color={isInvoice ? "#166534" : "#6366f1"} strokeWidth={1.8} style={{ flexShrink:0 }} />
       <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ fontSize:13, fontWeight:600, color:"#1F2937" }}>{num}</div>
-        {quote.client_name && <div style={{ fontSize:11, color:"#94a3b8" }}>{quote.client_name}</div>}
+        <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+          <span style={{ fontSize:13, fontWeight:600, color:"#1F2937" }}>{num}</span>
+          {isInvoice && <span style={{ fontSize:9, fontWeight:700, background:"#dcfce7", color:"#166534", borderRadius:3, padding:"1px 5px", letterSpacing:"0.04em" }}>INVOICE</span>}
+        </div>
+        {(quote.client_name || quote.student_name) && (
+          <div style={{ fontSize:11, color:"#94a3b8" }}>{quote.client_name || quote.student_name}</div>
+        )}
       </div>
       <span style={{ fontSize:12, color:"#64748b", flexShrink:0 }}>{amount}</span>
       <span style={{ fontSize:10, fontWeight:700, borderRadius:4, padding:"2px 7px", background:sc.bg, color:sc.color, letterSpacing:"0.04em", flexShrink:0 }}>{status.toUpperCase()}</span>
       <span style={{ fontSize:11, color:"#94a3b8", flexShrink:0 }}>{date}</span>
+      <button onClick={onView} title="View details"
+        style={{ background:"none", border:"none", cursor:"pointer", padding:4, display:"flex", alignItems:"center", flexShrink:0 }}>
+        <Eye size={15} color="#6366f1" strokeWidth={2} />
+      </button>
     </div>
   );
 }

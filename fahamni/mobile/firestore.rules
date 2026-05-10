@@ -253,5 +253,18 @@ service cloud.firestore {
       allow read: if request.auth != null || request.auth == null;
       allow delete: if true;
     }
+
+    match /config/{docId} {
+      allow read, write: if signedIn();
+    }
+
+    match /estimates/{estimateId} {
+      allow read: if signedIn() &&
+        (isAdmin() ||
+         resource.data.sender_uid == request.auth.uid ||
+         resource.data.student_id == request.auth.uid);
+      allow create, update: if signedIn();
+      allow delete: if false;
+    }
   }
 }

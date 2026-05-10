@@ -1,26 +1,21 @@
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
-const nodemailer = require("nodemailer");
-const { defineString, defineSecret } = require("firebase-functions/params");
+const sgMail = require("@sendgrid/mail");
+const { defineString } = require("firebase-functions/params");
 
 admin.initializeApp();
 
 // ── Config ────────────────────────────────────────────────────────────────────
-const mailUser = defineString("MAIL_USER");
-const mailPass = defineSecret("MAIL_PASS");
+const sendgridApiKey = defineString("SENDGRID_API_KEY");
+const mailFrom = defineString("MAIL_FROM");   // e.g. fahamni.app@gmail.com
 
-function getTransporter() {
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: mailUser.value(),
-      pass: mailPass.value(),
-    },
-  });
+function getSgMail() {
+  sgMail.setApiKey(sendgridApiKey.value());
+  return sgMail;
 }
 
 exports.updateUserEmail = onCall(
-  { allowUnauthenticated: false, secrets: [mailPass] },
+  { allowUnauthenticated: false },
   async (request) => {
     const { newEmail } = request.data;
     const uid = request.auth?.uid;
@@ -112,7 +107,7 @@ function emailWrapper(headerLeft, headerRight, body) {
 
 // ── Existing: Reset Password ──────────────────────────────────────────────────
 exports.resetPassword = onCall(
-  { allowUnauthenticated: true, secrets: [mailPass] },
+  { allowUnauthenticated: true },
   async (request) => {
     const { email, newPassword } = request.data;
 
@@ -135,7 +130,7 @@ exports.resetPassword = onCall(
 
 // ── Send OTP Email ────────────────────────────────────────────────────────────
 exports.sendOtpEmail = onCall(
-  { allowUnauthenticated: true, secrets: [mailPass] },
+  { allowUnauthenticated: true },
   async (request) => {
     const { email, firstName, code, isReset } = request.data;
 
@@ -186,11 +181,11 @@ exports.sendOtpEmail = onCall(
       <p style="font-size:10px;color:#cbd5e1;margin:0;">${note}</p>`;
 
     try {
-      await getTransporter().sendMail({
-        from:    '"Fahamni" <' + mailUser.value() + '>',
-        to:      email,
+      await getSgMail().send({
+        from: { name: "Fahamni", email: mailFrom.value() },
+        to: email,
         subject: isReset ? 'Reset your Fahamni password' : 'Your Fahamni verification code',
-        html:    emailWrapper(headerLeft, headerRight, body),
+        html: emailWrapper(headerLeft, headerRight, body),
       });
       return { success: true };
     } catch (e) {
@@ -201,7 +196,7 @@ exports.sendOtpEmail = onCall(
 
 // ── Send Welcome Email ────────────────────────────────────────────────────────
 exports.sendWelcomeEmail = onCall(
-  { allowUnauthenticated: true, secrets: [mailPass] },
+  { allowUnauthenticated: true },
   async (request) => {
     const { email, firstName } = request.data;
 
@@ -245,11 +240,11 @@ exports.sendWelcomeEmail = onCall(
       <p style="font-size:10px;color:#cbd5e1;margin:0;">Didn't create this account? Contact us immediately.</p>`;
 
     try {
-      await getTransporter().sendMail({
-        from:    '"Fahamni" <' + mailUser.value() + '>',
-        to:      email,
+      await getSgMail().send({
+        from: { name: "Fahamni", email: mailFrom.value() },
+        to: email,
         subject: `Welcome to Fahamni, ${firstName}!`,
-        html:    emailWrapper(headerLeft, headerRight, body),
+        html: emailWrapper(headerLeft, headerRight, body),
       });
       return { success: true };
     } catch (e) {
@@ -260,7 +255,7 @@ exports.sendWelcomeEmail = onCall(
 
 // ── Send Password Changed Email ───────────────────────────────────────────────
 exports.sendPasswordChangedEmail = onCall(
-  { allowUnauthenticated: true, secrets: [mailPass] },
+  { allowUnauthenticated: true },
   async (request) => {
     const { email } = request.data;
 
@@ -292,11 +287,11 @@ exports.sendPasswordChangedEmail = onCall(
       <p style="font-size:10px;color:#cbd5e1;margin:0;">This is an automated security notification.</p>`;
 
     try {
-      await getTransporter().sendMail({
-        from:    '"Fahamni" <' + mailUser.value() + '>',
-        to:      email,
+      await getSgMail().send({
+        from: { name: "Fahamni", email: mailFrom.value() },
+        to: email,
         subject: 'Your Fahamni password was changed',
-        html:    emailWrapper(headerLeft, headerRight, body),
+        html: emailWrapper(headerLeft, headerRight, body),
       });
       return { success: true };
     } catch (e) {
@@ -760,7 +755,7 @@ exports.addTeacherResource = onCall(async (request) => {
 
 // ── Send Estimate ──────────────────────────────────────────────────────────────
 exports.sendEstimate = onCall(
-  { allowUnauthenticated: false, secrets: [mailPass] },
+  { allowUnauthenticated: false },
   async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError("unauthenticated", "Login required.");
@@ -780,42 +775,60 @@ exports.sendEstimate = onCall(
     }
 
     const pdfBuffer = Buffer.from(pdfBase64, "base64");
+    const subjectLine = subject ?? "Tutoring Session";
+    const teacher = teacherName ?? "Your teacher";
+    const student = studentName ?? "Student";
 
-    const transporter = getTransporter();
-    await transporter.sendMail({
-      from: `"Fahamni" <${mailUser.value()}>`,
+    const msg = {
+      from: { name: "Fahamni Tutoring", email: mailFrom.value() },
+      replyTo: mailFrom.value(),
       to: recipientEmail,
-      subject: `Your Estimate ${invoiceNumber} — ${subject ?? "Tutoring Session"}`,
-      html: `
-        <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto">
-          <h2 style="color:#000080">Fahamni Estimate</h2>
-          <p>Dear <strong>${studentName ?? "Student"}</strong>,</p>
-          <p>
-            <strong>${teacherName ?? "Your teacher"}</strong> has sent you an estimate
-            for your tutoring sessions. Please find the PDF attached.
-          </p>
-          <p style="color:#6B7280;font-size:13px">
-            Reference: <strong>${invoiceNumber}</strong>
-          </p>
-          <hr style="border:none;border-top:1px solid #E5E7EB;margin:24px 0"/>
-          <p style="color:#9CA3AF;font-size:12px">
-            Fahamni — Mobile Tutoring Application<br/>
-            www.fahamni.app | contact@fahamni.app
-          </p>
-        </div>
-      `,
+      subject: `Tutoring Estimate ${invoiceNumber} from ${teacher}`,
+      text: `Dear ${student},\n\n${teacher} has sent you a tutoring estimate (${invoiceNumber}) for ${subjectLine}.\n\nPlease find the PDF attached.\n\nFahamni Tutoring Application`,
+      html: emailWrapper(
+        `<div style="font-size:48px;font-weight:900;color:rgba(255,255,255,0.06);line-height:1;margin-top:12px;">EST</div>`,
+        `<div style="font-size:20px;font-weight:800;color:#fff;line-height:1.25;">Tutoring Estimate</div>
+         <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:6px;">${invoiceNumber}</div>`,
+        `<p style="font-size:13px;color:#64748b;margin:0 0 16px;line-height:1.6;">
+           Dear <strong style="color:#0f172a;">${student}</strong>,
+         </p>
+         <p style="font-size:13px;color:#64748b;margin:0 0 20px;line-height:1.6;">
+           <strong style="color:#0f172a;">${teacher}</strong> has sent you a tutoring estimate for
+           <strong style="color:#0f172a;">${subjectLine}</strong>. Please find the full estimate PDF attached to this email.
+         </p>
+         <table width="100%" cellpadding="0" cellspacing="0"
+           style="background:#f8faff;border-left:3px solid #000080;margin-bottom:20px;">
+           <tr><td style="padding:12px 16px;">
+             <p style="font-size:11px;color:#64748b;margin:0 0 4px;text-transform:uppercase;letter-spacing:0.08em;">Reference</p>
+             <p style="font-size:15px;font-weight:800;color:#000080;margin:0;">${invoiceNumber}</p>
+           </td></tr>
+         </table>
+         <p style="font-size:10px;color:#cbd5e1;margin:0;">This is a transactional email sent on behalf of your tutor via Fahamni.</p>`,
+      ),
       attachments: [
         {
           filename: `${invoiceNumber}.pdf`,
-          content: pdfBuffer,
-          contentType: "application/pdf",
+          content: pdfBase64,
+          type: "application/pdf",
+          disposition: "attachment",
         },
       ],
-    });
+    };
+    // CC the teacher if their email is available
+    if (invoiceData?.teacher_email) msg.cc = invoiceData.teacher_email;
+    await getSgMail().send(msg);
 
+    const pricePerSession = Number(invoiceData?.price_per_session ?? 0);
+    const sessionsCount = Number(invoiceData?.sessions_count ?? 1);
+    const total = pricePerSession * sessionsCount;
+
+    // Only persist to `estimates`. Writing a duplicate to `quotes` would
+    // override the accepted/rejected status set by the app, causing the quote
+    // to stay stuck in the Waiting tab.
     await admin.firestore().collection("estimates").add({
       ...invoiceData,
       sender_uid: uid,
+      total,
       status: "sent",
       sent_at: admin.firestore.FieldValue.serverTimestamp(),
     });

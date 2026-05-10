@@ -15,10 +15,14 @@ class EstimateData {
     required this.sessionsCount,
     required this.sessionDuration,
     required this.pricePerSession,
+    this.quoteId = '',
+    this.studentId = '',
   });
 
   final String invoiceNumber;
   final DateTime date;
+  final String quoteId;
+  final String studentId;
 
   final String studentName;
   final String studentEmail;
@@ -62,6 +66,8 @@ class EstimateData {
 
   Map<String, dynamic> toFirestoreMap() => {
     'invoice_number': invoiceNumber,
+    'quote_id': quoteId,
+    'student_id': studentId,
     'student_name': studentName,
     'student_email': studentEmail,
     'teacher_name': teacherName,

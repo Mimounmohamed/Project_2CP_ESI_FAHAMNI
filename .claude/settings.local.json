@@ -35,7 +35,14 @@
       "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\catal\\\\Fahamni\" -Directory)",
       "Bash(Select-Object Name)",
       "PowerShell(New-Item -ItemType Directory -Path \"c:\\\\Users\\\\catal\\\\Fahamni\\\\Instalation web\" -Force)",
-      "PowerShell(Copy-Item \"c:\\\\Users\\\\catal\\\\Fahamni\\\\fahamni\\\\mobile\\\\assets\\\\images\\\\logo.png\" -Destination \"c:\\\\Users\\\\catal\\\\Fahamni\\\\Instalation web\\\\logo.png\")"
+      "PowerShell(Copy-Item \"c:\\\\Users\\\\catal\\\\Fahamni\\\\fahamni\\\\mobile\\\\assets\\\\images\\\\logo.png\" -Destination \"c:\\\\Users\\\\catal\\\\Fahamni\\\\Instalation web\\\\logo.png\")",
+      "Bash(firebase deploy *)",
+      "Bash(cd /c/Users/catal/Fahamni/fahamni/web/dashboard/src && find . -type f -name \"*.tsx\" -o -name \"*.ts\" -o -name \"*.jsx\" -o -name \"*.js\" | head -30)",
+      "Read(//c/c/Users/catal/Fahamni/fahamni/web/dashboard/**)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\catal\\\\Fahamni\\\\fahamni\\\\mobile\" -Recurse -Filter \"*.js\")",
+      "Bash(Select-Object FullName)",
+      "Bash(powershell -Command \"ls 'c:\\\\Users\\\\catal\\\\Fahamni\\\\fahamni\\\\mobile\\\\functions\\\\' | grep -v node_modules\")",
+      "Bash(xargs wc -l)"
     ]
   }
 }

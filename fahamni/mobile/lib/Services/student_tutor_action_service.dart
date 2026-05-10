@@ -165,6 +165,7 @@ class StudentTutorActionService {
           .collection('services')
           .doc(service.serviceId);
 
+      bool alreadyRequested = false;
       await _firestore.runTransaction((transaction) async {
         final DocumentSnapshot<Map<String, dynamic>> serviceSnap =
             await transaction.get(serviceRef);
@@ -177,34 +178,54 @@ class StudentTutorActionService {
           serviceSnap.data()?['student_ids'] ?? [],
         );
 
-        if (!pendingIds.contains(requestStudentId) &&
-            !studentIds.contains(requestStudentId)) {
-          pendingIds.add(requestStudentId);
-
-          transaction.update(serviceRef, {
-            'pending_ids': pendingIds,
-            'updated_at': Timestamp.now(),
-          });
+        if (pendingIds.contains(requestStudentId) ||
+            studentIds.contains(requestStudentId)) {
+          alreadyRequested = true;
+          return;
         }
+
+        pendingIds.add(requestStudentId);
+        transaction.update(serviceRef, {
+          'pending_ids': pendingIds,
+          'updated_at': Timestamp.now(),
+        });
       });
 
-      await _notificationService.sendNotification(
-        NotificationModel(
-          title: 'New join request',
-          content:
-              '$requestStudentName sent a join request for ${service.name}.',
-          dateTime: DateTime.now(),
-          isRead: false,
-          notificationId: '',
-          receiverId: tutor.uid,
-          type: 'join_request',
-          senderId: currentUser.uid,
-          tutorId: tutor.uid,
-          serviceId: service.serviceId,
-        ),
-      );
+      // Only send the notification the first time, not on repeated taps
+      if (!alreadyRequested) {
+        await _notificationService.sendNotification(
+          NotificationModel(
+            title: 'New join request',
+            content:
+                '$requestStudentName sent a join request for ${service.name}.',
+            dateTime: DateTime.now(),
+            isRead: false,
+            notificationId: '',
+            receiverId: tutor.uid,
+            type: 'join_request',
+            senderId: currentUser.uid,
+            tutorId: tutor.uid,
+            serviceId: service.serviceId,
+          ),
+        );
+      }
 
       return;
+    }
+
+    // Prevent duplicate quote: skip creation if a pending quote already exists
+    // for this student+tutor+service combination.
+    for (final collection in ['quotes', 'quote_requests']) {
+      Query<Map<String, dynamic>> q = _firestore
+          .collection(collection)
+          .where('student_id', isEqualTo: requestStudentId)
+          .where('tutor_id', isEqualTo: tutor.uid)
+          .where('status', isEqualTo: 'pending');
+      if (service != null) {
+        q = q.where('service_id', isEqualTo: service.serviceId);
+      }
+      final existing = await q.limit(1).get();
+      if (existing.docs.isNotEmpty) return;
     }
 
     final DocumentReference<Map<String, dynamic>> quoteRef = _firestore
@@ -334,10 +355,27 @@ class StudentTutorActionService {
       'created_at': Timestamp.now(),
     });
 
+    // Resolve the student/child display name for the notification content
+    String studentDisplayName = 'A student';
+    try {
+      final studentDoc = await _firestore.collection('students').doc(studentId).get();
+      if (studentDoc.exists && studentDoc.data() != null) {
+        final d = studentDoc.data()!;
+        final full = '${(d['first_name'] ?? '').toString().trim()} ${(d['last_name'] ?? '').toString().trim()}'.trim();
+        if (full.isNotEmpty) studentDisplayName = full;
+      } else {
+        final childDoc = await _firestore.collection('children').doc(studentId).get();
+        if (childDoc.exists && childDoc.data() != null) {
+          final n = (childDoc.data()!['name'] ?? '').toString().trim();
+          if (n.isNotEmpty) studentDisplayName = n;
+        }
+      }
+    } catch (_) {}
+
     await _notificationService.sendNotification(
       NotificationModel(
         title: 'New quote request',
-        content: 'A quote request has been sent to ${tutor.firstName}.',
+        content: '$studentDisplayName sent you a quote request for $subject.',
         dateTime: DateTime.now(),
         isRead: false,
         notificationId: '',

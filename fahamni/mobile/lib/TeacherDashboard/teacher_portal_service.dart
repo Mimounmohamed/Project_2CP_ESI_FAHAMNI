@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 
 import 'models/teacher_portal_models.dart';
@@ -209,13 +210,38 @@ class TeacherPortalService {
     await _firestore.collection('services').doc(serviceId).delete();
   }
 
+  /// Returns the UID that should receive the notification.
+  /// For regular students this is their own UID; for children it is the
+  /// parent's Firebase Auth UID (looked up from the children collection).
+  Future<String> _resolveNotificationReceiver(
+    String studentId,
+    bool isChild,
+  ) async {
+    if (!isChild) return studentId;
+    try {
+      final snap =
+          await _firestore.collection('children').doc(studentId).get();
+      final parentUid =
+          (snap.data()?['parentUid'] ?? '').toString().trim();
+      if (parentUid.isNotEmpty) return parentUid;
+    } catch (_) {}
+    return studentId;
+  }
+
   Future<void> respondToQuote({
     required TeacherJoinRequestDetail request,
     required QuoteStatus status,
     TeacherQuoteResponseDraft? response,
   }) async {
     final TutorModel currentTutor = await _loadCurrentTutor();
-    // If it's a join request from the pending_ids of a service
+
+    // Resolve the correct notification target once (parent if child).
+    final String notificationReceiver = await _resolveNotificationReceiver(
+      request.quote.studentId,
+      request.isChild,
+    );
+
+    // ── Join request from a service's pending_ids ──────────────────────────
     if (request.quote.quoteId.startsWith('pending_')) {
       final studentId = request.quote.studentId;
       final serviceId = request.quote.serviceId;
@@ -247,69 +273,53 @@ class TeacherPortalService {
             'updated_at': Timestamp.now(),
           });
         });
-        // notify the requester (student or parent who initiated the join request)
-        try {
-          final NotificationService ns = NotificationService();
-          // For join requests, the studentId is the one who should receive the notification
-          // If it was sent by a parent on behalf of a child, the studentId will be the child
-          // If it was sent directly by a student, the studentId will be the sender
-          final String receiver = studentId;
-          await ns.sendNotification(
-            NotificationModel(
-              title: 'Join request accepted',
-              content: '${request.studentName} has been accepted to ${request.serviceTitle}.',
-              dateTime: DateTime.now(),
-              isRead: false,
-              notificationId: '',
-              receiverId: receiver,
-              type: 'join_request_response',
-              senderId: currentTutor.uid,
-              tutorId: currentTutor.uid,
-              serviceId: serviceId,
-            ),
-          );
-        } catch (e) {
-          // Log the error but don't fail the operation
-          debugPrint('Failed to send join request acceptance notification: $e');
-        }
       } else {
         await serviceRef.update({
           'pending_ids': FieldValue.arrayRemove([studentId]),
           'updated_at': Timestamp.now(),
         });
-        // notify the requester about rejection
-        try {
-          final NotificationService ns = NotificationService();
-          // For join requests, the studentId is the one who should receive the notification
-          final String receiver = studentId;
-          await ns.sendNotification(
-            NotificationModel(
-              title: 'Join request rejected',
-              content: '${request.studentName} join request for ${request.serviceTitle} was rejected.',
-              dateTime: DateTime.now(),
-              isRead: false,
-              notificationId: '',
-              receiverId: receiver,
-              type: 'join_request_response',
-              senderId: currentTutor.uid,
-              tutorId: currentTutor.uid,
-              serviceId: serviceId,
-            ),
-          );
-        } catch (e) {
-          // Log the error but don't fail the operation
-          debugPrint('Failed to send join request rejection notification: $e');
-        }
+      }
+
+      try {
+        final NotificationService ns = NotificationService();
+        await ns.sendNotification(
+          NotificationModel(
+            title: status == QuoteStatus.accepted
+                ? 'Join request accepted'
+                : 'Join request rejected',
+            content: status == QuoteStatus.accepted
+                ? 'Your join request for ${request.serviceTitle} has been accepted!'
+                : 'Your join request for ${request.serviceTitle} has been rejected.',
+            dateTime: DateTime.now(),
+            isRead: false,
+            notificationId: '',
+            receiverId: notificationReceiver,
+            type: 'join_request_response',
+            senderId: currentTutor.uid,
+            tutorId: currentTutor.uid,
+            serviceId: serviceId,
+          ),
+        );
+      } catch (e) {
+        debugPrint('Failed to send join request notification: $e');
+      }
+      try {
+        await _sendQuoteResponseChatMessage(
+          tutorId: currentTutor.uid,
+          studentId: studentId,
+          status: status,
+        );
+      } catch (e) {
+        debugPrint('Failed to send quote response chat message: $e');
       }
       return;
     }
 
-    // Traditional Quote Request logic
+    // ── Traditional quote request ──────────────────────────────────────────
     final _QuoteDocumentLocation location = await _locateQuoteDocument(
       request.quote.quoteId,
     );
 
-    // If accepting a traditional quote that points to a specific service
     if (request.quote.serviceId.isNotEmpty) {
       final studentId = request.quote.studentId;
       final serviceId = request.quote.serviceId;
@@ -355,22 +365,55 @@ class TeacherPortalService {
         response,
         except: location.reference,
       );
-      return;
+    } else {
+      // Custom quote (no service attached).
+      await location.reference.update({
+        'status': status.name,
+        'response_price': response?.priceLabel ?? '',
+        'response_sessions_count': response?.sessionsCount ?? 0,
+        'updated_at': Timestamp.now(),
+      });
+      await _markDuplicateQuoteDocumentsResponded(
+        request.quote,
+        status,
+        response,
+        except: location.reference,
+      );
     }
 
-    // Default update for other quote statuses or custom quotes
-    await location.reference.update({
-      'status': status.name,
-      'response_price': response?.priceLabel ?? '',
-      'response_sessions_count': response?.sessionsCount ?? 0,
-      'updated_at': Timestamp.now(),
-    });
-    await _markDuplicateQuoteDocumentsResponded(
-      request.quote,
-      status,
-      response,
-      except: location.reference,
-    );
+    // Send notification and chat message for all traditional quotes.
+    try {
+      final NotificationService ns = NotificationService();
+      await ns.sendNotification(
+        NotificationModel(
+          title: status == QuoteStatus.accepted
+              ? 'Quote request accepted'
+              : 'Quote request declined',
+          content: status == QuoteStatus.accepted
+              ? 'Your quote request for ${request.subject} has been accepted!'
+              : 'Your quote request for ${request.subject} has been declined.',
+          dateTime: DateTime.now(),
+          isRead: false,
+          notificationId: '',
+          receiverId: notificationReceiver,
+          type: 'quote_response',
+          senderId: currentTutor.uid,
+          tutorId: currentTutor.uid,
+          serviceId: request.quote.serviceId,
+        ),
+      );
+    } catch (e) {
+      debugPrint('Failed to send quote response notification: $e');
+    }
+    try {
+      await _sendQuoteResponseChatMessage(
+        tutorId: currentTutor.uid,
+        studentId: request.quote.studentId,
+        status: status,
+      );
+    } catch (e) {
+      debugPrint('Failed to send quote response chat message: $e');
+    }
   }
 
   Future<void> createSession({
@@ -727,6 +770,188 @@ class TeacherPortalService {
     }
     final String fullName = '${student.firstName} ${student.lastName}'.trim();
     return fullName.isEmpty ? 'Student' : fullName;
+  }
+
+  /// Uploads [pdfBytes] to Firebase Storage and sends the file as a chat
+  /// message in the direct conversation between [tutorId] and [studentId].
+  Future<void> sendEstimatePdfToChat({
+    required String tutorId,
+    required String studentId,
+    required Uint8List pdfBytes,
+    required String invoiceNumber,
+  }) async {
+    if (tutorId.isEmpty || studentId.isEmpty) return;
+
+    final String conversationId = await _getOrCreateConversationId(
+      tutorId: tutorId,
+      studentId: studentId,
+    );
+
+    final String storagePath =
+        'chats/$conversationId/attachments/$invoiceNumber.pdf';
+    final Reference ref = FirebaseStorage.instance.ref(storagePath);
+    final UploadTask task = ref.putData(
+      pdfBytes,
+      SettableMetadata(contentType: 'application/pdf'),
+    );
+    final TaskSnapshot snap = await task;
+    final String downloadUrl = await snap.ref.getDownloadURL();
+
+    final DocumentReference<Map<String, dynamic>> msgRef = _firestore
+        .collection('conversations')
+        .doc(conversationId)
+        .collection('messages')
+        .doc();
+
+    final Timestamp now = Timestamp.now();
+    final Map<String, dynamic> attachment = {
+      'url': downloadUrl,
+      'name': '$invoiceNumber.pdf',
+      'mimeType': 'application/pdf',
+      'size': pdfBytes.length,
+      'isImage': false,
+    };
+    final Map<String, dynamic> messageData = {
+      'id': msgRef.id,
+      'conversationId': conversationId,
+      'senderId': tutorId,
+      'receiverId': studentId,
+      'text': 'Estimate $invoiceNumber',
+      'type': 'file',
+      'attachments': [attachment],
+      'voiceUrl': null,
+      'voiceDuration': null,
+      'created_at': now,
+      'readBy': [tutorId],
+    };
+
+    final WriteBatch batch = _firestore.batch();
+    batch.set(msgRef, messageData);
+    batch.set(
+      _firestore.collection('conversations').doc(conversationId),
+      {
+        'lastMessage': messageData,
+        'lastMessageTime': now,
+        'updatedAt': now,
+      },
+      SetOptions(merge: true),
+    );
+    await batch.commit();
+  }
+
+  Future<String> _getOrCreateConversationId({
+    required String tutorId,
+    required String studentId,
+  }) async {
+    final QuerySnapshot<Map<String, dynamic>> snapshot = await _firestore
+        .collection('conversations')
+        .where('participants', arrayContains: tutorId)
+        .get();
+
+    for (final doc in snapshot.docs) {
+      final List<dynamic> participants =
+          (doc.data()['participants'] as List<dynamic>?) ?? [];
+      final bool isGroup =
+          doc.data()['isGroup'] == true ||
+          doc.data()['is_group'] == true ||
+          participants.length > 2;
+      if (!isGroup && participants.contains(studentId)) {
+        return doc.id;
+      }
+    }
+
+    final DocumentReference<Map<String, dynamic>> convRef =
+        _firestore.collection('conversations').doc();
+    await convRef.set({
+      'conversationId': convRef.id,
+      'participants': [tutorId, studentId],
+      'isGroup': false,
+      'createdAt': Timestamp.now(),
+      'status': 'active',
+      'updatedAt': Timestamp.now(),
+    });
+    return convRef.id;
+  }
+
+  Future<void> _sendQuoteResponseChatMessage({
+    required String tutorId,
+    required String studentId,
+    required QuoteStatus status,
+  }) async {
+    if (tutorId.isEmpty || studentId.isEmpty) return;
+
+    // Find existing direct conversation between tutor and student
+    final QuerySnapshot<Map<String, dynamic>> snapshot = await _firestore
+        .collection('conversations')
+        .where('participants', arrayContains: tutorId)
+        .get();
+
+    String? conversationId;
+    for (final doc in snapshot.docs) {
+      final List<dynamic> participants =
+          (doc.data()['participants'] as List<dynamic>?) ?? [];
+      final bool isGroup =
+          doc.data()['isGroup'] == true ||
+          doc.data()['is_group'] == true ||
+          participants.length > 2;
+      if (!isGroup && participants.contains(studentId)) {
+        conversationId = doc.id;
+        break;
+      }
+    }
+
+    // Create conversation if none exists
+    if (conversationId == null) {
+      final DocumentReference<Map<String, dynamic>> convRef =
+          _firestore.collection('conversations').doc();
+      await convRef.set({
+        'conversationId': convRef.id,
+        'participants': [tutorId, studentId],
+        'isGroup': false,
+        'createdAt': Timestamp.now(),
+        'status': 'active',
+        'updatedAt': Timestamp.now(),
+      });
+      conversationId = convRef.id;
+    }
+
+    final String text = status == QuoteStatus.accepted
+        ? 'Your quote has been accepted! An estimate has been sent to your email.'
+        : 'Your quote request has been declined.';
+
+    final DocumentReference<Map<String, dynamic>> msgRef = _firestore
+        .collection('conversations')
+        .doc(conversationId)
+        .collection('messages')
+        .doc();
+
+    final Timestamp now = Timestamp.now();
+    final Map<String, dynamic> messageData = {
+      'id': msgRef.id,
+      'conversationId': conversationId,
+      'senderId': tutorId,
+      'receiverId': studentId,
+      'text': text,
+      'type': 'text',
+      'attachments': [],
+      'voiceUrl': null,
+      'voiceDuration': null,
+      'created_at': now,
+      'readBy': [tutorId],
+    };
+
+    final WriteBatch batch = _firestore.batch();
+    batch.set(msgRef, messageData);
+    batch.set(
+      _firestore.collection('conversations').doc(conversationId),
+      {
+        'lastMessage': messageData,
+        'lastMessageTime': now,
+        'updatedAt': now,
+      },
+      SetOptions(merge: true),
+    );
+    await batch.commit();
   }
 }
 
