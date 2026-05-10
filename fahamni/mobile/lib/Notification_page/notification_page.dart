@@ -9,7 +9,8 @@ import 'package:fahamni/messaging/chat_page.dart';
 import 'package:fahamni/messaging/conversation_page.dart';
 import 'package:fahamni/models/chat_model.dart';
 import 'package:fahamni/Account_Settings_Student/account_screen.dart';
-import 'package:fahamni/Account_Settings_Teacher/account_screen.dart' as teacher_account;
+import 'package:fahamni/Account_Settings_Teacher/account_screen.dart'
+    as teacher_account;
 import 'package:fahamni/widgets/customnavbar.dart';
 import 'package:fahamni/TeacherDashboard/widgets/teacher_navbar.dart';
 import 'package:flutter/material.dart';
@@ -74,7 +75,8 @@ class _NotificationPageState extends State<NotificationPage> {
       return;
     }
 
-    if (notification.type == 'message' && notification.conversationId.isNotEmpty) {
+    if (notification.type == 'message' &&
+        notification.conversationId.isNotEmpty) {
       final DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore
           .collection('conversations')
           .doc(notification.conversationId)
@@ -85,7 +87,8 @@ class _NotificationPageState extends State<NotificationPage> {
       if (snapshot.exists && snapshot.data() != null) {
         final ConversationModel conversation = ConversationModel.fromMap({
           ...snapshot.data()!,
-          'conversationId': snapshot.data()!['conversationId'] ??
+          'conversationId':
+              snapshot.data()!['conversationId'] ??
               snapshot.data()!['conversation_id'] ??
               snapshot.id,
         });
@@ -130,8 +133,21 @@ class _NotificationPageState extends State<NotificationPage> {
       if (!mounted) return;
       Navigator.push(
         context,
+        MaterialPageRoute(builder: (_) => const TeacherQuotesPage()),
+      );
+      return;
+    }
+
+    if (notification.type == 'review') {
+      Navigator.push(
+        context,
         MaterialPageRoute(
-          builder: (_) => const TeacherQuotesPage(),
+          builder: (_) => FeedbacksPage(
+            tutorId: notification.tutorId.isNotEmpty
+                ? notification.tutorId
+                : _currentUserId ?? '',
+            tutorName: '',
+          ),
         ),
       );
       return;
@@ -171,7 +187,8 @@ class _NotificationPageState extends State<NotificationPage> {
           if (convDoc.exists && convDoc.data() != null) {
             final ConversationModel conversation = ConversationModel.fromMap({
               ...convDoc.data()!,
-              'conversationId': convDoc.data()!['conversationId'] ??
+              'conversationId':
+                  convDoc.data()!['conversationId'] ??
                   convDoc.data()!['conversation_id'] ??
                   convDoc.id,
             });
@@ -236,7 +253,7 @@ class _NotificationPageState extends State<NotificationPage> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black,size: 35,),
+          icon: const Icon(Icons.arrow_back, color: Colors.black, size: 35),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -259,73 +276,90 @@ class _NotificationPageState extends State<NotificationPage> {
             child: _currentUserId == null
                 ? const Center(child: Text('Sign in to view notifications'))
                 : StreamBuilder<List<NotificationModel>>(
-              stream: _notificationService.streamNotifications(_currentUserId!),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+                    stream: _notificationService.streamNotifications(
+                      _currentUserId!,
+                    ),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
 
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
+                      if (snapshot.hasError) {
+                        return Center(child: Text('Error: ${snapshot.error}'));
+                      }
 
-                final allNotifications = snapshot.data ?? [];
+                      final allNotifications = snapshot.data ?? [];
 
-                if (allNotifications.isEmpty) {
-                  return const Center(child: Text('No notifications'));
-                }
+                      if (allNotifications.isEmpty) {
+                        return const Center(child: Text('No notifications'));
+                      }
 
-                // Display depends on which tab is selected
-                final visibleNotifications = _selectedTab == 0
-                    ? allNotifications.where((n) => !n.isRead).toList()
-                    : allNotifications;
+                      // Display depends on which tab is selected
+                      final visibleNotifications = _selectedTab == 0
+                          ? allNotifications.where((n) => !n.isRead).toList()
+                          : allNotifications;
 
-                if (visibleNotifications.isEmpty) {
-                  return const Center(child: Text('No new notifications'));
-                }
+                      if (visibleNotifications.isEmpty) {
+                        return const Center(
+                          child: Text('No new notifications'),
+                        );
+                      }
 
-                return ListView.builder(
-                  itemCount: visibleNotifications.length,
-                  itemBuilder: (context, index) {
-                    final notification = visibleNotifications[index];
-                    return NotificationItem(
-                      notification: notification,
-                      onTap: () => _handleNotificationTap(notification),
-                    );
-                  },
-                );
-              },
-            ),
+                      return ListView.builder(
+                        itemCount: visibleNotifications.length,
+                        itemBuilder: (context, index) {
+                          final notification = visibleNotifications[index];
+                          return NotificationItem(
+                            notification: notification,
+                            onTap: () => _handleNotificationTap(notification),
+                          );
+                        },
+                      );
+                    },
+                  ),
           ),
 
           // Mark as Read Button logic
           if (_currentUserId != null)
-          StreamBuilder<List<NotificationModel>>(
-            stream: _notificationService.streamNotifications(_currentUserId!),
-            builder: (context, snapshot) {
-              final unreadCount = snapshot.data?.where((n) => !n.isRead).length ?? 0;
-              
-              if (_selectedTab == 0 && unreadCount > 0) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 110.0),
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      await _notificationService.markAllAsRead(_currentUserId!);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: accentBlue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            StreamBuilder<List<NotificationModel>>(
+              stream: _notificationService.streamNotifications(_currentUserId!),
+              builder: (context, snapshot) {
+                final unreadCount =
+                    snapshot.data?.where((n) => !n.isRead).length ?? 0;
+
+                if (_selectedTab == 0 && unreadCount > 0) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 110.0),
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        await _notificationService.markAllAsRead(
+                          _currentUserId!,
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: accentBlue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                      ),
+                      child: const Text(
+                        'Mark as read',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 20,
+                        ),
+                      ),
                     ),
-                    child: const Text('Mark as read', 
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20)),
-                  ),
-                );
-              }
-              return const SizedBox.shrink();
-            },
-          ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
         ],
       ),
       bottomNavigationBar: _isTeacher
@@ -337,11 +371,8 @@ class _NotificationPageState extends State<NotificationPage> {
               selectedIndex: _navIndex,
               onTap: _handleBottomNavigation,
             ),
-
-
     );
   }
-
 
   Widget _buildToggle(Color accentBlue) {
     return Container(
@@ -350,7 +381,6 @@ class _NotificationPageState extends State<NotificationPage> {
       decoration: BoxDecoration(
         color: const Color(0xFF94A3B8),
         borderRadius: BorderRadius.circular(30),
-
       ),
       child: Padding(
         padding: const EdgeInsets.all(2),
@@ -358,7 +388,7 @@ class _NotificationPageState extends State<NotificationPage> {
           spacing: 7,
           children: [
             _buildToggleTab(label: 'Unread', index: 0, accentBlue: accentBlue),
-            _buildToggleTab(label: 'All',    index: 1, accentBlue: accentBlue),
+            _buildToggleTab(label: 'All', index: 1, accentBlue: accentBlue),
           ],
         ),
       ),
@@ -389,12 +419,12 @@ class _NotificationPageState extends State<NotificationPage> {
               fontWeight: FontWeight.w700,
               fontSize: 20,
             ),
-
-            ),
           ),
         ),
-      );
+      ),
+    );
   }
+
   void _handleBottomNavigation(int index) {
     if (index == _navIndex) {
       return;
@@ -465,12 +495,11 @@ class _NotificationPageState extends State<NotificationPage> {
       case 3:
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const teacher_account.AccountScreen()),
+          MaterialPageRoute(
+            builder: (_) => const teacher_account.AccountScreen(),
+          ),
         );
         break;
     }
   }
-
 }
-
-

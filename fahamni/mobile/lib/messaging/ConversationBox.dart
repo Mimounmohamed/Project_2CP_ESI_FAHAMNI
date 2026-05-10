@@ -10,11 +10,13 @@ class Conversationbox extends StatelessWidget {
     required this.conversation,
     required this.imageUrl,
     required this.currentUserId,
+    this.onLongPress,
   });
 
   final ConversationModel conversation;
   final String imageUrl;
   final String currentUserId;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +42,7 @@ class Conversationbox extends StatelessWidget {
           ),
         );
       },
+      onLongPress: onLongPress,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
         child: Row(

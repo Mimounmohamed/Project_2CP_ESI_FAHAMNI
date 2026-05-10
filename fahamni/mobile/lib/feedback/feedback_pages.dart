@@ -15,15 +15,13 @@ import 'package:fahamni/models/tutor_review_bundle.dart';
 import 'package:fahamni/models/user_model.dart';
 import 'package:fahamni/messaging/conversation_page.dart';
 import 'package:fahamni/widgets/servicedetails.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class TutorProfilePage extends StatefulWidget {
-  const TutorProfilePage({
-    super.key,
-    required this.tutorId,
-  });
+  const TutorProfilePage({super.key, required this.tutorId});
 
   final String tutorId;
 
@@ -63,8 +61,8 @@ class _TutorProfilePageState extends State<TutorProfilePage>
   }
 
   Future<void> _refresh() async {
-    final Future<TutorReviewBundle> future =
-        _reviewService.loadTutorReviewBundle(widget.tutorId);
+    final Future<TutorReviewBundle> future = _reviewService
+        .loadTutorReviewBundle(widget.tutorId);
     setState(() {
       _bundleFuture = future;
     });
@@ -73,8 +71,9 @@ class _TutorProfilePageState extends State<TutorProfilePage>
 
   Future<void> _loadFavoriteState() async {
     try {
-      final bool isFavorite =
-          await _studentTutorActionService.isFavoriteTutor(widget.tutorId);
+      final bool isFavorite = await _studentTutorActionService.isFavoriteTutor(
+        widget.tutorId,
+      );
       if (!mounted) {
         return;
       }
@@ -133,9 +132,9 @@ class _TutorProfilePageState extends State<TutorProfilePage>
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
     } finally {
       if (mounted) {
         setState(() {
@@ -151,8 +150,8 @@ class _TutorProfilePageState extends State<TutorProfilePage>
     });
 
     try {
-      final bool favorite =
-          await _studentTutorActionService.toggleFavoriteTutor(widget.tutorId);
+      final bool favorite = await _studentTutorActionService
+          .toggleFavoriteTutor(widget.tutorId);
       if (!mounted) {
         return;
       }
@@ -162,7 +161,9 @@ class _TutorProfilePageState extends State<TutorProfilePage>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            favorite ? 'Tutor added to favorites.' : 'Tutor removed from favorites.',
+            favorite
+                ? 'Tutor added to favorites.'
+                : 'Tutor removed from favorites.',
           ),
         ),
       );
@@ -170,9 +171,9 @@ class _TutorProfilePageState extends State<TutorProfilePage>
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
     } finally {
       if (mounted) {
         setState(() {
@@ -196,7 +197,10 @@ class _TutorProfilePageState extends State<TutorProfilePage>
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
               ),
-              insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 40,
+              ),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(minHeight: 360),
                 child: Padding(
@@ -220,7 +224,10 @@ class _TutorProfilePageState extends State<TutorProfilePage>
                             onPressed: () {
                               Navigator.of(dialogContext).pop();
                             },
-                            icon: const Icon(Icons.close, color: Color(0xFF1F2937)),
+                            icon: const Icon(
+                              Icons.close,
+                              color: Color(0xFF1F2937),
+                            ),
                           ),
                         ],
                       ),
@@ -273,11 +280,15 @@ class _TutorProfilePageState extends State<TutorProfilePage>
                           onPressed: isSubmitting
                               ? null
                               : () async {
-                                  final String reportText = reportController.text.trim();
+                                  final String reportText = reportController
+                                      .text
+                                      .trim();
                                   if (reportText.isEmpty) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
-                                        content: Text('Please write your report before sending.'),
+                                        content: Text(
+                                          'Please write your report before sending.',
+                                        ),
                                       ),
                                     );
                                     return;
@@ -290,7 +301,9 @@ class _TutorProfilePageState extends State<TutorProfilePage>
                                   try {
                                     await _studentTutorActionService.createReport(
                                       reportedId: tutor.uid,
-                                      reportedName: '${tutor.firstName} ${tutor.lastName}'.trim(),
+                                      reportedName:
+                                          '${tutor.firstName} ${tutor.lastName}'
+                                              .trim(),
                                       type: ReportType.teacher,
                                       text: reportText,
                                     );
@@ -298,7 +311,9 @@ class _TutorProfilePageState extends State<TutorProfilePage>
                                     Navigator.of(dialogContext).pop();
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
-                                        content: Text('Report submitted successfully.'),
+                                        content: Text(
+                                          'Report submitted successfully.',
+                                        ),
                                       ),
                                     );
                                   } catch (error) {
@@ -318,7 +333,9 @@ class _TutorProfilePageState extends State<TutorProfilePage>
                             ),
                           ),
                           child: isSubmitting
-                              ? const CircularProgressIndicator(color: Colors.white)
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
                               : const Text(
                                   'Send',
                                   style: TextStyle(
@@ -347,8 +364,8 @@ class _TutorProfilePageState extends State<TutorProfilePage>
     });
 
     try {
-      final conversation =
-          await _studentTutorActionService.createOrGetConversation(tutor: tutor);
+      final conversation = await _studentTutorActionService
+          .createOrGetConversation(tutor: tutor);
       if (!mounted) {
         return;
       }
@@ -370,9 +387,9 @@ class _TutorProfilePageState extends State<TutorProfilePage>
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
     } finally {
       if (mounted) {
         setState(() {
@@ -434,9 +451,9 @@ class _TutorProfilePageState extends State<TutorProfilePage>
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
     } finally {
       if (mounted) {
         setState(() {
@@ -499,191 +516,194 @@ class _TutorProfilePageState extends State<TutorProfilePage>
         onTap: () => FocusScope.of(context).unfocus(),
         child: SafeArea(
           child: FutureBuilder<TutorReviewBundle>(
-          future: _bundleFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
+            future: _bundleFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-            if (snapshot.hasError) {
-              return _FeedbackErrorState(
-                message: snapshot.error.toString(),
-                onRetry: _refresh,
-              );
-            }
+              if (snapshot.hasError) {
+                return _FeedbackErrorState(
+                  message: snapshot.error.toString(),
+                  onRetry: _refresh,
+                );
+              }
 
-            final TutorReviewBundle bundle = snapshot.data!;
-            final TutorModel tutor = bundle.tutor;
-            final List<ReviewModel> previewReviews = bundle.reviews.take(2).toList();
+              final TutorReviewBundle bundle = snapshot.data!;
+              final TutorModel tutor = bundle.tutor;
+              final List<ReviewModel> previewReviews = bundle.reviews
+                  .take(2)
+                  .toList();
 
-            return AnimatedPadding(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOut,
-              padding: EdgeInsets.fromLTRB(
-                20,
-                16,
-                20,
-                20 + MediaQuery.of(context).viewInsets.bottom,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _ProfileTopBar(
-                    tutorName: 'Teacher',
-                    isFavorite: _isFavorite,
-                    isFavoriteLoading: _isFavoriteLoading,
-                    onFavoriteTap: _toggleFavorite,
-                    onReportTap: () => _showReportTutorDialog(tutor),
-                  ),
-                  const SizedBox(height: 18),
-                  _TutorHero(
-                    tutor: tutor,
-                    averageRating: bundle.averageRating,
-                    reviewService: _reviewService,
-                  ),
-                  const SizedBox(height: 18),
-                  TabBar(
-                    controller: _tabController,
-                    labelColor: const Color(0xFF000080),
-                    unselectedLabelColor: const Color(0xFF64748B),
-                    indicatorColor: const Color(0xFF000080),
-                    labelStyle: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
+              return AnimatedPadding(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  16,
+                  20,
+                  20 + MediaQuery.of(context).viewInsets.bottom,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _ProfileTopBar(
+                      tutorName: 'Teacher',
+                      isFavorite: _isFavorite,
+                      isFavoriteLoading: _isFavoriteLoading,
+                      onFavoriteTap: _toggleFavorite,
+                      onReportTap: () => _showReportTutorDialog(tutor),
                     ),
-                    tabs: const [
-                      Tab(text: 'About'),
-                      Tab(text: 'Services'),
-                      Tab(text: 'Reviews'),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: RefreshIndicator(
-                      onRefresh: _refresh,
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          _AboutTutorTab(tutor: tutor),
-                          _TutorServicesTab(
-                            tutor: tutor,
-                            services: bundle.services,
-                            reviewService: _reviewService,
-                            onBookNow: (service) => _bookSpecificService(
-                              tutor: tutor,
-                              service: service,
-                            ),
-                          ),
-                          ListView(
-                            keyboardDismissBehavior:
-                                ScrollViewKeyboardDismissBehavior.onDrag,
-                            padding: const EdgeInsets.only(bottom: 16),
-                            children: [
-                              _RatingsSummaryCard(
-                                tutor: tutor,
-                                reviews: previewReviews,
-                                reviewers: bundle.reviewers,
-                                averageRating: bundle.averageRating,
-                                reviewService: _reviewService,
-                                totalReviewsCount: bundle.reviews.length,
-                                onViewAll: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => FeedbacksPage(
-                                        tutorId: widget.tutorId,
-                                        tutorName:
-                                            '${tutor.firstName} ${tutor.lastName}'.trim(),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 16),
-                              _FeedbackComposerCard(
-                                controller: _feedbackController,
-                                selectedRating: _selectedRating,
-                                onRatingChanged: (value) {
-                                  setState(() {
-                                    _selectedRating = value;
-                                  });
-                                },
-                                onSubmit: _submitFeedback,
-                                isSubmitting: _isSubmitting,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (!keyboardVisible) ...[
                     const SizedBox(height: 18),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: _isActionLoading
-                                ? null
-                                : () => _openConversation(tutor),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFD9D9D9),
-                              foregroundColor: const Color(0xFF1F2937),
-                              minimumSize: const Size(0, 56),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(28),
+                    _TutorHero(
+                      tutor: tutor,
+                      averageRating: bundle.averageRating,
+                      reviewService: _reviewService,
+                    ),
+                    const SizedBox(height: 18),
+                    TabBar(
+                      controller: _tabController,
+                      labelColor: const Color(0xFF000080),
+                      unselectedLabelColor: const Color(0xFF64748B),
+                      indicatorColor: const Color(0xFF000080),
+                      labelStyle: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      tabs: const [
+                        Tab(text: 'About'),
+                        Tab(text: 'Services'),
+                        Tab(text: 'Reviews'),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: _refresh,
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: [
+                            _AboutTutorTab(tutor: tutor),
+                            _TutorServicesTab(
+                              tutor: tutor,
+                              services: bundle.services,
+                              reviewService: _reviewService,
+                              onBookNow: (service) => _bookSpecificService(
+                                tutor: tutor,
+                                service: service,
                               ),
                             ),
-                            icon: const Icon(Icons.message_outlined),
-                            label: const Text(
-                              'Message',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: _isActionLoading
-                                ? null
-                                : () {
+                            ListView(
+                              keyboardDismissBehavior:
+                                  ScrollViewKeyboardDismissBehavior.onDrag,
+                              padding: const EdgeInsets.only(bottom: 16),
+                              children: [
+                                _RatingsSummaryCard(
+                                  tutor: tutor,
+                                  reviews: previewReviews,
+                                  reviewers: bundle.reviewers,
+                                  averageRating: bundle.averageRating,
+                                  reviewService: _reviewService,
+                                  totalReviewsCount: bundle.reviews.length,
+                                  onViewAll: () {
                                     Navigator.of(context).push(
                                       MaterialPageRoute(
-                                        builder: (_) => QuoteRequestPage(
-                                          tutor: tutor,
-                                          services: bundle.services,
+                                        builder: (_) => FeedbacksPage(
+                                          tutorId: widget.tutorId,
+                                          tutorName:
+                                              '${tutor.firstName} ${tutor.lastName}'
+                                                  .trim(),
                                         ),
                                       ),
                                     );
                                   },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF000080),
-                              foregroundColor: Colors.white,
-                              minimumSize: const Size(0, 56),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(28),
-                              ),
+                                ),
+                                const SizedBox(height: 16),
+                                _FeedbackComposerCard(
+                                  controller: _feedbackController,
+                                  selectedRating: _selectedRating,
+                                  onRatingChanged: (value) {
+                                    setState(() {
+                                      _selectedRating = value;
+                                    });
+                                  },
+                                  onSubmit: _submitFeedback,
+                                  isSubmitting: _isSubmitting,
+                                ),
+                              ],
                             ),
-                            icon: const Icon(Icons.calendar_today_outlined),
-                            label: const Text(
-                              'Quote request',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (!keyboardVisible) ...[
+                      const SizedBox(height: 18),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _isActionLoading
+                                  ? null
+                                  : () => _openConversation(tutor),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFD9D9D9),
+                                foregroundColor: const Color(0xFF1F2937),
+                                minimumSize: const Size(0, 56),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(28),
+                                ),
+                              ),
+                              icon: const Icon(Icons.message_outlined),
+                              label: const Text(
+                                'Message',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _isActionLoading
+                                  ? null
+                                  : () {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => QuoteRequestPage(
+                                            tutor: tutor,
+                                            services: bundle.services,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF000080),
+                                foregroundColor: Colors.white,
+                                minimumSize: const Size(0, 56),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(28),
+                                ),
+                              ),
+                              icon: const Icon(Icons.calendar_today_outlined),
+                              label: const Text(
+                                'Quote request',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
-                ],
-              ),
-            );
-          },
-        ),
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -706,6 +726,58 @@ class FeedbacksPage extends StatefulWidget {
 
 class _FeedbacksPageState extends State<FeedbacksPage> {
   final ReviewService _reviewService = ReviewService();
+  final StudentTutorActionService _studentTutorActionService =
+      StudentTutorActionService();
+  final Set<String> _reportingReviewIds = <String>{};
+
+  bool get _canReportFeedback =>
+      FirebaseAuth.instance.currentUser?.uid == widget.tutorId;
+
+  Future<void> _reportFeedback(
+    ReviewModel review,
+    StudentModel? reviewer,
+  ) async {
+    if (_reportingReviewIds.contains(review.reviewId)) return;
+
+    setState(() {
+      _reportingReviewIds.add(review.reviewId);
+    });
+
+    final String reportedName = reviewer == null
+        ? 'Student'
+        : '${reviewer.firstName} ${reviewer.lastName}'.trim();
+
+    try {
+      await _studentTutorActionService.createReport(
+        reportedId: review.reviewerId,
+        reportedName: reportedName.isEmpty ? 'Student' : reportedName,
+        type: ReportType.comment,
+        text: review.comment,
+        extraData: <String, dynamic>{
+          'review_id': review.reviewId,
+          'rating': review.rating,
+          'reported_role': 'student',
+          'reporter_role': 'teacher',
+          'created_at': Timestamp.fromDate(DateTime.now()),
+        },
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Feedback reported successfully.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _reportingReviewIds.remove(review.reviewId);
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -733,8 +805,9 @@ class _FeedbacksPageState extends State<FeedbacksPage> {
 
           final List<ReviewModel> reviews = snapshot.data ?? <ReviewModel>[];
           return FutureBuilder<Map<String, StudentModel>>(
-            future: _reviewService
-                .getReviewers(reviews.map((review) => review.reviewerId).toList()),
+            future: _reviewService.getReviewers(
+              reviews.map((review) => review.reviewerId).toList(),
+            ),
             builder: (context, reviewerSnapshot) {
               final Map<String, StudentModel> reviewers =
                   reviewerSnapshot.data ?? <String, StudentModel>{};
@@ -755,13 +828,21 @@ class _FeedbacksPageState extends State<FeedbacksPage> {
               return ListView.separated(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                 itemCount: reviews.length,
-                separatorBuilder: (_, separatorIndex) => const SizedBox(height: 14),
+                separatorBuilder: (_, separatorIndex) =>
+                    const SizedBox(height: 14),
                 itemBuilder: (context, index) {
                   final ReviewModel review = reviews[index];
                   return _ReviewCard(
                     review: review,
                     reviewer: reviewers[review.reviewerId],
                     reviewService: _reviewService,
+                    onReport: _canReportFeedback
+                        ? () => _reportFeedback(
+                            review,
+                            reviewers[review.reviewerId],
+                          )
+                        : null,
+                    isReporting: _reportingReviewIds.contains(review.reviewId),
                   );
                 },
               );
@@ -808,8 +889,12 @@ class _ProfileTopBar extends StatelessWidget {
           ),
         ),
         _CircleIconButton(
-          icon: isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-          iconColor: isFavorite ? const Color(0xFFEF4444) : const Color(0xFF64748B),
+          icon: isFavorite
+              ? Icons.favorite_rounded
+              : Icons.favorite_border_rounded,
+          iconColor: isFavorite
+              ? const Color(0xFFEF4444)
+              : const Color(0xFF64748B),
           onTap: isFavoriteLoading ? null : onFavoriteTap,
           child: isFavoriteLoading
               ? const SizedBox(
@@ -829,10 +914,7 @@ class _ProfileTopBar extends StatelessWidget {
             }
           },
           itemBuilder: (_) => const [
-            PopupMenuItem<int>(
-              value: 0,
-              child: Text('Report tutor'),
-            ),
+            PopupMenuItem<int>(value: 0, child: Text('Report tutor')),
           ],
           icon: const Icon(Icons.more_vert, color: Color(0xFF64748B)),
           color: Colors.white,
@@ -881,7 +963,11 @@ class _TutorHero extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.verified_outlined, color: Color(0xFF000080), size: 22),
+            const Icon(
+              Icons.verified_outlined,
+              color: Color(0xFF000080),
+              size: 22,
+            ),
           ],
         ),
         const SizedBox(height: 8),
@@ -903,7 +989,11 @@ class _TutorHero extends StatelessWidget {
             _MetaText(
               text: '${averageRating.toStringAsFixed(1)} Rating',
               color: const Color(0xFF64748B),
-              leading: const Icon(Icons.star_rounded, size: 16, color: Color(0xFFF4B400)),
+              leading: const Icon(
+                Icons.star_rounded,
+                size: 16,
+                color: Color(0xFFF4B400),
+              ),
             ),
             _MetaText(
               text: reviewService.experienceLabel(tutor.yearsOfExperience),
@@ -911,7 +1001,9 @@ class _TutorHero extends StatelessWidget {
             ),
             _MetaText(
               text: reviewService.availabilityLabel(tutor.isAvailable),
-              color: tutor.isAvailable ? const Color(0xFF16A34A) : const Color(0xFFDC2626),
+              color: tutor.isAvailable
+                  ? const Color(0xFF16A34A)
+                  : const Color(0xFFDC2626),
             ),
           ],
         ),
@@ -921,9 +1013,7 @@ class _TutorHero extends StatelessWidget {
 }
 
 class _AboutTutorTab extends StatelessWidget {
-  const _AboutTutorTab({
-    required this.tutor,
-  });
+  const _AboutTutorTab({required this.tutor});
 
   final TutorModel tutor;
 
@@ -974,10 +1064,26 @@ class _AboutTutorTab extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                _buildInfoCard(Icons.menu_book, 'Expertise Domain', tutor.expertiseDomain),
-                _buildInfoCard(Icons.school_outlined, 'Levels Taught', levelsTaught),
-                _buildInfoCard(Icons.location_on_outlined, 'Location', tutor.location),
-                _buildInfoCard(Icons.devices_rounded, 'Teaching Mode', tutor.teachingMode),
+                _buildInfoCard(
+                  Icons.menu_book,
+                  'Expertise Domain',
+                  tutor.expertiseDomain,
+                ),
+                _buildInfoCard(
+                  Icons.school_outlined,
+                  'Levels Taught',
+                  levelsTaught,
+                ),
+                _buildInfoCard(
+                  Icons.location_on_outlined,
+                  'Location',
+                  tutor.location,
+                ),
+                _buildInfoCard(
+                  Icons.devices_rounded,
+                  'Teaching Mode',
+                  tutor.teachingMode,
+                ),
               ],
             ),
           ),
@@ -1039,27 +1145,31 @@ class _TutorServicesTab extends StatelessWidget {
         itemCount: services.length,
         itemBuilder: (context, index) {
           final ServiceModel service = services[index];
-          final String serviceMode =
-              service.area.isNotEmpty ? service.area : tutor.teachingMode;
+          final String serviceMode = service.area.isNotEmpty
+              ? service.area
+              : tutor.teachingMode;
           final bool isJoined =
-              currentUserId != null && service.studentIds.contains(currentUserId);
+              currentUserId != null &&
+              service.studentIds.contains(currentUserId);
           final bool isPending =
-              currentUserId != null && service.pendingIds.contains(currentUserId);
+              currentUserId != null &&
+              service.pendingIds.contains(currentUserId);
           final String actionLabel = isJoined
               ? 'Joined'
               : isPending
-                  ? 'Pending'
-                  : 'Book Now';
+              ? 'Pending'
+              : 'Book Now';
           final bool isActionDisabled = isJoined || isPending;
 
           return GestureDetector(
             onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => Servicedetails(tutor: tutor, service: service),
-          ),
-        );
-      },
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) =>
+                      Servicedetails(tutor: tutor, service: service),
+                ),
+              );
+            },
             child: Padding(
               padding: const EdgeInsets.only(bottom: 14),
               child: Card(
@@ -1089,20 +1199,19 @@ class _TutorServicesTab extends StatelessWidget {
                                   color: const Color(0x19000080),
                                   borderRadius: BorderRadius.circular(999),
                                 ),
-                                  child: Center(
-                                    child: Text(
-                                      service.subject,
-                                      style: const TextStyle(
-                                        color: Color(0xFF000080),
-                                        fontSize: 13,
-                                        fontFamily: 'Nunito',
-                                        fontWeight: FontWeight.w700,
-                                        height: 1.50,
-                                        letterSpacing: 0.50,
-                                      ),
+                                child: Center(
+                                  child: Text(
+                                    service.subject,
+                                    style: const TextStyle(
+                                      color: Color(0xFF000080),
+                                      fontSize: 13,
+                                      fontFamily: 'Nunito',
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.50,
+                                      letterSpacing: 0.50,
                                     ),
                                   ),
-                              
+                                ),
                               ),
                               const SizedBox(height: 8),
                               Text(
@@ -1118,7 +1227,10 @@ class _TutorServicesTab extends StatelessWidget {
                               const SizedBox(height: 8),
                               Row(
                                 children: [
-                                  const Icon(Icons.access_time_rounded, color: Color(0xFF64748B)),
+                                  const Icon(
+                                    Icons.access_time_rounded,
+                                    color: Color(0xFF64748B),
+                                  ),
                                   const SizedBox(width: 5),
                                   Text(
                                     '${service.duration}min session',
@@ -1135,7 +1247,10 @@ class _TutorServicesTab extends StatelessWidget {
                               const SizedBox(height: 4),
                               Row(
                                 children: [
-                                  const Icon(Icons.location_on_outlined, color: Color(0xFF64748B)),
+                                  const Icon(
+                                    Icons.location_on_outlined,
+                                    color: Color(0xFF64748B),
+                                  ),
                                   const SizedBox(width: 5),
                                   Text(
                                     serviceMode,
@@ -1153,7 +1268,10 @@ class _TutorServicesTab extends StatelessWidget {
                               if (service.maxnum - service.enrollednum <= 10)
                                 Row(
                                   children: [
-                                    const Icon(Icons.error_outline_rounded, color: Color(0xFFDD0D0D)),
+                                    const Icon(
+                                      Icons.error_outline_rounded,
+                                      color: Color(0xFFDD0D0D),
+                                    ),
                                     const SizedBox(width: 5),
                                     Text(
                                       '${service.maxnum - service.enrollednum} places left',
@@ -1189,11 +1307,15 @@ class _TutorServicesTab extends StatelessWidget {
                                           ? null
                                           : () => onBookNow(service),
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFF000080),
+                                        backgroundColor: const Color(
+                                          0xFF000080,
+                                        ),
                                         foregroundColor: Colors.white,
                                         minimumSize: const Size(100, 40),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
                                       ),
                                       child: Center(
@@ -1208,12 +1330,12 @@ class _TutorServicesTab extends StatelessWidget {
                                         ),
                                       ),
                                     ),
-                                  )
+                                  ),
                                 ],
-                              )
+                              ),
                             ],
                           ),
-                        )
+                        ),
                       ],
                     ),
                     Positioned(
@@ -1387,9 +1509,7 @@ Widget _buildTextCard(String title, String value) {
 }
 
 class _ServiceHeaderImage extends StatelessWidget {
-  const _ServiceHeaderImage({
-    required this.imagePath,
-  });
+  const _ServiceHeaderImage({required this.imagePath});
 
   final String imagePath;
 
@@ -1605,7 +1725,8 @@ class _FeedbackComposerCard extends StatelessWidget {
               maxLength: 200,
               maxLines: 3,
               textInputAction: TextInputAction.done,
-              onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+              onTapOutside: (_) =>
+                  FocusManager.instance.primaryFocus?.unfocus(),
               decoration: const InputDecoration(
                 hintText: 'Write something...',
                 border: InputBorder.none,
@@ -1670,11 +1791,15 @@ class _ReviewCard extends StatelessWidget {
     required this.review,
     required this.reviewer,
     required this.reviewService,
+    this.onReport,
+    this.isReporting = false,
   });
 
   final ReviewModel review;
   final StudentModel? reviewer;
   final ReviewService reviewService;
+  final VoidCallback? onReport;
+  final bool isReporting;
 
   @override
   Widget build(BuildContext context) {
@@ -1701,8 +1826,9 @@ class _ReviewCard extends StatelessWidget {
               CircleAvatar(
                 radius: 24,
                 backgroundColor: const Color(0xFFE2E8F0),
-                backgroundImage:
-                    reviewer == null ? null : _resolveImageProvider(reviewer!.picture),
+                backgroundImage: reviewer == null
+                    ? null
+                    : _resolveImageProvider(reviewer!.picture),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1724,12 +1850,29 @@ class _ReviewCard extends StatelessWidget {
                   ],
                 ),
               ),
-              Text(
-                reviewService.formatShortDate(review.createdAt),
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF94A3B8),
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    reviewService.formatShortDate(review.createdAt),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF94A3B8),
+                    ),
+                  ),
+                  if (onReport != null) ...[
+                    const SizedBox(height: 6),
+                    TextButton(
+                      onPressed: isReporting ? null : onReport,
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(0, 28),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(isReporting ? 'Reporting...' : 'Report'),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),
@@ -1759,11 +1902,7 @@ class _ReviewCard extends StatelessWidget {
 }
 
 class _InfoCard extends StatelessWidget {
-  const _InfoCard({
-    required this.title,
-    required this.child,
-    this.trailing,
-  });
+  const _InfoCard({required this.title, required this.child, this.trailing});
 
   final String title;
   final Widget child;
@@ -1812,10 +1951,7 @@ class _InfoCard extends StatelessWidget {
 }
 
 class _FeedbackErrorState extends StatelessWidget {
-  const _FeedbackErrorState({
-    required this.message,
-    required this.onRetry,
-  });
+  const _FeedbackErrorState({required this.message, required this.onRetry});
 
   final String message;
   final Future<void> Function() onRetry;
@@ -1828,7 +1964,11 @@ class _FeedbackErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.rate_review_outlined, size: 48, color: Color(0xFF000080)),
+            const Icon(
+              Icons.rate_review_outlined,
+              size: 48,
+              color: Color(0xFF000080),
+            ),
             const SizedBox(height: 12),
             Text(
               message,
@@ -1858,11 +1998,7 @@ class _FeedbackErrorState extends StatelessWidget {
 }
 
 class _MetaText extends StatelessWidget {
-  const _MetaText({
-    required this.text,
-    required this.color,
-    this.leading,
-  });
+  const _MetaText({required this.text, required this.color, this.leading});
 
   final String text;
   final Color color;
@@ -1873,10 +2009,7 @@ class _MetaText extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (leading != null) ...[
-          leading!,
-          const SizedBox(width: 4),
-        ],
+        if (leading != null) ...[leading!, const SizedBox(width: 4)],
         Text(
           text,
           style: TextStyle(
@@ -1891,10 +2024,7 @@ class _MetaText extends StatelessWidget {
 }
 
 class _StarSelector extends StatelessWidget {
-  const _StarSelector({
-    required this.selectedRating,
-    required this.onChanged,
-  });
+  const _StarSelector({required this.selectedRating, required this.onChanged});
 
   final double selectedRating;
   final ValueChanged<double> onChanged;
@@ -1920,10 +2050,7 @@ class _StarSelector extends StatelessWidget {
 }
 
 class _StarsRow extends StatelessWidget {
-  const _StarsRow({
-    required this.rating,
-    required this.size,
-  });
+  const _StarsRow({required this.rating, required this.size});
 
   final double rating;
   final double size;
@@ -1970,8 +2097,7 @@ class _CircleIconButton extends StatelessWidget {
           border: Border.all(color: const Color(0xFFE5E7EB)),
           color: Colors.white,
         ),
-        child: child ??
-            Icon(icon, color: iconColor, size: 20),
+        child: child ?? Icon(icon, color: iconColor, size: 20),
       ),
     );
   }
@@ -1990,5 +2116,3 @@ ImageProvider<Object>? _resolveImageProvider(String path) {
   }
   return null;
 }
-
-

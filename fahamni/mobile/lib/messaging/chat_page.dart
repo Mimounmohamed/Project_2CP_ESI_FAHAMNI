@@ -38,6 +38,7 @@ class _ChatPageState extends State<ChatPage> {
   bool _didResolveInitialTab = false;
   UserRole? _currentRole;
   StudentModel? _student;
+  String _searchQuery = '';
 
   String? get _currentUserId => _auth.currentUser?.uid;
 
@@ -242,11 +243,64 @@ class _ChatPageState extends State<ChatPage> {
     return 'https://ui-avatars.com/api/?name=$encodedName&background=000080&color=ffffff';
   }
 
+  bool _matchesSearch(ConversationModel conversation) {
+    final String query = _searchQuery.trim().toLowerCase();
+    if (query.isEmpty) return true;
+
+    return _conversationName(conversation).toLowerCase().contains(query) ||
+        conversation.participantSubtitle.toLowerCase().contains(query) ||
+        conversation.lastMessageText.toLowerCase().contains(query);
+  }
+
   void _openStudyAiPage() {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const AIStudyChatPage()),
     );
+  }
+
+  Future<void> _confirmDeleteConversation(
+    ConversationModel conversation,
+  ) async {
+    final String? currentUserId = _currentUserId;
+    if (currentUserId == null) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final bool shouldDelete =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Delete conversation'),
+            content: const Text(
+              'Are you sure you want to delete this conversation?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!mounted || !shouldDelete) return;
+
+    try {
+      await _chatService.deleteConversation(
+        conversationId: conversation.conversationId,
+        userId: currentUserId,
+      );
+    } catch (error) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not delete conversation: $error')),
+      );
+    }
   }
 
   @override
@@ -302,6 +356,11 @@ class _ChatPageState extends State<ChatPage> {
                   Expanded(
                     child: TextField(
                       style: GoogleFonts.inter(fontSize: 16.0),
+                      onChanged: (String value) {
+                        setState(() {
+                          _searchQuery = value;
+                        });
+                      },
                       decoration: const InputDecoration(
                         hintText: 'Search Conversations...',
                         hintStyle: TextStyle(
@@ -319,7 +378,9 @@ class _ChatPageState extends State<ChatPage> {
 
           // Tabs
           ChatButtons(
-            key: ValueKey(_currentRole == UserRole.tutor ? 'teacher-tabs' : 'default-tabs'),
+            key: ValueKey(
+              _currentRole == UserRole.tutor ? 'teacher-tabs' : 'default-tabs',
+            ),
             selectedIndex: _selectedTabIndex,
             tabs: _currentRole == UserRole.tutor
                 ? const ['Students', 'Groups']
@@ -355,11 +416,17 @@ class _ChatPageState extends State<ChatPage> {
                       }
 
                       final List<ConversationModel> conversations =
-                          snapshot.data ?? const <ConversationModel>[];
+                          (snapshot.data ?? const <ConversationModel>[])
+                              .where(_matchesSearch)
+                              .toList();
 
                       if (conversations.isEmpty) {
-                        return const Center(
-                          child: Text('No conversations yet.'),
+                        return Center(
+                          child: Text(
+                            _searchQuery.trim().isEmpty
+                                ? 'No conversations yet.'
+                                : 'No conversations found.',
+                          ),
                         );
                       }
 
@@ -379,6 +446,8 @@ class _ChatPageState extends State<ChatPage> {
                             conversation: conversation,
                             imageUrl: _conversationAvatar(conversation),
                             currentUserId: currentUserId,
+                            onLongPress: () =>
+                                _confirmDeleteConversation(conversation),
                           );
                         },
                       );

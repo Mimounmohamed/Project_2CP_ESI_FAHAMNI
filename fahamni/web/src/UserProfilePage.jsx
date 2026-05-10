@@ -158,13 +158,6 @@ export default function UserProfilePage({ user, onBack, onSuspendChange, onViewU
       }
 
       try {
-        const snap = await getDocs(query(collection(db, "resources"), where("tutor_id", "==", tutorUid)));
-        snap.docs.forEach(d => addCert({ id: d.id, ...d.data() }));
-      } catch (e) {
-        console.error("Certificate resources load failed:", e);
-      }
-
-      try {
         const storageCerts = await listStorageCertificates(`tutor_certifications/${tutorUid}`);
         storageCerts.forEach(addCert);
       } catch (e) {

@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum ReportType { session, student, teacher, parent }
+enum ReportType { session, student, teacher, parent, comment }
 
 enum ReportStatus { pending, reviewed, resolved, dismissed }
 
@@ -77,5 +77,3 @@ class ReportModel {
     );
   }
 }
-
-

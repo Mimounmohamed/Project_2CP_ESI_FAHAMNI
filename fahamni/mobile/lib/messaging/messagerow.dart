@@ -35,7 +35,10 @@ class MessageRow extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      MessageBubble(messageModel: message, isme: isMe),
+                      GestureDetector(
+                        onLongPress: onLongPress,
+                        child: MessageBubble(messageModel: message, isme: isMe),
+                      ),
                       const SizedBox(height: 2),
                       Text(
                         formattedTime,

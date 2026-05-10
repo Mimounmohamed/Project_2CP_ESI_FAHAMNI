@@ -179,8 +179,22 @@ export default function ReportsPage() {
   // ── Actions ───────────────────────────────────────────────────────────────
   async function markReviewed(reportId) {
     await updateDoc(doc(db, "reports", reportId), { status: "reviewed" });
-    setReports(prev => prev?.map(r => r.id === reportId ? { ...r, status: "reviewed" } : r));
+    setReports(prev => tab === "pending"
+      ? prev?.filter(r => r.id !== reportId)
+      : prev?.map(r => r.id === reportId ? { ...r, status: "reviewed" } : r)
+    );
     setSelected(r => r ? { ...r, status: "reviewed" } : r);
+    setPendingCount(count => count == null ? count : Math.max(0, count - 1));
+  }
+
+  async function handleMarkReviewed() {
+    if (!selected) return;
+    setActionLoading("review");
+    try {
+      await markReviewed(selected.id);
+      setActionDone("reviewed");
+    } catch (e) { console.error(e); }
+    finally { setActionLoading(null); }
   }
 
   async function handleToggleHide() {
@@ -429,12 +443,24 @@ export default function ReportsPage() {
               <div style={s.actionFeedback}>
                 {actionDone === "averted"   && t("reports.averted")}
                 {actionDone === "suspended" && t("reports.suspended")}
+                {actionDone === "reviewed"  && "Report marked as reviewed."}
               </div>
             )}
 
             {/* Buttons */}
             {!actionDone && (
               <div style={s.modalActions}>
+                <button
+                  style={{ ...s.modalBtn, ...s.modalBtnOutline }}
+                  disabled={!!actionLoading || selected.status === "reviewed"}
+                  onClick={handleMarkReviewed}
+                >
+                  {actionLoading === "review"
+                    ? t("reports.processing")
+                    : selected.status === "reviewed"
+                    ? "Already reviewed"
+                    : "Mark as reviewed"}
+                </button>
                 <button
                   style={{ ...s.modalBtn, ...s.modalBtnOutline }}
                   disabled={!!actionLoading}

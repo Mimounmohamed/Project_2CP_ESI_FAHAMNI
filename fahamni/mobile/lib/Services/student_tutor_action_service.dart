@@ -273,6 +273,7 @@ class StudentTutorActionService {
     required String reportedName,
     required ReportType type,
     required String text,
+    Map<String, dynamic> extraData = const <String, dynamic>{},
   }) async {
     final User? currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -300,7 +301,7 @@ class StudentTutorActionService {
       createdAt: DateTime.now(),
     );
 
-    await reportRef.set(report.toMap());
+    await reportRef.set({...report.toMap(), ...extraData});
 
     // Send admin notification for new report
     try {
@@ -358,13 +359,21 @@ class StudentTutorActionService {
     // Resolve the student/child display name for the notification content
     String studentDisplayName = 'A student';
     try {
-      final studentDoc = await _firestore.collection('students').doc(studentId).get();
+      final studentDoc = await _firestore
+          .collection('students')
+          .doc(studentId)
+          .get();
       if (studentDoc.exists && studentDoc.data() != null) {
         final d = studentDoc.data()!;
-        final full = '${(d['first_name'] ?? '').toString().trim()} ${(d['last_name'] ?? '').toString().trim()}'.trim();
+        final full =
+            '${(d['first_name'] ?? '').toString().trim()} ${(d['last_name'] ?? '').toString().trim()}'
+                .trim();
         if (full.isNotEmpty) studentDisplayName = full;
       } else {
-        final childDoc = await _firestore.collection('children').doc(studentId).get();
+        final childDoc = await _firestore
+            .collection('children')
+            .doc(studentId)
+            .get();
         if (childDoc.exists && childDoc.data() != null) {
           final n = (childDoc.data()!['name'] ?? '').toString().trim();
           if (n.isNotEmpty) studentDisplayName = n;
