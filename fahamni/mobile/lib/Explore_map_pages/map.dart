@@ -20,7 +20,9 @@ const LatLng _defaultMapCenter = LatLng(36.7538, 3.0588);
 const String _mapLocationConsentKey = 'map_location_consent_granted';
 
 class Mappage extends StatefulWidget {
-  const Mappage({super.key});
+  const Mappage({super.key, this.initialTutor});
+
+  final TutorModel? initialTutor;
 
   @override
   State<Mappage> createState() => _MappageState();
@@ -34,19 +36,51 @@ class _MappageState extends State<Mappage> {
   Position? _currentPosition;
   final Set<Marker> _markers = {};
   Set<Polyline> _polylines = {};
-  final List<_MappedTutor> _mappedTutors = <_MappedTutor>[];
+  
+  // All tutors that have been successfully geocoded and had markers created
+  final List<_MappedTutor> _allMappedTutors = <_MappedTutor>[];
+  // Currently visible tutors based on distance filter
+  List<_MappedTutor> _visibleTutors = <_MappedTutor>[];
+  
   TutorModel? _selectedTutor;
   int? _selectedIndex;
   bool _hasLocationConsent = false;
   bool _isRequestingLocation = false;
   final DraggableScrollableController _sheetController =
       DraggableScrollableController();
+  LatLng? _initialTutorTarget;
+  bool _focusedInitialTutor = false;
+
+  double _maxDistanceKm = 20.0;
+  final TextEditingController _distanceController = TextEditingController(text: '20');
 
   @override
   void initState() {
     super.initState();
+    _resolveInitialTutorTarget();
     _initializeLocationState();
     _loadTutorMarkers();
+  }
+
+  Future<void> _resolveInitialTutorTarget() async {
+    final TutorModel? tutor = widget.initialTutor;
+    if (tutor == null || tutor.location.trim().isEmpty) {
+      return;
+    }
+
+    final Location? location = await _geocodeTutorLocation(tutor.location);
+    if (!mounted || location == null) {
+      return;
+    }
+
+    final LatLng target = LatLng(location.latitude, location.longitude);
+    setState(() {
+      _initialTutorTarget = target;
+      _selectedTutor = tutor;
+    });
+    _controller?.animateCamera(
+      CameraUpdate.newCameraPosition(CameraPosition(target: target, zoom: 15)),
+    );
   }
 
   Future<void> _initializeLocationState() async {
@@ -101,9 +135,14 @@ class _MappageState extends State<Mappage> {
       _currentPosition = position;
       _hasLocationConsent = true;
     });
-    _controller?.animateCamera(
-      CameraUpdate.newLatLng(LatLng(position.latitude, position.longitude)),
-    );
+    
+    _applyDistanceFilter();
+
+    if (widget.initialTutor == null) {
+      _controller?.animateCamera(
+        CameraUpdate.newLatLng(LatLng(position.latitude, position.longitude)),
+      );
+    }
   }
 
   Future<void> _requestLocationAccess() async {
@@ -229,40 +268,79 @@ class _MappageState extends State<Mappage> {
           location.latitude,
           location.longitude,
         );
-        final int mappedIndex = _mappedTutors.length;
+        
         final BitmapDescriptor icon = await _buildCircularMarker(tutor.picture);
         final marker = Marker(
           markerId: MarkerId(tutor.uid),
           position: markerPosition,
           icon: icon,
           onTap: () {
-            setState(() {
-              _selectedTutor = tutor;
-              _selectedIndex = mappedIndex;
-            });
-            _sheetController.animateTo(
-              0.45,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOut,
-            );
-            _controller?.animateCamera(
-              CameraUpdate.newLatLng(markerPosition),
-            );
+            _onMarkerTapped(tutor, markerPosition);
           },
         );
+        
         setState(() {
-          _markers.add(marker);
-          _mappedTutors.add(
-            _MappedTutor(
-              tutor: tutor,
-              location: location,
-            ),
-          );
+          _allMappedTutors.add(_MappedTutor(tutor: tutor, location: location, marker: marker));
         });
+        
+        // Initial filter application
+        _applyDistanceFilter();
+
       } catch (e) {
         debugPrint('Could not geocode tutor location.');
       }
     }
+  }
+
+  void _onMarkerTapped(TutorModel tutor, LatLng position) {
+    int visibleIndex = _visibleTutors.indexWhere((mt) => mt.tutor.uid == tutor.uid);
+    setState(() {
+      _selectedTutor = tutor;
+      _selectedIndex = visibleIndex != -1 ? visibleIndex : null;
+    });
+    _sheetController.animateTo(
+      0.45,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+    _controller?.animateCamera(CameraUpdate.newLatLng(position));
+  }
+
+  void _applyDistanceFilter() {
+    if (_currentPosition == null) {
+      // If no current position, show all tutors but don't filter
+      setState(() {
+        _visibleTutors = List.from(_allMappedTutors);
+        _markers.clear();
+        _markers.addAll(_visibleTutors.map((mt) => mt.marker));
+      });
+      return;
+    }
+
+    final List<_MappedTutor> filtered = _allMappedTutors.where((mt) {
+      final distanceInMeters = Geolocator.distanceBetween(
+        _currentPosition!.latitude,
+        _currentPosition!.longitude,
+        mt.location.latitude,
+        mt.location.longitude,
+      );
+      return (distanceInMeters / 1000) <= _maxDistanceKm;
+    }).toList();
+
+    setState(() {
+      _visibleTutors = filtered;
+      _markers.clear();
+      _markers.addAll(_visibleTutors.map((mt) => mt.marker));
+      
+      // If selected tutor is filtered out, clear selection
+      if (_selectedTutor != null && !_visibleTutors.any((mt) => mt.tutor.uid == _selectedTutor!.uid)) {
+        _selectedTutor = null;
+        _selectedIndex = null;
+      } else if (_selectedTutor != null) {
+        // Update selected index in the new visible list
+        _selectedIndex = _visibleTutors.indexWhere((mt) => mt.tutor.uid == _selectedTutor!.uid);
+      }
+    });
   }
 
   Future<Location?> _geocodeTutorLocation(String rawLocation) async {
@@ -301,7 +379,7 @@ class _MappageState extends State<Mappage> {
 
   String _getDistance(int index) {
     if (_currentPosition == null) return '';
-    final Location location = _mappedTutors[index].location;
+    final Location location = _visibleTutors[index].location;
     final distanceInMeters = Geolocator.distanceBetween(
       _currentPosition!.latitude,
       _currentPosition!.longitude,
@@ -314,57 +392,80 @@ class _MappageState extends State<Mappage> {
         : '${km.toStringAsFixed(1)} km away';
   }
 
-  Future<void> _drawPolyline(int index) async {
-    PolylinePoints polylinePoints = PolylinePoints();
-
-    PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
-      googleApiKey: _googleMapsApiKey,
-      request: PolylineRequest(
-        origin: PointLatLng(
-          _currentPosition?.latitude ?? _defaultMapCenter.latitude,
-          _currentPosition?.longitude ?? _defaultMapCenter.longitude,
-        ),
-        destination: PointLatLng(
-          _mappedTutors[index].location.latitude,
-          _mappedTutors[index].location.longitude,
-        ),
-        mode: TravelMode.driving,
-      ),
-    );
-
-    if (result.points.isNotEmpty) {
-      setState(() {
-        _polylines = {
-          Polyline(
-            polylineId: PolylineId('route'),
-            points: result.points
-                .map((p) => LatLng(p.latitude, p.longitude))
-                .toList(),
-            color: Color(0xFF000080),
-            width: 5,
-          ),
-        };
-        debugPrint('polyline points: ${result.points.length}');
-        debugPrint('status: ${result.status}');
-        debugPrint('error: ${result.errorMessage}');
-      });
-    }
-  }
-
   void _openGoogleMapsDirections(int index) async {
-    final lat = _mappedTutors[index].location.latitude;
-    final lng = _mappedTutors[index].location.longitude;
+    final lat = _visibleTutors[index].location.latitude;
+    final lng = _visibleTutors[index].location.longitude;
     final url = Uri.parse(
       'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving',
     );
     await launchUrl(url, mode: LaunchMode.externalApplication);
   }
 
+  void _showDistanceFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Distance Filter',
+          style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Show tutors within (km):',
+              style: TextStyle(fontFamily: 'Nunito'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _distanceController,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: InputDecoration(
+                hintText: 'Distance in km',
+                filled: true,
+                fillColor: Colors.grey[100],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                suffixText: 'km',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _maxDistanceKm = double.tryParse(_distanceController.text) ?? 20.0;
+              });
+              _applyDistanceFilter();
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF000080),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Confirm', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final LatLng initialTarget = _currentPosition == null
-        ? _defaultMapCenter
-        : LatLng(_currentPosition!.latitude, _currentPosition!.longitude);
+    final LatLng initialTarget =
+        _initialTutorTarget ??
+        (_currentPosition == null
+            ? _defaultMapCenter
+            : LatLng(_currentPosition!.latitude, _currentPosition!.longitude));
 
     return Scaffold(
       appBar: AppBar(
@@ -383,6 +484,14 @@ class _MappageState extends State<Mappage> {
           ),
         ),
         centerTitle: true,
+      ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 120), // Adjust to be above the sheet
+        child: FloatingActionButton(
+          onPressed: _showDistanceFilterDialog,
+          backgroundColor: const Color(0xFF000080),
+          child: const Icon(Icons.filter_list_alt, color: Colors.white),
+        ),
       ),
       body: Stack(
         children: [
@@ -414,7 +523,7 @@ class _MappageState extends State<Mappage> {
               });
               _sheetController.animateTo(
                 0.18,
-                duration: Duration(milliseconds: 300),
+                duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOut,
               );
             },
@@ -472,12 +581,12 @@ class _MappageState extends State<Mappage> {
               return Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.15),
                       blurRadius: 20,
-                      offset: Offset(0, -4),
+                      offset: const Offset(0, -4),
                     ),
                   ],
                 ),
@@ -489,7 +598,7 @@ class _MappageState extends State<Mappage> {
                       // Handle
                       Center(
                         child: Container(
-                          margin: EdgeInsets.only(top: 12, bottom: 8),
+                          margin: const EdgeInsets.only(top: 12, bottom: 8),
                           height: 4,
                           width: 40,
                           decoration: BoxDecoration(
@@ -504,8 +613,8 @@ class _MappageState extends State<Mappage> {
                         padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                         child: Center(
                           child: Text(
-                            'select your favorite tutor',
-                            style: TextStyle(
+                            'select your favorite tutor (within ${_maxDistanceKm.toInt()}km)',
+                            style: const TextStyle(
                               fontFamily: "Inter",
                               fontWeight: FontWeight.w400,
                               fontSize: 12,
@@ -514,16 +623,16 @@ class _MappageState extends State<Mappage> {
                           ),
                         ),
                       ),
-                      SizedBox(height: 10),
+                      const SizedBox(height: 10),
                       SizedBox(
                         height: 85,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
-                          padding: EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: _mappedTutors.length,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: _visibleTutors.length,
                           itemBuilder: (context, index) {
                             final isSelected = _selectedIndex == index;
-                            final TutorModel tutor = _mappedTutors[index].tutor;
+                            final TutorModel tutor = _visibleTutors[index].tutor;
                             return GestureDetector(
                               onTap: () {
                                 setState(() {
@@ -533,14 +642,14 @@ class _MappageState extends State<Mappage> {
                                 _controller?.animateCamera(
                                   CameraUpdate.newLatLng(
                                     LatLng(
-                                      _mappedTutors[index].location.latitude,
-                                      _mappedTutors[index].location.longitude,
+                                      _visibleTutors[index].location.latitude,
+                                      _visibleTutors[index].location.longitude,
                                     ),
                                   ),
                                 );
                                 _sheetController.animateTo(
                                   0.45,
-                                  duration: Duration(milliseconds: 300),
+                                  duration: const Duration(milliseconds: 300),
                                   curve: Curves.easeOut,
                                 );
                               },
@@ -554,20 +663,18 @@ class _MappageState extends State<Mappage> {
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         image: DecorationImage(
-                                          image: NetworkImage(
-                                            tutor.picture,
-                                          ),
+                                          image: NetworkImage(tutor.picture),
                                           fit: BoxFit.cover,
                                         ),
                                         border: Border.all(
                                           color: isSelected
-                                              ? Color(0xFF000080)
+                                              ? const Color(0xFF000080)
                                               : Colors.grey[300]!,
                                           width: isSelected ? 3 : 1.5,
                                         ),
                                       ),
                                     ),
-                                    SizedBox(height: 4),
+                                    const SizedBox(height: 4),
                                     Text(
                                       tutor.firstName,
                                       style: TextStyle(
@@ -577,7 +684,7 @@ class _MappageState extends State<Mappage> {
                                             : FontWeight.w400,
                                         fontSize: 11,
                                         color: isSelected
-                                            ? Color(0xFF000080)
+                                            ? const Color(0xFF000080)
                                             : Colors.black,
                                       ),
                                     ),
@@ -603,11 +710,11 @@ class _MappageState extends State<Mappage> {
                                   vertical: 5,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Color(0xFF000080).withValues(alpha: 0.1),
-                                  borderRadius: BorderRadiusGeometry.circular(
-                                    5,
-                                  ),
-                                  border: Border(
+                                  color: const Color(
+                                    0xFF000080,
+                                  ).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(5),
+                                  border: const Border(
                                     left: BorderSide(
                                       color: Color(0xFF000080),
                                       width: 4,
@@ -632,7 +739,7 @@ class _MappageState extends State<Mappage> {
                                         ),
                                       ),
                                     ),
-                                    SizedBox(width: 12),
+                                    const SizedBox(width: 12),
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment:
@@ -640,7 +747,7 @@ class _MappageState extends State<Mappage> {
                                         children: [
                                           Text(
                                             '${_selectedTutor!.firstName} ${_selectedTutor!.lastName}',
-                                            style: TextStyle(
+                                            style: const TextStyle(
                                               fontFamily: "Inter",
                                               fontWeight: FontWeight.w700,
                                               fontSize: 16,
@@ -649,7 +756,7 @@ class _MappageState extends State<Mappage> {
                                           ),
                                           Text(
                                             _selectedTutor!.expertiseDomain,
-                                            style: TextStyle(
+                                            style: const TextStyle(
                                               fontFamily: "Nunito",
                                               fontWeight: FontWeight.w400,
                                               fontSize: 13,
@@ -660,12 +767,12 @@ class _MappageState extends State<Mappage> {
                                       ),
                                     ),
                                     Container(
-                                      padding: EdgeInsets.symmetric(
+                                      padding: const EdgeInsets.symmetric(
                                         horizontal: 8,
                                         vertical: 4,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Color(
+                                        color: const Color(
                                           0xFF000080,
                                         ).withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(8),
@@ -677,11 +784,11 @@ class _MappageState extends State<Mappage> {
                                             height: 12,
                                             width: 12,
                                           ),
-                                          SizedBox(width: 4),
+                                          const SizedBox(width: 4),
                                           Text(
                                             _selectedTutor!.averageRating
                                                 .toString(),
-                                            style: TextStyle(
+                                            style: const TextStyle(
                                               fontFamily: "Lexend",
                                               fontWeight: FontWeight.w700,
                                               fontSize: 13,
@@ -694,25 +801,24 @@ class _MappageState extends State<Mappage> {
                                   ],
                                 ),
                               ),
-                              SizedBox(height: 16),
+                              const SizedBox(height: 16),
                               // Info rows
                               _infoRow(
                                 Icons.location_on_rounded,
                                 _selectedTutor!.location,
                               ),
-                              SizedBox(height: 8),
+                              const SizedBox(height: 8),
                               Container(
-                                margin: EdgeInsetsGeometry.symmetric(
+                                margin: const EdgeInsets.symmetric(
                                   horizontal: 10,
                                 ),
-                                padding: EdgeInsets.fromLTRB(6, 3, 0, 3),
+                                padding: const EdgeInsets.fromLTRB(6, 3, 0, 3),
                                 width: 130,
-                                isAntiAlias: true,
                                 decoration: BoxDecoration(
-                                  color: Color(0xFF000080).withValues(alpha: 0.1),
-                                  borderRadius: BorderRadiusGeometry.circular(
-                                    99,
-                                  ),
+                                  color: const Color(
+                                    0xFF000080,
+                                  ).withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(99),
                                 ),
                                 child: _infoRow(
                                   Icons.directions_walk_rounded,
@@ -721,12 +827,12 @@ class _MappageState extends State<Mappage> {
                                       : _getDistance(_selectedIndex!),
                                 ),
                               ),
-                              SizedBox(height: 8),
+                              const SizedBox(height: 8),
                               _infoRow(
                                 Icons.devices,
                                 _selectedTutor!.teachingMode,
                               ),
-                              SizedBox(height: 20),
+                              const SizedBox(height: 20),
                               SizedBox(
                                 width: double.infinity,
                                 height: 60,
@@ -738,22 +844,22 @@ class _MappageState extends State<Mappage> {
                                           _openGoogleMapsDirections(
                                             _selectedIndex!,
                                           ),
-                                      icon: Icon(Icons.message_outlined),
+                                      icon: const Icon(Icons.message_outlined),
                                       style: ElevatedButton.styleFrom(
-                                        padding: EdgeInsetsGeometry.fromLTRB(
+                                        padding: const EdgeInsets.fromLTRB(
                                           20,
                                           15,
                                           20,
                                           15,
                                         ),
-                                        backgroundColor: Color(0xFFD2D2D2),
+                                        backgroundColor: const Color(0xFFD2D2D2),
                                         iconColor: Colors.black,
                                         shape: RoundedRectangleBorder(
                                           borderRadius:
-                                              BorderRadiusGeometry.circular(30),
+                                              BorderRadius.circular(30),
                                         ),
                                       ),
-                                      label: Center(
+                                      label: const Center(
                                         child: Text(
                                           'Directions',
                                           style: TextStyle(
@@ -765,36 +871,37 @@ class _MappageState extends State<Mappage> {
                                         ),
                                       ),
                                     ),
-                                    SizedBox(width: 10),
+                                    const SizedBox(width: 10),
                                     ElevatedButton.icon(
                                       onPressed: () {
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (_) => TutorProfilePage(tutorId: _selectedTutor!.uid),
+                                            builder: (_) => TutorProfilePage(
+                                              tutorId: _selectedTutor!.uid,
+                                            ),
                                           ),
                                         );
-
                                       },
-                                      icon: Icon(
+                                      icon: const Icon(
                                         Icons.person_2_outlined,
                                         color: Colors.white,
                                         size: 23,
                                       ),
                                       style: ElevatedButton.styleFrom(
-                                        padding: EdgeInsetsGeometry.fromLTRB(
+                                        padding: const EdgeInsets.fromLTRB(
                                           20,
                                           15,
                                           20,
                                           15,
                                         ),
-                                        backgroundColor: Color(0xFF000080),
+                                        backgroundColor: const Color(0xFF000080),
                                         shape: RoundedRectangleBorder(
                                           borderRadius:
-                                              BorderRadiusGeometry.circular(30),
+                                              BorderRadius.circular(30),
                                         ),
                                       ),
-                                      label: Center(
+                                      label: const Center(
                                         child: Text(
                                           'View Profile',
                                           style: TextStyle(
@@ -809,7 +916,7 @@ class _MappageState extends State<Mappage> {
                                   ],
                                 ),
                               ),
-                              SizedBox(height: 20),
+                              const SizedBox(height: 20),
                             ],
                           ),
                         ),
@@ -860,12 +967,12 @@ class _MappageState extends State<Mappage> {
   Widget _infoRow(IconData icon, String text) {
     return Container(
       padding: icon == Icons.directions_walk_rounded
-          ? EdgeInsets.symmetric(horizontal: 0)
-          : EdgeInsets.symmetric(horizontal: 16),
+          ? EdgeInsets.zero
+          : const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: Color(0xFF000080)),
-          SizedBox(width: 8),
+          Icon(icon, size: 18, color: const Color(0xFF000080)),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
@@ -874,8 +981,8 @@ class _MappageState extends State<Mappage> {
                 fontWeight: FontWeight.w400,
                 fontSize: 13,
                 color: icon == Icons.directions_walk_rounded
-                    ? Color(0xFF000080)
-                    : Color(0xFF475569),
+                    ? const Color(0xFF000080)
+                    : const Color(0xFF475569),
               ),
             ),
           ),
@@ -887,18 +994,15 @@ class _MappageState extends State<Mappage> {
   @override
   void dispose() {
     _controller?.dispose();
+    _distanceController.dispose();
     super.dispose();
   }
 }
 
 class _MappedTutor {
-  const _MappedTutor({
-    required this.tutor,
-    required this.location,
-  });
+  const _MappedTutor({required this.tutor, required this.location, required this.marker});
 
   final TutorModel tutor;
   final Location location;
+  final Marker marker;
 }
-
-

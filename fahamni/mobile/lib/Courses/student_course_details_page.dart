@@ -228,12 +228,12 @@ class _StudentCourseDetailsPageState extends State<StudentCourseDetailsPage>
               child: TabBar(
                 controller: _tabController,
                 labelStyle: const TextStyle(
-                  fontFamily: 'Inter',
+                  fontFamily: 'Nunito',
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
                 ),
                 unselectedLabelStyle: const TextStyle(
-                  fontFamily: 'Inter',
+                  fontFamily: 'Nunito',
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
                 ),

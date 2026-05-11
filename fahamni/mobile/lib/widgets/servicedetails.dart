@@ -1,5 +1,6 @@
 import 'package:fahamni/messaging/chat_page.dart';
 import 'package:fahamni/messaging/conversation_page.dart';
+import 'package:fahamni/Explore_map_pages/map.dart';
 import 'package:fahamni/Services/student_tutor_action_service.dart';
 import 'package:fahamni/Courses/courses_page.dart';
 import 'package:fahamni/feedback/feedback_pages.dart';
@@ -12,6 +13,7 @@ import 'package:fahamni/Account_Settings_Student/account_screen.dart';
 import '../models/child_model.dart';
 import '../models/service_model.dart';
 import '../models/tutor_model.dart';
+import '../utils/image_utils.dart';
 
 class Servicedetails extends StatefulWidget {
   final TutorModel tutor;
@@ -148,13 +150,17 @@ class _ServicedetailsState extends State<Servicedetails> {
       }
     }
 
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: const Color(0xfff9f9f9),
+        elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           iconSize: 24,
-          icon: const Icon(Icons.arrow_back_ios_new_outlined),
+          icon: const Icon(Icons.arrow_back_ios_new_outlined, color: Colors.black),
         ),
         title: const Text(
           "Service",
@@ -163,133 +169,115 @@ class _ServicedetailsState extends State<Servicedetails> {
             fontSize: 20,
             fontWeight: FontWeight.w700,
             color: Color(0xff0f172a),
-            height: 23 / 18,
           ),
         ),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
         child: Container(
-          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (widget.service.picture != "")
-                Image.network(
+              Image(
+                image: safeImage(
                   widget.service.picture,
-                  height: 180,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                )
-              else
-                Image.asset(
+                  defaultAsset: "assets/images/default_service_img.png",
+                ),
+                height: size.height * 0.25,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Image.asset(
                   "assets/images/default_service_img.png",
-                  height: 180,
+                  height: size.height * 0.25,
                   width: double.infinity,
                   fit: BoxFit.cover,
                 ),
-              SizedBox(height: 5),
+              ),
               Container(
-                padding: EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Center(
                       child: Text(
                         widget.service.subject,
-                        style: TextStyle(
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
                           color: Colors.black,
                           fontFamily: "Inter",
                           fontWeight: FontWeight.w700,
-                          fontSize: 18,
+                          fontSize: 22,
                         ),
                       ),
                     ),
-                    SizedBox(height: 5),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final double cardWidth =
-                            (constraints.maxWidth - 146) / 2;
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatCard(
+                            'STUDENTS',
+                            widget.service.enrollednum.toString(),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildStatCard(
+                            'SESSIONS',
+                            widget.service.sessionsnum.toString(),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildStatCard(
+                            'PRICE',
+                            "${widget.service.price.toInt()}DA",
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    if (widget.service.maxnum - widget.service.enrollednum <= 10)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 15),
+                        child: Row(
                           children: [
-                            _buildStatCard(
-                              'STUDENTS',
-                              widget.service.enrollednum.toString(),
-                              cardWidth,
+                            SvgPicture.asset(
+                              "assets/images/circle-alert.svg",
+                              height: 18,
+                              width: 18,
+                              colorFilter: const ColorFilter.mode(
+                                Color(0xFFDD0D0D),
+                                BlendMode.srcIn,
+                              ),
                             ),
-                            _buildStatCard(
-                              'SESSIONS',
-                              widget.service.sessionsnum.toString(),
-                              cardWidth,
-                            ),
-                            _buildStatCard(
-                              'PRICE',
-                              "${widget.service.price.toInt()}DA",
-                              cardWidth,
+                            const SizedBox(width: 8),
+                            Text(
+                              "${widget.service.maxnum - widget.service.enrollednum} places left",
+                              style: const TextStyle(
+                                color: Color(0xFFDD0D0D),
+                                fontSize: 14,
+                                fontFamily: 'Nunito',
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
-                        );
-                      },
-                    ),
-                    SizedBox(height: 15),
-                    if (widget.service.maxnum - widget.service.enrollednum <=
-                        10)
-                      Row(
-                        children: [
-                          SvgPicture.asset(
-                            "assets/images/circle-alert.svg",
-                            height: 20,
-                            width: 20,
-                            colorFilter: const ColorFilter.mode(
-                              Color(0xFFDD0D0D),
-                              BlendMode.srcIn,
-                            ),
-                          ),
-                          SizedBox(width: 5),
-                          Text(
-                            "${widget.service.maxnum - widget.service.enrollednum} places left",
-                            style: TextStyle(
-                              color: const Color(0xFFDD0D0D),
-                              fontSize: 14,
-                              fontFamily: 'Nunito',
-                              fontWeight: FontWeight.w400,
-                              height: 1.43,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    SizedBox(height: 15),
-                    Container(
-                      padding: EdgeInsets.all(15),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0xFF000080).withValues(alpha: 0.2),
-                            spreadRadius: 0.5,
-                            blurRadius: 4,
-                            offset: Offset(0, 1),
-                          ),
-                        ],
-                      ),
+                    _buildSectionContainer(
                       child: Column(
                         children: [
-                          // Column fro the Services details
                           Row(
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.info_outline_rounded,
                                 color: Color(0xFF000080),
-                                size: 30,
+                                size: 28,
                               ),
-                              SizedBox(width: 5),
-                              Text(
+                              const SizedBox(width: 8),
+                              const Text(
                                 'Service Details',
                                 style: TextStyle(
                                   color: Color(0xFF1F2937),
@@ -300,254 +288,86 @@ class _ServicedetailsState extends State<Servicedetails> {
                               ),
                             ],
                           ),
-                          SizedBox(height: 15),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Color(
-                                    0xFF000080,
-                                  ).withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: SvgPicture.asset(
-                                  'assets/images/course.svg',
-                                  height: 20,
-                                  width: 20,
-                                ),
-                              ),
-                              SizedBox(width: 10),
-                              Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'DOMAIN',
-                                    style: TextStyle(
-                                      fontFamily: "Nunito",
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 12,
-                                      color: Color(0xFF94A3B8),
-                                    ),
-                                  ),
-                                  SizedBox(height: 5),
-                                  Text(
-                                    widget.service.subject,
-                                    style: TextStyle(
-                                      fontFamily: "Nunito",
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 18,
-                                      color: Color(0xFF1F2937),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                          const SizedBox(height: 15),
+                          _buildDetailRow(
+                            icon: SvgPicture.asset(
+                              'assets/images/course.svg',
+                              height: 20,
+                              width: 20,
+                            ),
+                            label: 'DOMAIN',
+                            value: widget.service.subject,
                           ),
-                          SizedBox(height: 10),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Color(
-                                    0xFF000080,
-                                  ).withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(
-                                  Icons.school_outlined,
-                                  color: Color(0xFF000080),
-                                ),
-                              ),
-                              SizedBox(width: 10),
-                              Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'GRADE',
-                                    style: TextStyle(
-                                      fontFamily: "Nuntio",
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 12,
-                                      color: Color(0xFF94A3B8),
-                                    ),
-                                  ),
-                                  SizedBox(height: 5),
-                                  Text(
-                                    widget.service.level,
-                                    style: TextStyle(
-                                      fontFamily: "Nunito",
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 18,
-                                      color: Color(0xFF1F2937),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                          const SizedBox(height: 12),
+                          _buildDetailRow(
+                            icon: const Icon(
+                              Icons.school_outlined,
+                              color: Color(0xFF000080),
+                            ),
+                            label: 'GRADE',
+                            value: widget.service.level,
                           ),
-                          SizedBox(height: 13),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Color(
-                                    0xFF000080,
-                                  ).withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(
-                                  Icons.access_time,
-                                  color: Color(0xFF000080),
-                                ),
-                              ),
-                              SizedBox(width: 10),
-                              Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Duration',
-                                    style: TextStyle(
-                                      fontFamily: "Nunito",
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 12,
-                                      color: Color(0xFF94A3B8),
-                                    ),
-                                  ),
-                                  SizedBox(height: 5),
-                                  Text(
-                                    "${widget.service.duration}min/session",
-                                    style: TextStyle(
-                                      fontFamily: "Nunito",
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 18,
-                                      color: Color(0xFF1F2937),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                          const SizedBox(height: 12),
+                          _buildDetailRow(
+                            icon: const Icon(
+                              Icons.access_time,
+                              color: Color(0xFF000080),
+                            ),
+                            label: 'DURATION',
+                            value: "${widget.service.duration}min/session",
                           ),
-                          SizedBox(height: 13),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Color(
-                                    0xFF000080,
-                                  ).withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(
-                                  Icons.devices_rounded,
-                                  color: Color(0xFF000080),
-                                ),
-                              ),
-                              SizedBox(width: 10),
-                              Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'COURSE TYPE',
-                                    style: TextStyle(
-                                      fontFamily: "Nunito",
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 12,
-                                      color: Color(0xFF94A3B8),
-                                    ),
-                                  ),
-                                  SizedBox(height: 5),
-                                  Text(
-                                    widget.tutor.teachingMode,
-                                    style: TextStyle(
-                                      fontFamily: "Nunito",
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 18,
-                                      color: Color(0xFF1F2937),
-                                    ),
-                                  ),
-                                  SizedBox(height: 13),
-                                ],
-                              ),
-                            ],
+                          const SizedBox(height: 12),
+                          _buildDetailRow(
+                            icon: const Icon(
+                              Icons.devices_rounded,
+                              color: Color(0xFF000080),
+                            ),
+                            label: 'COURSE TYPE',
+                            value: widget.tutor.teachingMode,
                           ),
+                          const SizedBox(height: 12),
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Container(
-                                padding: EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Color(
-                                    0xFF000080,
-                                  ).withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Icon(
-                                  Icons.location_on_outlined,
-                                  color: Color(0xFF000080),
+                              Expanded(
+                                child: _buildDetailRow(
+                                  icon: const Icon(
+                                    Icons.location_on_outlined,
+                                    color: Color(0xFF000080),
+                                  ),
+                                  label: 'LOCATION',
+                                  value: widget.tutor.location,
                                 ),
                               ),
-                              SizedBox(width: 10),
-                              Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'LOCATION',
-                                    style: TextStyle(
-                                      fontFamily: "Nunito",
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 12,
-                                      color: Color(0xFF94A3B8),
-                                    ),
-                                  ),
-                                  SizedBox(height: 5),
-                                  Text(
-                                    widget.tutor.location,
-                                    style: TextStyle(
-                                      fontFamily: "Nunito",
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 18,
-                                      color: Color(0xFF1F2937),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(width: 70),
+                              const SizedBox(width: 8),
                               ElevatedButton(
-                                onPressed: () {},
-                                style: ElevatedButton.styleFrom(
-                                  padding: EdgeInsets.fromLTRB(15, 10, 15, 10),
-                                  backgroundColor: Color(0xFF000080),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(15),
-                                  ),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    'See on map',
-                                    style: TextStyle(
-                                      fontFamily: "Nunito",
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 16,
-                                      color: Colors.white,
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          Mappage(initialTutor: widget.tutor),
                                     ),
+                                  );
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  backgroundColor: const Color(0xFF000080),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: const Text(
+                                  'Map',
+                                  style: TextStyle(
+                                    fontFamily: "Nunito",
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    color: Colors.white,
                                   ),
                                 ),
                               ),
@@ -556,26 +376,12 @@ class _ServicedetailsState extends State<Servicedetails> {
                         ],
                       ),
                     ),
-                    SizedBox(height: 10),
-                    Container(
-                      padding: EdgeInsets.all(15),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0xFF000080).withValues(alpha: 0.2),
-                            spreadRadius: 0.5,
-                            blurRadius: 4,
-                            offset: Offset(0, 1),
-                          ),
-                        ],
-                      ),
+                    const SizedBox(height: 15),
+                    _buildSectionContainer(
                       child: Column(
-                        // Column for the About this Service
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          const Text(
                             'About this Service',
                             style: TextStyle(
                               color: Color(0xFF1F2937),
@@ -584,170 +390,122 @@ class _ServicedetailsState extends State<Servicedetails> {
                               fontSize: 18,
                             ),
                           ),
-                          SizedBox(height: 10),
+                          const SizedBox(height: 10),
                           Text(
                             widget.service.description,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontFamily: "Nunito",
                               fontWeight: FontWeight.w400,
-                              fontSize: 13,
+                              fontSize: 14,
+                              color: Color(0xFF4B5563),
+                              height: 1.5,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    SizedBox(height: 10),
-                    Container(
-                      padding: EdgeInsets.all(15),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0xFF000080).withValues(alpha: 0.2),
-                            spreadRadius: 0.5,
-                            blurRadius: 4,
-                            offset: Offset(0, 1),
-                          ),
-                        ],
-                      ),
+                    const SizedBox(height: 15),
+                    _buildSectionContainer(
                       child: Column(
-                        // Column fro the Tutor
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          const Text(
                             'Instructor',
                             style: TextStyle(
                               color: Color(0xFF1F2937),
                               fontFamily: "Inter",
                               fontWeight: FontWeight.w700,
-                              fontSize: 20,
+                              fontSize: 18,
                             ),
                           ),
-                          SizedBox(height: 10),
+                          const SizedBox(height: 15),
                           Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               CircleAvatar(
-                                backgroundImage: NetworkImage(
+                                backgroundImage: safeImage(
                                   widget.tutor.picture,
+                                  defaultAsset: "assets/images/tutormale.png",
                                 ),
-                                radius: 30,
+                                radius: 32,
                               ),
-                              SizedBox(width: 15),
+                              const SizedBox(width: 15),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      widget.tutor.firstName,
-                                      style: TextStyle(
+                                      "${widget.tutor.firstName} ${widget.tutor.lastName}",
+                                      style: const TextStyle(
                                         fontFamily: "Inter",
-                                        fontWeight: FontWeight.w600,
+                                        fontWeight: FontWeight.w700,
                                         fontSize: 18,
                                         color: Colors.black,
                                       ),
                                     ),
-                                    SizedBox(height: 5),
+                                    const SizedBox(height: 4),
                                     Text(
                                       widget.tutor.expertiseDomain,
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontFamily: "Inter",
                                         fontWeight: FontWeight.w400,
-                                        fontSize: 15,
-                                        color: Color(0xFF464653),
+                                        fontSize: 14,
+                                        color: Color(0xFF6B7280),
                                       ),
                                     ),
-                                    SizedBox(height: 10),
-                                    Wrap(
-                                      spacing: 12,
-                                      runSpacing: 12,
-                                      crossAxisAlignment:
-                                          WrapCrossAlignment.center,
-                                      children: [
-                                        Container(
-                                          height: 25,
-                                          width: 50,
-                                          decoration: ShapeDecoration(
-                                            color: Color(
-                                              0xFF000080,
-                                            ).withValues(alpha: 0.1),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(5),
-                                            ),
-                                          ),
-                                          child: Center(
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.start,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.center,
-                                              children: [
-                                                SvgPicture.asset(
-                                                  "assets/images/star.svg",
-                                                  height: 12,
-                                                  width: 12,
-                                                ),
-                                                SizedBox(width: 2),
-                                                Text(
-                                                  widget.tutor.averageRating
-                                                      .toString(),
-                                                  style: TextStyle(
-                                                    color: const Color(
-                                                      0xFF1E293B,
-                                                    ),
-                                                    fontSize: 14,
-                                                    fontFamily: 'Lexend',
-                                                    fontWeight: FontWeight.w700,
-                                                    height: 1.33,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                        ElevatedButton(
-                                          onPressed: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (_) =>
-                                                    TutorProfilePage(
-                                                      tutorId: widget.tutor.uid,
-                                                    ),
-                                              ),
-                                            );
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                            side: BorderSide(
-                                              color: Color(
-                                                0xFF000080,
-                                              ).withValues(alpha: 0.2),
-                                            ),
-                                            padding: EdgeInsets.all(10),
-                                            backgroundColor: Colors.white,
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(30),
-                                            ),
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              'View profile',
-                                              style: TextStyle(
-                                                fontFamily: "Nunito",
-                                                fontWeight: FontWeight.w700,
-                                                fontSize: 18,
-                                                color: Color(0xFF000080),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 15),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF000080).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  children: [
+                                    SvgPicture.asset(
+                                      "assets/images/star.svg",
+                                      height: 14,
+                                      width: 14,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      widget.tutor.averageRating.toString(),
+                                      style: const TextStyle(
+                                        color: Color(0xFF1E293B),
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                      ),
                                     ),
                                   ],
+                                ),
+                              ),
+                              const Spacer(),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => TutorProfilePage(
+                                        tutorId: widget.tutor.uid,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: const Text(
+                                  'View profile',
+                                  style: TextStyle(
+                                    fontFamily: "Nunito",
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
+                                    color: Color(0xFF000080),
+                                  ),
                                 ),
                               ),
                             ],
@@ -755,65 +513,64 @@ class _ServicedetailsState extends State<Servicedetails> {
                         ],
                       ),
                     ),
-                    SizedBox(height: 20),
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 10,
-                      runSpacing: 10,
+                    const SizedBox(height: 30),
+                    Row(
                       children: [
-                        ElevatedButton.icon(
-                          onPressed: _isActionLoading
-                              ? null
-                              : _openConversation,
-                          icon: Icon(Icons.message_outlined),
-                          style: ElevatedButton.styleFrom(
-                            padding: EdgeInsets.fromLTRB(20, 15, 20, 15),
-                            backgroundColor: Color(0xFFD2D2D2),
-                            iconColor: Colors.black,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton.icon(
+                            onPressed: _isActionLoading ? null : _openConversation,
+                            icon: const Icon(Icons.message_outlined, size: 20),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              backgroundColor: const Color(0xFFF1F5F9),
+                              foregroundColor: Colors.black,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
                             ),
-                          ),
-                          label: Center(
-                            child: Text(
+                            label: const Text(
                               'Message',
                               style: TextStyle(
                                 fontFamily: "Nunito",
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.bold,
                                 fontSize: 16,
-                                color: Colors.black,
                               ),
                             ),
                           ),
                         ),
-                        SizedBox(width: 10),
-                        ElevatedButton.icon(
-                          onPressed: isActionDisabled ? null : _sendJoinRequest,
-                          icon: ImageIcon(
-                            AssetImage("assets/images/schedule.png"),
-                            color: Colors.white,
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            padding: EdgeInsets.fromLTRB(20, 15, 20, 15),
-                            backgroundColor: Color(0xFF000080),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 3,
+                          child: ElevatedButton.icon(
+                            onPressed: isActionDisabled ? null : _sendJoinRequest,
+                            icon: const ImageIcon(
+                              AssetImage("assets/images/schedule.png"),
+                              size: 20,
                             ),
-                          ),
-                          label: Center(
-                            child: Text(
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              backgroundColor: const Color(0xFF000080),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            label: Text(
                               buttonText,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontFamily: "Nunito",
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.bold,
                                 fontSize: 16,
-                                color: Colors.white,
                               ),
                             ),
                           ),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),
@@ -853,47 +610,111 @@ class _ServicedetailsState extends State<Servicedetails> {
       ),
     );
   }
+
+  Widget _buildSectionContainer({required Widget child}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
 }
 
-Widget _buildStatCard(String title, String value, double width) {
+Widget _buildStatCard(String title, String value) {
   return Container(
-    height: 80,
-    width: width,
-    padding: EdgeInsets.all(8),
+    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
     decoration: BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(10),
-      boxShadow: [
-        BoxShadow(
-          color: Color(0xFF000080).withValues(alpha: 0.2),
-          spreadRadius: 0.5,
-          blurRadius: 4,
-          offset: Offset(0, 1),
-        ),
-      ],
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0xFFE2E8F0)),
     ),
     child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
           title,
-          style: TextStyle(
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
             color: Color(0xFF64748B),
             fontFamily: "Nunito",
-            fontWeight: FontWeight.w700,
-            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            fontSize: 11,
           ),
         ),
-        SizedBox(height: 10),
+        const SizedBox(height: 6),
         Text(
           value,
-          style: TextStyle(
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
             color: Color(0xFF000080),
             fontFamily: "Nunito",
-            fontWeight: FontWeight.w700,
-            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            fontSize: 16,
           ),
         ),
       ],
     ),
+  );
+}
+
+Widget _buildDetailRow({
+  required Widget icon,
+  required String label,
+  required String value,
+}) {
+  return Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF000080).withOpacity(0.08),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: SizedBox(height: 20, width: 20, child: Center(child: icon)),
+      ),
+      const SizedBox(width: 12),
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontFamily: "Nunito",
+                fontWeight: FontWeight.w700,
+                fontSize: 11,
+                color: Color(0xFF94A3B8),
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: const TextStyle(
+                fontFamily: "Nunito",
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+                color: Color(0xFF1F2937),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
   );
 }

@@ -158,7 +158,7 @@ service cloud.firestore {
             isAdmin() ||
             (
               isConversationParticipantAfter(conversationId) &&
-              request.resource.data.senderId == request.auth.uid
+              (request.resource.data.senderId == request.auth.uid || request.resource.data.senderId == 'system')
             )
           );
         allow update, delete: if false;
@@ -211,6 +211,13 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create: if isTutorWriteOwner() || isAdmin();
       allow update, delete: if isTutorResourceOwner() || isAdmin();
+    }
+
+    function isResourceOwner() {
+      return signedIn() && (
+        (resource.data.tutor_id is string && resource.data.tutor_id == request.auth.uid) ||
+        (resource.data.sender_id is string && resource.data.sender_id == request.auth.uid)
+      );
     }
 
     match /feedbacks/{feedbackId} {

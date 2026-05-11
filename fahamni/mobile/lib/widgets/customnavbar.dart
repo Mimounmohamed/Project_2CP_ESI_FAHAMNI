@@ -62,6 +62,7 @@ class _CustomBottomNavbarState extends State<CustomBottomNavbar> {
                           child: Text(
                             label,
                             style: const TextStyle(
+                              fontFamily: "Nunito",
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
                             ),

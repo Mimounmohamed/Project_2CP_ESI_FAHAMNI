@@ -371,11 +371,6 @@ class _ParentExplorePageState extends State<ParentExplorePage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xfff9f9f9),
-        leading: IconButton(
-          onPressed: () => Navigator.pop(context),
-          iconSize: 24,
-          icon: const Icon(Icons.arrow_back_ios_new_outlined),
-        ),
         title: const Text(
           'Explore',
           style: TextStyle(
@@ -800,7 +795,7 @@ class _ParentExplorePageState extends State<ParentExplorePage> {
                 ],
               ),
               SizedBox(
-                height: 320,
+                height: 350,
                 width: double.infinity,
                 child: services!.isEmpty
                     ? const Center(

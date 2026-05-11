@@ -4,6 +4,7 @@ import 'package:flutter_svg/svg.dart';
 
 import '../models/service_model.dart';
 import '../models/tutor_model.dart';
+import '../utils/image_utils.dart';
 
 class ServiceCard extends StatelessWidget {
   const ServiceCard({
@@ -43,230 +44,211 @@ class ServiceCard extends StatelessWidget {
       }
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Card(
-        elevation: 6,
-        shadowColor: const Color(0xFF000080).withValues(alpha: 0.45),
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      decoration: BoxDecoration(
         color: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF000080).withOpacity(0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
-              mainAxisSize: MainAxisSize.min,
+            Stack(
               children: [
                 _ServiceHeaderImage(imagePath: service.picture),
-                Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    15,
-                    15,
-                    15,
-                    15 + bottomContentPadding,
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.star_rounded, color: Color(0xFFEAB308), size: 14),
+                        const SizedBox(width: 4),
+                        Text(
+                          tutor.averageRating.toStringAsFixed(1),
+                          style: const TextStyle(
+                            color: Color(0xFF1E293B),
+                            fontSize: 11,
+                            fontFamily: 'Nunito',
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+              ],
+            ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(12, 10, 12, 10 + bottomContentPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Container(
-                        constraints: const BoxConstraints(
-                          minHeight: 23,
-                          maxWidth: 140,
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0x19000080),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Center(
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF000080).withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
                           child: Text(
                             service.subject,
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: Color(0xFF000080),
-                              fontSize: 13,
+                              fontSize: 10,
                               fontFamily: 'Nunito',
                               fontWeight: FontWeight.w700,
-                              height: 1.50,
-                              letterSpacing: 0.50,
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      Text(
-                        service.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFF1F2937),
-                          fontSize: 18,
-                          fontFamily: 'Inter',
-                          fontWeight: FontWeight.w700,
-                          height: 1.38,
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    service.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF1F2937),
+                      fontSize: 15,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w700,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 11,
+                        backgroundColor: const Color(0xFFF1F5F9),
+                        backgroundImage: safeImage(
+                          tutor.picture,
+                          defaultAsset: tutor.gender.name == 'female'
+                              ? 'assets/images/tutorfemale.png'
+                              : 'assets/images/tutormale.png',
                         ),
                       ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          _TutorAvatar(imagePath: tutor.picture),
-                          const SizedBox(width: 5),
-                          Expanded(
-                            child: Text(
-                              tutor.firstName,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF64748B),
-                                fontSize: 14,
-                                fontFamily: 'Nunito',
-                                fontWeight: FontWeight.w400,
-                                height: 1.43,
-                              ),
-                            ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "${tutor.firstName} ${tutor.lastName}",
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF4B5563),
+                            fontSize: 12,
+                            fontFamily: 'Nunito',
+                            fontWeight: FontWeight.w600,
                           ),
-                        ],
+                        ),
                       ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          SvgPicture.asset(
-                            'assets/images/time.svg',
-                            height: 20,
-                            width: 20,
-                            colorFilter: const ColorFilter.mode(
-                              Color(0xFF475569),
-                              BlendMode.srcIn,
-                            ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.access_time_rounded, size: 14, color: Color(0xFF6B7280)),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          '${service.duration} min session',
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF6B7280),
+                            fontSize: 11,
+                            fontFamily: 'Nunito',
+                            fontWeight: FontWeight.w400,
                           ),
-                          const SizedBox(width: 5),
-                          Expanded(
-                            child: Text(
-                              '${service.duration}min session',
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color(0xFF64748B),
-                                fontSize: 14,
-                                fontFamily: 'Nunito',
-                                fontWeight: FontWeight.w400,
-                                height: 1.43,
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                      if (placesLeft <= 10) ...[
-                        const SizedBox(height: 10),
-                        Row(
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  SizedBox(
+                    height: 18,
+                    child: placesLeft <= 10 
+                      ? Row(
                           children: [
-                            SvgPicture.asset(
-                              'assets/images/circle-alert.svg',
-                              height: 20,
-                              width: 20,
-                              colorFilter: const ColorFilter.mode(
-                                Color(0xFFDD0D0D),
-                                BlendMode.srcIn,
-                              ),
-                            ),
-                            const SizedBox(width: 5),
+                            const Icon(Icons.info_outline_rounded, size: 14, color: Color(0xFFDC2626)),
+                            const SizedBox(width: 6),
                             Expanded(
                               child: Text(
                                 '$placesLeft places left',
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
-                                  color: Color(0xFFDD0D0D),
-                                  fontSize: 14,
+                                  color: Color(0xFFDC2626),
+                                  fontSize: 11,
                                   fontFamily: 'Nunito',
-                                  fontWeight: FontWeight.w400,
-                                  height: 1.43,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),
                           ],
+                        )
+                      : null,
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Text(
+                        '${service.price.toInt()}DA',
+                        style: const TextStyle(
+                          color: Color(0xFF000080),
+                          fontSize: 16,
+                          fontFamily: 'Nunito',
+                          fontWeight: FontWeight.w800,
                         ),
-                      ],
-                      if(placesLeft > 10)
-                        const SizedBox(height: 30,),
-                      const SizedBox(height: 8),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            '${service.price.toInt()}DA',
+                      ),
+                      const Spacer(),
+                      if (trailingActions != null) trailingActions!,
+                      if (showBookButton)
+                        ElevatedButton(
+                          onPressed: isActionDisabled ? null : (onPrimaryAction ?? () {}),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF000080),
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(70, 32),
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: Text(
+                            actionLabel,
                             style: const TextStyle(
-                              color: Color(0xFF000080),
-                              fontSize: 20,
                               fontFamily: 'Nunito',
                               fontWeight: FontWeight.w700,
-                              height: 1.56,
+                              fontSize: 12,
                             ),
                           ),
-                          const Spacer(),
-                          ?trailingActions,
-                          if (showBookButton)
-                            ElevatedButton(
-                              onPressed: isActionDisabled ? null : (onPrimaryAction ?? () {}),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF000080),
-                                foregroundColor: Colors.white,
-                                minimumSize: const Size(100, 40),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: Text(
-                                actionLabel,
-                                style: const TextStyle(
-                                  fontFamily: 'Nunito',
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                  fontSize: 15,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            Positioned(
-              top: 15,
-              right: 16,
-              child: Container(
-                height: 25,
-                width: 50,
-                decoration: ShapeDecoration(
-                  color: Colors.white.withValues(alpha: 0.90),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                ),
-                child: Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SvgPicture.asset(
-                        'assets/images/star.svg',
-                        height: 12,
-                        width: 12,
-                      ),
-                      const SizedBox(width: 2),
-                      Text(
-                        tutor.averageRating.toString(),
-                        style: const TextStyle(
-                          color: Color(0xFF1E293B),
-                          fontSize: 14,
-                          fontFamily: 'Nunito',
-                          fontWeight: FontWeight.w700,
-                          height: 1.33,
                         ),
-                      ),
                     ],
                   ),
-                ),
+                ],
               ),
             ),
           ],
@@ -276,71 +258,23 @@ class ServiceCard extends StatelessWidget {
   }
 }
 
-class _TutorAvatar extends StatelessWidget {
-  const _TutorAvatar({
-    required this.imagePath,
-  });
-
-  final String imagePath;
-
-  @override
-  Widget build(BuildContext context) {
-    final ImageProvider<Object>? imageProvider = _resolveImageProvider(imagePath);
-    return CircleAvatar(
-      radius: 20,
-      backgroundColor: const Color(0xFFE2E8F0),
-      backgroundImage: imageProvider,
-      child: imageProvider == null
-          ? const Icon(
-              Icons.person_rounded,
-              color: Color(0xFF64748B),
-            )
-          : null,
-    );
-  }
-}
-
 class _ServiceHeaderImage extends StatelessWidget {
-  const _ServiceHeaderImage({
-    required this.imagePath,
-  });
-
+  const _ServiceHeaderImage({required this.imagePath});
   final String imagePath;
 
   @override
   Widget build(BuildContext context) {
-    final ImageProvider<Object>? imageProvider = _resolveImageProvider(imagePath);
     return SizedBox(
-      height: 111,
+      height: 100,
       width: double.infinity,
-      child: imageProvider == null
-          ? Image.asset(
-              'assets/images/default_service_img.png',
-              fit: BoxFit.cover,
-            )
-          : Ink.image(
-              image: imageProvider,
-              fit: BoxFit.cover,
-            ),
+      child: Image(
+        image: safeImage(imagePath, defaultAsset: 'assets/images/default_service_img.png'),
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => Image.asset(
+          'assets/images/default_service_img.png',
+          fit: BoxFit.cover,
+        ),
+      ),
     );
   }
 }
-
-ImageProvider<Object>? _resolveImageProvider(String imagePath) {
-  final String trimmed = imagePath.trim();
-  if (trimmed.isEmpty) {
-    return null;
-  }
-
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-    return NetworkImage(trimmed);
-  }
-
-  if (trimmed.startsWith('assets/')) {
-    return AssetImage(trimmed);
-  }
-
-  return null;
-}
-
-

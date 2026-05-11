@@ -251,6 +251,7 @@ class _QuoteRequestPageState extends State<QuoteRequestPage> {
                           (child) => DropdownMenuItem<String>(
                             value: child.uid,
                             child: Text(
+                              style: const TextStyle(fontFamily: 'Nunito'),
                               child.firstName.isNotEmpty
                                   ? '${child.firstName} ${child.lastName}'
                                         .trim()
@@ -266,6 +267,7 @@ class _QuoteRequestPageState extends State<QuoteRequestPage> {
                     },
                     decoration: InputDecoration(
                       labelText: 'Select a Child',
+                      labelStyle: const TextStyle(fontFamily: 'Nunito'),
                       filled: true,
                       fillColor: Colors.white,
                       border: OutlineInputBorder(
@@ -281,7 +283,10 @@ class _QuoteRequestPageState extends State<QuoteRequestPage> {
                         .map(
                           (subject) => DropdownMenuItem<String>(
                             value: subject,
-                            child: Text(subject),
+                            child: Text(
+                              subject,
+                              style: const TextStyle(fontFamily: 'Nunito'),
+                            ),
                           ),
                         )
                         .toList(),
@@ -292,6 +297,7 @@ class _QuoteRequestPageState extends State<QuoteRequestPage> {
                     },
                     decoration: InputDecoration(
                       labelText: 'Choose Subject',
+                      labelStyle: const TextStyle(fontFamily: 'Nunito'),
                       filled: true,
                       fillColor: Colors.white,
                       border: OutlineInputBorder(
@@ -307,6 +313,7 @@ class _QuoteRequestPageState extends State<QuoteRequestPage> {
                     maxLines: 6,
                     decoration: InputDecoration(
                       labelText: 'Description',
+                      labelStyle: const TextStyle(fontFamily: 'Nunito'),
                       hintText: 'Describe your request',
                       alignLabelWithHint: true,
                       filled: true,
@@ -327,7 +334,10 @@ class _QuoteRequestPageState extends State<QuoteRequestPage> {
                         .map(
                           (mode) => DropdownMenuItem<String>(
                             value: mode,
-                            child: Text(mode),
+                            child: Text(
+                              mode,
+                              style: const TextStyle(fontFamily: 'Nunito'),
+                            ),
                           ),
                         )
                         .toList(),
@@ -338,6 +348,7 @@ class _QuoteRequestPageState extends State<QuoteRequestPage> {
                     },
                     decoration: InputDecoration(
                       labelText: 'Choose Mode',
+                      labelStyle: const TextStyle(fontFamily: 'Nunito'),
                       filled: true,
                       fillColor: Colors.white,
                       border: OutlineInputBorder(
@@ -358,6 +369,7 @@ class _QuoteRequestPageState extends State<QuoteRequestPage> {
                           ],
                           decoration: InputDecoration(
                             labelText: 'Sessions Number',
+                            labelStyle: const TextStyle(fontFamily: 'Nunito'),
                             filled: true,
                             fillColor: Colors.white,
                             border: OutlineInputBorder(
@@ -375,7 +387,10 @@ class _QuoteRequestPageState extends State<QuoteRequestPage> {
                               .map(
                                 (value) => DropdownMenuItem<int>(
                                   value: value,
-                                  child: Text('$value min'),
+                                  child: Text(
+                                    '$value min',
+                                    style: const TextStyle(fontFamily: 'Nunito'),
+                                  ),
                                 ),
                               )
                               .toList(),
@@ -415,6 +430,8 @@ class _QuoteRequestPageState extends State<QuoteRequestPage> {
                           : const Text(
                               'Submit',
                               style: TextStyle(
+                                color: Colors.white,
+                                fontFamily: "Nunito",
                                 fontWeight: FontWeight.w700,
                                 fontSize: 16,
                               ),

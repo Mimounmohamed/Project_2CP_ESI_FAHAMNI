@@ -544,6 +544,7 @@ class _FilterPill extends StatelessWidget {
           label,
           style: TextStyle(
             fontSize: 14,
+            fontFamily: "Nunito",
             fontWeight: FontWeight.w700,
             color: selected ? Colors.white : const Color(0xFF6B7280),
           ),

@@ -28,7 +28,7 @@ class _ParentSchedulePageState extends State<ParentSchedulePage> {
   StudentModel? _selectedChild;
   DateTime _focusedDate = DateTime(2026, 12, 18);
   _ScheduleMode _mode = _ScheduleMode.week;
-  final int _selectedIndex = 2;
+  final int _selectedIndex = 0;
 
   static const int _agendaStartHour = 9;
   static const int _agendaEndHour = 22;

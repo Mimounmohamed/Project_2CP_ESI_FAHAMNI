@@ -63,7 +63,10 @@ class _ResourcesTabState extends State<ResourcesTab> {
       final docType = fileName.split('.').last.toLowerCase();
 
       final sessionId = _sessions.isNotEmpty ? _sessions.first.sessionId : '';
-      final resourceId = FirebaseFirestore.instance.collection('resources').doc().id;
+      final resourceId = FirebaseFirestore.instance
+          .collection('resources')
+          .doc()
+          .id;
       final resource = DocumentResource(
         resourceId: resourceId,
         tutorId: tutorId,
@@ -91,9 +94,9 @@ class _ResourcesTabState extends State<ResourcesTab> {
           const SnackBar(content: Text('Document uploaded successfully')),
         );
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
       }
     }
   }
@@ -112,7 +115,10 @@ class _ResourcesTabState extends State<ResourcesTab> {
       final fileName = result.files.single.name;
 
       final sessionId = _sessions.isNotEmpty ? _sessions.first.sessionId : '';
-      final resourceId = FirebaseFirestore.instance.collection('resources').doc().id;
+      final resourceId = FirebaseFirestore.instance
+          .collection('resources')
+          .doc()
+          .id;
       final resource = MediaResource(
         resourceId: resourceId,
         tutorId: tutorId,
@@ -131,7 +137,9 @@ class _ResourcesTabState extends State<ResourcesTab> {
 
       try {
         // Upload to storage
-        final Reference ref = FirebaseStorage.instance.ref().child('resources/media/${DateTime.now().millisecondsSinceEpoch}_$fileName');
+        final Reference ref = FirebaseStorage.instance.ref().child(
+          'resources/media/${DateTime.now().millisecondsSinceEpoch}_$fileName',
+        );
         final UploadTask uploadTask = ref.putFile(file);
         final TaskSnapshot snapshot = await uploadTask;
         final String downloadUrl = await snapshot.ref.getDownloadURL();
@@ -161,9 +169,9 @@ class _ResourcesTabState extends State<ResourcesTab> {
           const SnackBar(content: Text('Media uploaded successfully')),
         );
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Upload failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Upload failed: $e')));
       }
     }
   }
@@ -179,7 +187,10 @@ class _ResourcesTabState extends State<ResourcesTab> {
 
     if (result != null) {
       final sessionId = _sessions.isNotEmpty ? _sessions.first.sessionId : '';
-      final resourceId = FirebaseFirestore.instance.collection('resources').doc().id;
+      final resourceId = FirebaseFirestore.instance
+          .collection('resources')
+          .doc()
+          .id;
       final resource = LinkResource(
         resourceId: resourceId,
         tutorId: tutorId,
@@ -194,16 +205,12 @@ class _ResourcesTabState extends State<ResourcesTab> {
         addedAt: DateTime.now(),
         linkUrl: result['url']!,
       );
-      await _service.addResource(
-        resource,
-        serviceId: widget.serviceId,
-      );
+      await _service.addResource(resource, serviceId: widget.serviceId);
       _load();
     }
   }
 
   void _showAddResourceSheet() {
-
     showModalBottomSheet(
       context: context,
       builder: (context) => Container(
@@ -255,9 +262,14 @@ class _ResourcesTabState extends State<ResourcesTab> {
         Expanded(
           child: _resources.isEmpty
               ? const Center(
-                  child: Text('No resources yet',
-                      style: TextStyle(
-                          fontFamily: 'Nunito', color: Color(0xFF94A3B8))))
+                  child: Text(
+                    'No resources yet',
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      color: Color(0xFF94A3B8),
+                    ),
+                  ),
+                )
               : ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                   itemCount: _resources.length,
@@ -271,21 +283,27 @@ class _ResourcesTabState extends State<ResourcesTab> {
                 ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           child: SizedBox(
-            width: double.infinity,
-            height: 50,
+            width: 200,
+            height: 52,
             child: ElevatedButton.icon(
               onPressed: _showAddResourceSheet,
-              icon: const Icon(Icons.add),
-              label: const Text('Add Resource',
-                  style: TextStyle(
-                      fontFamily: 'Nunito', fontWeight: FontWeight.w700)),
+              icon: const Icon(Icons.add, size: 20),
+              label: const Text(
+                'Add Resource',
+                style: TextStyle(
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                ),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF000080),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30)),
+                  borderRadius: BorderRadius.circular(30),
+                ),
               ),
             ),
           ),
@@ -328,7 +346,8 @@ class _AddLinkDialogState extends State<_AddLinkDialog> {
         ),
         TextButton(
           onPressed: () {
-            if (_titleController.text.isNotEmpty && _urlController.text.isNotEmpty) {
+            if (_titleController.text.isNotEmpty &&
+                _urlController.text.isNotEmpty) {
               Navigator.pop(context, {
                 'title': _titleController.text,
                 'url': _urlController.text,
@@ -341,5 +360,3 @@ class _AddLinkDialogState extends State<_AddLinkDialog> {
     );
   }
 }
-
-

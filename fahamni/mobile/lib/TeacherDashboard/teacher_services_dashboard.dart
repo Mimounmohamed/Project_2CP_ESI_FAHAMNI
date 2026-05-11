@@ -1,9 +1,11 @@
-import 'package:fahamni/Account_Settings_Teacher/account_screen.dart' as teacher_account;
+import 'package:fahamni/Account_Settings_Teacher/account_screen.dart'
+    as teacher_account;
 import 'package:fahamni/TeacherDashboard/models/teacher_portal_models.dart';
 import 'package:fahamni/TeacherDashboard/teacher_create_service_page.dart';
 import 'package:fahamni/TeacherDashboard/teacher_portal_service.dart';
 import 'package:fahamni/TeacherDashboard/widgets/teacher_navbar.dart';
-import 'package:fahamni/TeacherDashboard/widgets/teacher_portal_modals.dart' as portal_modals;
+import 'package:fahamni/TeacherDashboard/widgets/teacher_portal_modals.dart'
+    as portal_modals;
 import 'package:fahamni/Teacher_Service_Details/service_details_page.dart';
 import 'package:fahamni/messaging/chat_page.dart';
 import 'package:fahamni/models/quote_model.dart';
@@ -46,7 +48,8 @@ class _TeacherServicesDashboardScreenState
   }
 
   Future<void> _refresh() async {
-    final Future<TeacherServicesDashboardData> future = _service.loadDashboard();
+    final Future<TeacherServicesDashboardData> future = _service
+        .loadDashboard();
     setState(() {
       _dashboardFuture = future;
     });
@@ -64,22 +67,33 @@ class _TeacherServicesDashboardScreenState
       return;
     }
     if (index == 2) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const ChatPage()),
-      );
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const ChatPage()));
       return;
     }
     if (index == 3) {
       Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const teacher_account.AccountScreen()),
+        MaterialPageRoute(
+          builder: (_) => const teacher_account.AccountScreen(),
+        ),
       );
       return;
     }
   }
 
   Future<void> _openCreateService() async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const TeacherCreateServicePage()));
+    await _refresh();
+  }
+
+  Future<void> _openEditService(ServiceModel service) async {
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const TeacherCreateServicePage()),
+      MaterialPageRoute(
+        builder: (_) => TeacherCreateServicePage(service: service),
+      ),
     );
     await _refresh();
   }
@@ -143,10 +157,14 @@ class _TeacherServicesDashboardScreenState
             }
 
             final TeacherServicesDashboardData data = snapshot.data!;
-            final List<ServiceModel> visibleServices = _filteredServices(data.services);
+            final List<ServiceModel> visibleServices = _filteredServices(
+              data.services,
+            );
 
             // If teacher opened Join Requests tab and it's empty, try one refresh (handles timing race)
-            if (_selectedTab == 1 && data.joinRequests.isEmpty && !_attemptedJoinRefresh) {
+            if (_selectedTab == 1 &&
+                data.joinRequests.isEmpty &&
+                !_attemptedJoinRefresh) {
               _attemptedJoinRefresh = true;
               WidgetsBinding.instance.addPostFrameCallback((_) async {
                 await _refresh();
@@ -163,111 +181,112 @@ class _TeacherServicesDashboardScreenState
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
                     sliver: SliverList(
-                      delegate: SliverChildListDelegate(
-                        [
-                          const SizedBox(height: 8),
-                          const Center(
-                            child: Text(
-                              'Services',
-                              style: TextStyle(
-                                fontSize: 34,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF1F2937),
-                              ),
+                      delegate: SliverChildListDelegate([
+                        const SizedBox(height: 8),
+                        const Center(
+                          child: Text(
+                            'Services',
+                            style: TextStyle(
+                              fontSize: 34,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF1F2937),
                             ),
                           ),
-                          const SizedBox(height: 22),
-                          _TopTabSwitcher(
-                            selectedIndex: _selectedTab,
-                            labels: const ['Services', 'Join Requests'],
-                            onChanged: (index) {
+                        ),
+                        const SizedBox(height: 22),
+                        _TopTabSwitcher(
+                          selectedIndex: _selectedTab,
+                          labels: const ['Services', 'Join Requests'],
+                          onChanged: (index) {
+                            setState(() {
+                              _selectedTab = index;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 18),
+                        if (_selectedTab == 0) ...[
+                          _StatusFilterBar(
+                            value: _filter,
+                            onChanged: (value) {
                               setState(() {
-                                _selectedTab = index;
+                                _filter = value;
                               });
                             },
                           ),
                           const SizedBox(height: 18),
-                          if (_selectedTab == 0) ...[
-                            _StatusFilterBar(
-                              value: _filter,
-                              onChanged: (value) {
-                                setState(() {
-                                  _filter = value;
-                                });
-                              },
-                            ),
-                            const SizedBox(height: 18),
-                            if (visibleServices.isEmpty)
-                              const _EmptyTeacherState(
-                                title: 'No services yet',
-                                subtitle:
-                                    'Create your first service to start receiving join requests.',
-                              )
-                            else
-                              ...visibleServices.map(
-                                (service) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 16),
-                                  child: _TeacherServiceCard(
-                                    tutor: data.tutor,
-                                    service: service,
-                                    onToggleStatus: () async {
-                                      await _service.updateServiceStatus(
-                                        serviceId: service.serviceId,
-                                        isActive: !service.isActive,
-                                      );
-                                      await _refresh();
-                                    },
-                                    onDelete: () async {
-                                      await _service.deleteService(service.serviceId);
-                                      await _refresh();
-                                    },
-                                  ),
-                                ),
-                              ),
-                            const SizedBox(height: 8),
-                            Center(
-                              child: ElevatedButton.icon(
-                                onPressed: _openCreateService,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF0D138B),
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 18,
-                                    vertical: 14,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(999),
-                                  ),
-                                ),
-                                icon: const Icon(Icons.add, size: 18),
-                                label: const Text(
-                                  'Create Service',
-                                  style: TextStyle(fontWeight: FontWeight.w700),
+                          if (visibleServices.isEmpty)
+                            const _EmptyTeacherState(
+                              title: 'No services yet',
+                              subtitle:
+                                  'Create your first service to start receiving join requests.',
+                            )
+                          else
+                            ...visibleServices.map(
+                              (service) => Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: _TeacherServiceCard(
+                                  tutor: data.tutor,
+                                  service: service,
+                                  onToggleStatus: () async {
+                                    await _service.updateServiceStatus(
+                                      serviceId: service.serviceId,
+                                      isActive: !service.isActive,
+                                    );
+                                    await _refresh();
+                                  },
+                                  onEdit: () => _openEditService(service),
+                                  onDelete: () async {
+                                    await _service.deleteService(
+                                      service.serviceId,
+                                    );
+                                    await _refresh();
+                                  },
                                 ),
                               ),
                             ),
-                          ] else ...[
-                            if (data.joinRequests.isEmpty)
-                              const _EmptyTeacherState(
-                                title: 'No join requests',
-                                subtitle:
-                                    'Incoming requests from students will appear here.',
-                              )
-                            else
-                              ...data.joinRequests.map(
-                                (request) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
-                                  child: _JoinRequestCard(
-                                    request: request,
-                                    onOpen: () {},
-                                    onAccept: () => _acceptRequest(request),
-                                    onReject: () => _rejectRequest(request),
-                                  ),
+                          const SizedBox(height: 8),
+                          Center(
+                            child: ElevatedButton.icon(
+                              onPressed: _openCreateService,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF0D138B),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(999),
                                 ),
                               ),
-                          ],
+                              icon: const Icon(Icons.add, size: 18),
+                              label: const Text(
+                                'Create Service',
+                                style: TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                          ),
+                        ] else ...[
+                          if (data.joinRequests.isEmpty)
+                            const _EmptyTeacherState(
+                              title: 'No join requests',
+                              subtitle:
+                                  'Incoming requests from students will appear here.',
+                            )
+                          else
+                            ...data.joinRequests.map(
+                              (request) => Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: _JoinRequestCard(
+                                  request: request,
+                                  onOpen: () {},
+                                  onAccept: () => _acceptRequest(request),
+                                  onReject: () => _rejectRequest(request),
+                                ),
+                              ),
+                            ),
                         ],
-                      ),
+                      ]),
                     ),
                   ),
                 ],
@@ -296,26 +315,27 @@ class _TeacherServiceCard extends StatelessWidget {
     required this.tutor,
     required this.service,
     required this.onToggleStatus,
+    required this.onEdit,
     required this.onDelete,
   });
 
   final TutorModel tutor;
   final ServiceModel service;
   final Future<void> Function() onToggleStatus;
+  final VoidCallback onEdit;
   final Future<void> Function() onDelete;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: (){
+      onTap: () {
         Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => CourseDetailsPage(service: service
-                                    , tutor: tutor
-                                    )
-                                  ),
-                                );
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                CourseDetailsPage(service: service, tutor: tutor),
+          ),
+        );
       },
       child: Container(
         decoration: BoxDecoration(
@@ -410,7 +430,7 @@ class _TeacherServiceCard extends StatelessWidget {
                           color: Color(0xFF7A88A3),
                           size: 24,
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 5),
                         Text(
                           '${service.sessionsnum} Session${service.sessionsnum == 1 ? '' : 's'}',
                           style: const TextStyle(
@@ -443,20 +463,12 @@ class _TeacherServiceCard extends StatelessWidget {
                             shape: BoxShape.circle,
                           ),
                           child: GestureDetector(
+                            onTap: onEdit,
                             child: const Icon(
                               Icons.edit_outlined,
                               size: 22,
                               color: Color(0xFF000080),
                             ),
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Edit flow can be added on top of the create form.',
-                                  ),
-                                ),
-                              );
-                            },
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -465,23 +477,24 @@ class _TeacherServiceCard extends StatelessWidget {
                           onChanged: (_) => onToggleStatus(),
                         ),
                         const SizedBox(width: 12),
-                         Container(
+                        Container(
                           height: 50,
                           width: 50,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF000080
+                            color: const Color(
+                              0xFF000080,
                             ).withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                           ),
-                          child:
-                        GestureDetector(
-                          onTap: onDelete,
-                          child: const Icon(
-                            Icons.delete_outline_rounded,
-                            size: 22,
-                            color: Color(0xFF000080),
+                          child: GestureDetector(
+                            onTap: onDelete,
+                            child: const Icon(
+                              Icons.delete_outline_rounded,
+                              size: 22,
+                              color: Color(0xFF000080),
+                            ),
                           ),
-                        ),)
+                        ),
                       ],
                     ),
                   ],
@@ -558,10 +571,7 @@ class _TeacherServiceImage extends StatelessWidget {
 }
 
 class _TeacherStatusSwitch extends StatelessWidget {
-  const _TeacherStatusSwitch({
-    required this.value,
-    required this.onChanged,
-  });
+  const _TeacherStatusSwitch({required this.value, required this.onChanged});
 
   final bool value;
   final ValueChanged<bool> onChanged;
@@ -620,8 +630,9 @@ class _JoinRequestCard extends StatelessWidget {
                 CircleAvatar(
                   radius: 24,
                   backgroundColor: const Color(0xFFDBEAFE),
-                  backgroundImage:
-                      request.studentAvatar.isNotEmpty ? NetworkImage(request.studentAvatar) : null,
+                  backgroundImage: request.studentAvatar.isNotEmpty
+                      ? NetworkImage(request.studentAvatar)
+                      : null,
                   child: request.studentAvatar.isEmpty
                       ? Text(
                           request.studentName.characters.first.toUpperCase(),
@@ -730,6 +741,7 @@ class _TopTabSwitcher extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 13,
+                  fontFamily: "Nunito",
                   fontWeight: FontWeight.w800,
                   color: selected
                       ? const Color(0xFF0D138B)
@@ -745,10 +757,7 @@ class _TopTabSwitcher extends StatelessWidget {
 }
 
 class _StatusFilterBar extends StatelessWidget {
-  const _StatusFilterBar({
-    required this.value,
-    required this.onChanged,
-  });
+  const _StatusFilterBar({required this.value, required this.onChanged});
 
   final TeacherServicesFilter value;
   final ValueChanged<TeacherServicesFilter> onChanged;
@@ -773,7 +782,8 @@ class _StatusFilterBar extends StatelessWidget {
               label,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 14,
+                fontFamily: "Nunito",
                 fontWeight: FontWeight.w700,
                 color: selected ? Colors.white : const Color(0xFF64748B),
               ),
@@ -813,8 +823,7 @@ class _InlineActionButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           elevation: 0,
           backgroundColor: filled ? const Color(0xFF0D138B) : Colors.white,
-          foregroundColor:
-              filled ? Colors.white : const Color(0xFF475569),
+          foregroundColor: filled ? Colors.white : const Color(0xFF475569),
           side: filled
               ? BorderSide.none
               : const BorderSide(color: Color(0xFFD3DAEA)),
@@ -822,20 +831,14 @@ class _InlineActionButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(999),
           ),
         ),
-        child: Text(
-          label,
-          style: const TextStyle(fontWeight: FontWeight.w700),
-        ),
+        child: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
       ),
     );
   }
 }
 
 class _RoundIconButton extends StatelessWidget {
-  const _RoundIconButton({
-    required this.icon,
-    required this.onTap,
-  });
+  const _RoundIconButton({required this.icon, required this.onTap});
 
   final IconData icon;
   final VoidCallback onTap;
@@ -859,10 +862,7 @@ class _RoundIconButton extends StatelessWidget {
 }
 
 class _EmptyTeacherState extends StatelessWidget {
-  const _EmptyTeacherState({
-    required this.title,
-    required this.subtitle,
-  });
+  const _EmptyTeacherState({required this.title, required this.subtitle});
 
   final String title;
   final String subtitle;
@@ -897,10 +897,7 @@ class _EmptyTeacherState extends StatelessWidget {
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color(0xFF64748B),
-              height: 1.5,
-            ),
+            style: const TextStyle(color: Color(0xFF64748B), height: 1.5),
           ),
         ],
       ),
@@ -909,10 +906,7 @@ class _EmptyTeacherState extends StatelessWidget {
 }
 
 class _TeacherPortalError extends StatelessWidget {
-  const _TeacherPortalError({
-    required this.message,
-    required this.onRetry,
-  });
+  const _TeacherPortalError({required this.message, required this.onRetry});
 
   final String message;
   final Future<void> Function() onRetry;
@@ -955,5 +949,3 @@ class _TeacherPortalError extends StatelessWidget {
     );
   }
 }
-
-

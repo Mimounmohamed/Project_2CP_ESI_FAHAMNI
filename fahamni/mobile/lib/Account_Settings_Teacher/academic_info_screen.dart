@@ -237,7 +237,7 @@ class _AcademicInfoScreenState extends State<AcademicInfoScreen> {
                 value: selected,
                 activeColor: const Color(0xFF000080),
                 title: Text(_levelLabel[level] ?? level,
-                    style: const TextStyle(fontFamily: 'Inter', fontSize: 15,
+                    style: const TextStyle(fontFamily: 'Nunito', fontSize: 15,
                         fontWeight: FontWeight.w500)),
                 onChanged: (_) {
                   setState(() {
@@ -280,7 +280,7 @@ class _AcademicInfoScreenState extends State<AcademicInfoScreen> {
               _sheetHandle(),
               const SizedBox(height: 8),
               const Text('Select Expertise Domains',
-                  style: TextStyle(fontFamily: 'Inter', fontSize: 16,
+                  style: TextStyle(fontFamily: 'Nunito', fontSize: 16,
                       fontWeight: FontWeight.w700, color: Color(0xFF1F2937))),
               const Divider(),
               Expanded(
@@ -334,7 +334,7 @@ class _AcademicInfoScreenState extends State<AcademicInfoScreen> {
                             style: const TextStyle(
                                 color: Color(0xFFE53935),
                                 fontSize: 13,
-                                fontFamily: 'Inter')),
+                                fontFamily: 'Nunito')),
                       ),
                     SizedBox(
                       width: double.infinity,
@@ -354,7 +354,7 @@ class _AcademicInfoScreenState extends State<AcademicInfoScreen> {
                                     color: Colors.white, strokeWidth: 2.5))
                             : const Text('Confirm Changes',
                                 style: TextStyle(
-                                    fontFamily: 'Inter',
+                                    fontFamily: 'Nunito',
                                     fontSize: 16,
                                     fontWeight: FontWeight.w700,
                                     color: Colors.white)),
@@ -425,7 +425,7 @@ class _AcademicInfoScreenState extends State<AcademicInfoScreen> {
                           child: const Text(
                             'Add a new Expertise Domain',
                             style: TextStyle(
-                                fontFamily: 'Inter',
+                                fontFamily: 'Nunito',
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 color: Color(0xFF000080)),
@@ -472,7 +472,7 @@ class _AcademicInfoScreenState extends State<AcademicInfoScreen> {
   Widget _label(String text) => Text(
         text,
         style: const TextStyle(
-            fontFamily: 'Inter',
+            fontFamily: 'Nunito',
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: Color(0xFF1F2937)),
@@ -511,7 +511,7 @@ class _AcademicInfoScreenState extends State<AcademicInfoScreen> {
               child: Text(
                 text,
                 style: TextStyle(
-                    fontFamily: 'Lexend',
+                    fontFamily: 'Nunito',
                     fontSize: 15,
                     color: isEmpty || !enabled
                         ? const Color(0xFF9CA3AF)
@@ -555,7 +555,7 @@ class _AcademicInfoScreenState extends State<AcademicInfoScreen> {
               style: const TextStyle(
                   color: Color(0xFF9CA3AF),
                   fontSize: 15,
-                  fontFamily: 'Lexend')),
+                  fontFamily: 'Nunito')),
           icon: const Icon(Icons.keyboard_arrow_down,
               color: Color(0xFF6B7280)),
           dropdownColor: Colors.white,
@@ -563,7 +563,7 @@ class _AcademicInfoScreenState extends State<AcademicInfoScreen> {
           style: const TextStyle(
               color: Color(0xFF1F2937),
               fontSize: 15,
-              fontFamily: 'Lexend'),
+              fontFamily: 'Nunito'),
           onChanged: (v) {
             onChanged(v);
             setState(() {});

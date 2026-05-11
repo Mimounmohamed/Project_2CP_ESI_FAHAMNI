@@ -572,7 +572,7 @@ class _ExplorepageState extends State<Explorepage> {
                 )
               else
                 SizedBox(
-                  height: 398,
+                  height: 330,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     itemCount: (tutors!.length / 3).ceil(),
@@ -638,7 +638,7 @@ class _ExplorepageState extends State<Explorepage> {
                 ],
               ),
               SizedBox(
-                height: 410,
+                height: 350,
                 width: double.infinity,
                 child: services!.isEmpty
                     ? const Center(
