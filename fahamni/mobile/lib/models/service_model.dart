@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class ServiceModel {
   final String serviceId;
   final String tutorId;
@@ -16,6 +18,7 @@ class ServiceModel {
   final String picture;
   final List<String> studentIds;
   final List<String> pendingIds;
+  final String? groupChatId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -37,6 +40,7 @@ class ServiceModel {
     required this.picture,
     List<String>? studentIds,
     List<String>? pendingIds,
+    this.groupChatId,
     this.createdAt,
     this.updatedAt,
   })  : studentIds = studentIds ?? const [],
@@ -63,6 +67,7 @@ class ServiceModel {
       'student_ids': studentIds,
       'pending_ids': pendingIds,
       'picture': picture,
+      'group_chat_id': groupChatId,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     };
@@ -76,7 +81,10 @@ class ServiceModel {
       if (value is DateTime) {
         return value;
       }
-      return (value as dynamic).toDate();
+      if (value is Timestamp) {
+        return value.toDate();
+      }
+      return null;
     }
 
     double parsePrice(dynamic value) {
@@ -107,10 +115,9 @@ class ServiceModel {
       sessionsnum: map['sessions_num'] ?? 0,
       isActive: map['is_active'] ?? false,
       picture: map['picture'] ?? '',
+      groupChatId: map['group_chat_id'],
       createdAt: parseDate(map['created_at']),
       updatedAt: parseDate(map['updated_at']),
     );
   }
 }
-
-

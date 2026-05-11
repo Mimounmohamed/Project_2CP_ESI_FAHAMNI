@@ -2,16 +2,20 @@ import 'package:fahamni/TeacherDashboard/models/teacher_portal_models.dart';
 import 'package:fahamni/TeacherDashboard/teacher_portal_service.dart';
 import 'package:fahamni/TeacherDashboard/widgets/teacher_navbar.dart';
 import 'package:fahamni/messaging/chat_page.dart';
+import 'package:fahamni/models/service_model.dart';
 import 'package:flutter/material.dart';
 
 import 'teacher_dashboard.dart';
 import 'teacher_services_dashboard.dart';
 
 class TeacherCreateServicePage extends StatefulWidget {
-  const TeacherCreateServicePage({super.key});
+  const TeacherCreateServicePage({super.key, this.service});
+
+  final ServiceModel? service;
 
   @override
-  State<TeacherCreateServicePage> createState() => _TeacherCreateServicePageState();
+  State<TeacherCreateServicePage> createState() =>
+      _TeacherCreateServicePageState();
 }
 
 class _TeacherCreateServicePageState extends State<TeacherCreateServicePage> {
@@ -20,11 +24,15 @@ class _TeacherCreateServicePageState extends State<TeacherCreateServicePage> {
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  final TextEditingController _membersController =
-      TextEditingController(text: '1');
-  final TextEditingController _sessionsController =
-      TextEditingController(text: '1');
-  final TextEditingController _priceController = TextEditingController(text: '1');
+  final TextEditingController _membersController = TextEditingController(
+    text: '1',
+  );
+  final TextEditingController _sessionsController = TextEditingController(
+    text: '1',
+  );
+  final TextEditingController _priceController = TextEditingController(
+    text: '1',
+  );
 
   String _selectedDomain = 'Mathematics';
   String _selectedGrade = '2nd High School';
@@ -32,6 +40,8 @@ class _TeacherCreateServicePageState extends State<TeacherCreateServicePage> {
   int _selectedDuration = 30;
   String _selectedImage = _imageOptions.first;
   bool _submitting = false;
+
+  bool get _isEditing => widget.service != null;
 
   static const List<String> _domains = <String>[
     'Mathematics',
@@ -47,11 +57,7 @@ class _TeacherCreateServicePageState extends State<TeacherCreateServicePage> {
     '3rd High School',
   ];
 
-  static const List<String> _modes = <String>[
-    'Online',
-    'Onsite',
-    'Hybrid',
-  ];
+  static const List<String> _modes = <String>['Online', 'Onsite', 'Hybrid'];
 
   static const List<int> _durations = <int>[30, 45, 60, 90];
 
@@ -60,6 +66,42 @@ class _TeacherCreateServicePageState extends State<TeacherCreateServicePage> {
     'assets/images/Container (3).png',
     'assets/images/page3.png',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    final ServiceModel? service = widget.service;
+    if (service == null) {
+      return;
+    }
+
+    _nameController.text = service.name;
+    _descriptionController.text = service.description;
+    _membersController.text = service.maxStudents.toString();
+    _sessionsController.text = service.sessionsnum.toString();
+    _priceController.text = _formatPrice(service.price);
+    _selectedDomain = _matchingOption(
+      _domains,
+      service.area.isNotEmpty ? service.area : service.subject,
+      fallback: _selectedDomain,
+    );
+    _selectedGrade = _matchingOption(
+      _grades,
+      service.level,
+      fallback: _selectedGrade,
+    );
+    _selectedMode = _matchingOption(
+      _modes,
+      service.mode,
+      fallback: _selectedMode,
+    );
+    _selectedDuration = _durations.contains(service.duration)
+        ? service.duration
+        : _selectedDuration;
+    _selectedImage = _imageOptions.contains(service.picture)
+        ? service.picture
+        : _selectedImage;
+  }
 
   @override
   void dispose() {
@@ -80,14 +122,16 @@ class _TeacherCreateServicePageState extends State<TeacherCreateServicePage> {
     }
     if (index == 1) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const TeacherServicesDashboardScreen()),
+        MaterialPageRoute(
+          builder: (_) => const TeacherServicesDashboardScreen(),
+        ),
       );
       return;
     }
     if (index == 2) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const ChatPage()),
-      );
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const ChatPage()));
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
@@ -105,35 +149,48 @@ class _TeacherCreateServicePageState extends State<TeacherCreateServicePage> {
     });
 
     try {
-      await _service.createService(
-        TeacherServiceDraft(
-          name: _nameController.text.trim(),
-          description: _descriptionController.text.trim(),
-          domain: _selectedDomain,
-          grade: _selectedGrade,
-          membersCount: int.parse(_membersController.text.trim()),
-          mode: _selectedMode,
-          sessionsCount: int.parse(_sessionsController.text.trim()),
-          sessionDurationMinutes: _selectedDuration,
-          price: double.parse(_priceController.text.trim()),
-          imagePath: _selectedImage,
-        ),
+      final TeacherServiceDraft draft = TeacherServiceDraft(
+        name: _nameController.text.trim(),
+        description: _descriptionController.text.trim(),
+        domain: _selectedDomain,
+        grade: _selectedGrade,
+        membersCount: int.parse(_membersController.text.trim()),
+        mode: _selectedMode,
+        sessionsCount: int.parse(_sessionsController.text.trim()),
+        sessionDurationMinutes: _selectedDuration,
+        price: double.parse(_priceController.text.trim()),
+        imagePath: _selectedImage,
       );
+
+      if (_isEditing) {
+        await _service.updateService(
+          serviceId: widget.service!.serviceId,
+          draft: draft,
+        );
+      } else {
+        await _service.createService(draft);
+      }
 
       if (!mounted) {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Service created successfully.')),
+        SnackBar(
+          content: Text(
+            _isEditing
+                ? 'Service updated successfully.'
+                : 'Service created successfully.',
+          ),
+        ),
       );
       Navigator.of(context).pop();
     } catch (error) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
     } finally {
       if (mounted) {
         setState(() {
@@ -165,11 +222,11 @@ class _TeacherCreateServicePageState extends State<TeacherCreateServicePage> {
                       onPressed: () => Navigator.of(context).pop(),
                       icon: const Icon(Icons.arrow_back_ios_new_rounded),
                     ),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Create Service',
+                        _isEditing ? 'Edit Service' : 'Create Service',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.w800,
                           color: Color(0xFF1F2937),
@@ -196,7 +253,9 @@ class _TeacherCreateServicePageState extends State<TeacherCreateServicePage> {
                     maxLines: 5,
                     maxLength: 200,
                     validator: _requiredValidator,
-                    decoration: _inputDecoration(hintText: 'In This Service ...'),
+                    decoration: _inputDecoration(
+                      hintText: 'In This Service ...',
+                    ),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -208,10 +267,20 @@ class _TeacherCreateServicePageState extends State<TeacherCreateServicePage> {
                         child: DropdownButtonFormField<String>(
                           initialValue: _selectedDomain,
                           items: _domains
-                              .map((domain) => DropdownMenuItem<String>(
-                                    value: domain,
-                                    child: Text(domain),
-                                  ))
+                              .map(
+                                (domain) => DropdownMenuItem<String>(
+                                  value: domain,
+                                  child: Text(
+                                    domain,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontFamily: "Nunito",
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF334155),
+                                    ),
+                                  ),
+                                ),
+                              )
                               .toList(),
                           decoration: _inputDecoration(),
                           onChanged: (value) {
@@ -231,10 +300,20 @@ class _TeacherCreateServicePageState extends State<TeacherCreateServicePage> {
                         child: DropdownButtonFormField<String>(
                           initialValue: _selectedGrade,
                           items: _grades
-                              .map((grade) => DropdownMenuItem<String>(
-                                    value: grade,
-                                    child: Text(grade),
-                                  ))
+                              .map(
+                                (grade) => DropdownMenuItem<String>(
+                                  value: grade,
+                                  child: Text(
+                                    grade,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontFamily: "Nunito",
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF334155),
+                                    ),
+                                  ),
+                                ),
+                              )
                               .toList(),
                           decoration: _inputDecoration(),
                           onChanged: (value) {
@@ -270,10 +349,20 @@ class _TeacherCreateServicePageState extends State<TeacherCreateServicePage> {
                         child: DropdownButtonFormField<String>(
                           initialValue: _selectedMode,
                           items: _modes
-                              .map((mode) => DropdownMenuItem<String>(
-                                    value: mode,
-                                    child: Text(mode),
-                                  ))
+                              .map(
+                                (mode) => DropdownMenuItem<String>(
+                                  value: mode,
+                                  child: Text(
+                                    mode,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontFamily: "Nunito",
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF334155),
+                                    ),
+                                  ),
+                                ),
+                              )
                               .toList(),
                           decoration: _inputDecoration(),
                           onChanged: (value) {
@@ -309,10 +398,20 @@ class _TeacherCreateServicePageState extends State<TeacherCreateServicePage> {
                         child: DropdownButtonFormField<int>(
                           initialValue: _selectedDuration,
                           items: _durations
-                              .map((duration) => DropdownMenuItem<int>(
-                                    value: duration,
-                                    child: Text('$duration min'),
-                                  ))
+                              .map(
+                                (duration) => DropdownMenuItem<int>(
+                                  value: duration,
+                                  child: Text(
+                                    '$duration min',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontFamily: "Nunito",
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF334155),
+                                    ),
+                                  ),
+                                ),
+                              )
                               .toList(),
                           decoration: _inputDecoration(),
                           onChanged: (value) {
@@ -332,7 +431,9 @@ class _TeacherCreateServicePageState extends State<TeacherCreateServicePage> {
                   label: 'Service Price',
                   child: TextFormField(
                     controller: _priceController,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     validator: _numberValidator,
                     decoration: _inputDecoration(suffixText: 'DA'),
                   ),
@@ -342,6 +443,7 @@ class _TeacherCreateServicePageState extends State<TeacherCreateServicePage> {
                   'Service Picture',
                   style: TextStyle(
                     fontSize: 12,
+                    fontFamily: "Nunito",
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF334155),
                   ),
@@ -376,8 +478,9 @@ class _TeacherCreateServicePageState extends State<TeacherCreateServicePage> {
                             boxShadow: selected
                                 ? [
                                     BoxShadow(
-                                      color: const Color(0xFF0D138B)
-                                          .withValues(alpha: 0.18),
+                                      color: const Color(
+                                        0xFF0D138B,
+                                      ).withValues(alpha: 0.18),
                                       blurRadius: 16,
                                       offset: const Offset(0, 8),
                                     ),
@@ -454,9 +557,9 @@ class _TeacherCreateServicePageState extends State<TeacherCreateServicePage> {
                               color: Colors.white,
                             ),
                           )
-                        : const Text(
-                            'Create',
-                            style: TextStyle(fontWeight: FontWeight.w700),
+                        : Text(
+                            _isEditing ? 'Save Changes' : 'Create',
+                            style: const TextStyle(fontWeight: FontWeight.w700),
                           ),
                   ),
                 ),
@@ -485,13 +588,28 @@ class _TeacherCreateServicePageState extends State<TeacherCreateServicePage> {
     return null;
   }
 
-  InputDecoration _inputDecoration({
-    String hintText = '',
-    String? suffixText,
-  }) {
+  InputDecoration _inputDecoration({String hintText = '', String? suffixText}) {
     return InputDecoration(
       hintText: hintText,
       suffixText: suffixText,
+      hintStyle: const TextStyle(
+        fontSize: 14,
+        fontFamily: "Nunito",
+        fontWeight: FontWeight.w600,
+        color: Color(0xFF334155),
+      ),
+      prefixStyle: const TextStyle(
+        fontSize: 14,
+        fontFamily: "Nunito",
+        fontWeight: FontWeight.w600,
+        color: Color(0xFF334155),
+      ),
+      suffixStyle: const TextStyle(
+        fontSize: 14,
+        fontFamily: "Nunito",
+        fontWeight: FontWeight.w600,
+        color: Color(0xFF334155),
+      ),
       filled: true,
       fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -513,13 +631,31 @@ class _TeacherCreateServicePageState extends State<TeacherCreateServicePage> {
       ),
     );
   }
+
+  String _matchingOption(
+    List<String> options,
+    String value, {
+    required String fallback,
+  }) {
+    final String normalized = value.trim().toLowerCase();
+    for (final String option in options) {
+      if (option.toLowerCase() == normalized) {
+        return option;
+      }
+    }
+    return fallback;
+  }
+
+  String _formatPrice(double price) {
+    if (price == price.roundToDouble()) {
+      return price.toInt().toString();
+    }
+    return price.toString();
+  }
 }
 
 class _FormFieldBlock extends StatelessWidget {
-  const _FormFieldBlock({
-    required this.label,
-    required this.child,
-  });
+  const _FormFieldBlock({required this.label, required this.child});
 
   final String label;
   final Widget child;
@@ -533,6 +669,7 @@ class _FormFieldBlock extends StatelessWidget {
           label,
           style: const TextStyle(
             fontSize: 12,
+            fontFamily: "Nunito",
             fontWeight: FontWeight.w600,
             color: Color(0xFF334155),
           ),
@@ -543,5 +680,3 @@ class _FormFieldBlock extends StatelessWidget {
     );
   }
 }
-
-

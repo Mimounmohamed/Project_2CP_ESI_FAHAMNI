@@ -50,7 +50,8 @@ class TeacherNavbar extends StatelessWidget {
                 label,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 12,
+                  fontFamily: 'Nunito',
+                  fontSize: 15,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -127,5 +128,3 @@ class TeacherNavbar extends StatelessWidget {
     );
   }
 }
-
-

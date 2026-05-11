@@ -26,13 +26,11 @@ class TeacherPortalService {
     final TutorModel tutor = await _loadCurrentTutor();
     final List<ServiceModel> services = await _loadServices(tutor.uid);
 
-    // Collect all pending_ids from services
     final Set<String> pendingStudentIds = {};
     for (var service in services) {
       pendingStudentIds.addAll(service.pendingIds);
     }
 
-    // Combine student IDs to fetch
     final Set<String> allStudentIds = {...pendingStudentIds};
 
     final Map<String, StudentModel> students = await _loadStudentsByIds(
@@ -40,7 +38,6 @@ class TeacherPortalService {
     );
     final Set<String> childIds = await _loadChildIdsByIds(allStudentIds);
 
-    // Create joinRequests from pending_ids of services
     final List<TeacherJoinRequestDetail> serviceRequests = [];
     for (var service in services) {
       for (var studentId in service.pendingIds) {
@@ -84,8 +81,6 @@ class TeacherPortalService {
 
     final List<TeacherJoinRequestDetail> joinRequests = serviceRequests;
 
-    // If no join requests constructed from service.pendingIds, try to infer
-    // join requests from recent notifications as a fallback (covers timing issues).
     if (joinRequests.isEmpty) {
       try {
         final QuerySnapshot<Map<String, dynamic>> notifSnap = await _firestore
@@ -169,13 +164,56 @@ class TeacherPortalService {
 
   Future<ServiceModel> createService(TeacherServiceDraft draft) async {
     final TutorModel tutor = await _loadCurrentTutor();
-    final DocumentReference<Map<String, dynamic>> doc = _firestore
+    final WriteBatch batch = _firestore.batch();
+    
+    // 1. Create the Group Chat ID
+    final DocumentReference<Map<String, dynamic>> convRef = _firestore
+        .collection('conversations')
+        .doc();
+    
+    final Timestamp now = Timestamp.now();
+    final String groupName = '${draft.name} Group';
+
+    // 2. Set Conversation Data
+    batch.set(convRef, {
+      'conversationId': convRef.id,
+      'conversation_id': convRef.id,
+      'conversationName': groupName,
+      'participants': [tutor.uid],
+      'isGroup': true,
+      'is_group': true,
+      'ownerId': tutor.uid,
+      'createdAt': now,
+      'updatedAt': now,
+      'status': 'active',
+      'lastMessage': {
+        'text': 'Welcome to the group chat for ${draft.name}!',
+        'senderId': 'system',
+        'type': 'text',
+        'created_at': now,
+      },
+      'lastMessageTime': now,
+    });
+
+    // 3. Add Initial System Message to subcollection
+    final DocumentReference<Map<String, dynamic>> msgRef = convRef.collection('messages').doc();
+    batch.set(msgRef, {
+      'id': msgRef.id,
+      'conversationId': convRef.id,
+      'senderId': 'system',
+      'text': 'Welcome to the group chat for ${draft.name}!',
+      'type': 'text',
+      'created_at': now,
+      'readBy': [tutor.uid],
+    });
+
+    // 4. Create the Service Document
+    final DocumentReference<Map<String, dynamic>> svcRef = _firestore
         .collection('services')
         .doc();
-    final Timestamp now = Timestamp.now();
 
     final ServiceModel model = ServiceModel(
-      serviceId: doc.id,
+      serviceId: svcRef.id,
       tutorId: tutor.uid,
       name: draft.name,
       area: draft.domain,
@@ -192,13 +230,53 @@ class TeacherPortalService {
       picture: draft.imagePath,
       studentIds: const [],
       pendingIds: const [],
+      groupChatId: convRef.id,
       createdAt: now.toDate(),
       updatedAt: now.toDate(),
     );
 
-    await doc.set({...model.toMap(), 'created_at': now, 'updated_at': now});
+    batch.set(svcRef, {...model.toMap(), 'created_at': now, 'updated_at': now});
+
+    // 5. Commit all at once to prevent duplication on partial failure/retry
+    await batch.commit();
 
     return model;
+  }
+
+  Future<void> updateService({
+    required String serviceId,
+    required TeacherServiceDraft draft,
+  }) async {
+    final TutorModel tutor = await _loadCurrentTutor();
+
+    await _firestore.collection('services').doc(serviceId).update({
+      'tutor_id': tutor.uid,
+      'name': draft.name,
+      'area': draft.domain,
+      'level': draft.grade,
+      'subject': draft.domain.toUpperCase(),
+      'mode': draft.mode,
+      'description': draft.description,
+      'price': draft.price,
+      'duration': draft.sessionDurationMinutes,
+      'maxstudents': draft.membersCount,
+      'sessions_num': draft.sessionsCount,
+      'picture': draft.imagePath,
+      'updated_at': Timestamp.now(),
+    });
+    
+    try {
+      final svcDoc = await _firestore.collection('services').doc(serviceId).get();
+      final gId = svcDoc.data()?['group_chat_id'];
+      if (gId != null && gId.toString().isNotEmpty) {
+        await _firestore.collection('conversations').doc(gId).update({
+          'conversationName': '${draft.name} Group',
+          'updatedAt': Timestamp.now(),
+        });
+      }
+    } catch (e) {
+      debugPrint('Failed to update group chat name: $e');
+    }
   }
 
   Future<void> updateServiceStatus({
@@ -215,9 +293,6 @@ class TeacherPortalService {
     await _firestore.collection('services').doc(serviceId).delete();
   }
 
-  /// Returns the UID that should receive the notification.
-  /// For regular students this is their own UID; for children it is the
-  /// parent's Firebase Auth UID (looked up from the children collection).
   Future<String> _resolveNotificationReceiver(
     String studentId,
     bool isChild,
@@ -237,14 +312,11 @@ class TeacherPortalService {
     TeacherQuoteResponseDraft? response,
   }) async {
     final TutorModel currentTutor = await _loadCurrentTutor();
-
-    // Resolve the correct notification target once (parent if child).
     final String notificationReceiver = await _resolveNotificationReceiver(
       request.quote.studentId,
       request.isChild,
     );
 
-    // ── Join request from a service's pending_ids ──────────────────────────
     if (request.quote.quoteId.startsWith('pending_')) {
       final studentId = request.quote.studentId;
       final serviceId = request.quote.serviceId;
@@ -262,11 +334,34 @@ class TeacherPortalService {
             snapshot.data()?['pending_ids'] ?? [],
           );
           int enrolled = snapshot.data()?['enrolled_num'] ?? 0;
+          final String? groupChatId = snapshot.data()?['group_chat_id'];
 
           pendingIds.remove(studentId);
           if (!studentIds.contains(studentId)) {
             studentIds.add(studentId);
             enrolled++;
+            
+            if (groupChatId != null && groupChatId.isNotEmpty) {
+              transaction.update(_firestore.collection('conversations').doc(groupChatId), {
+                'participants': FieldValue.arrayUnion([studentId]),
+                'updatedAt': Timestamp.now(),
+              });
+
+              final DocumentReference<Map<String, dynamic>> welcomeMsgRef = _firestore
+                  .collection('conversations')
+                  .doc(groupChatId)
+                  .collection('messages')
+                  .doc();
+              transaction.set(welcomeMsgRef, {
+                'id': welcomeMsgRef.id,
+                'conversationId': groupChatId,
+                'senderId': 'system',
+                'text': '${request.studentName} has joined the group.',
+                'type': 'text',
+                'created_at': Timestamp.now(),
+                'readBy': [currentTutor.uid],
+              });
+            }
           }
 
           transaction.update(serviceRef, {
@@ -308,7 +403,6 @@ class TeacherPortalService {
       return;
     }
 
-    // ── Traditional quote request ──────────────────────────────────────────
     final _QuoteDocumentLocation location = await _locateQuoteDocument(
       request.quote.quoteId,
     );
@@ -328,6 +422,7 @@ class TeacherPortalService {
             serviceSnap.data()?['pending_ids'] ?? [],
           );
           int enrolled = serviceSnap.data()?['enrolled_num'] ?? 0;
+          final String? groupChatId = serviceSnap.data()?['group_chat_id'];
 
           pendingIds.remove(studentId);
 
@@ -335,6 +430,28 @@ class TeacherPortalService {
               !studentIds.contains(studentId)) {
             studentIds.add(studentId);
             enrolled++;
+            
+            if (groupChatId != null && groupChatId.isNotEmpty) {
+              transaction.update(_firestore.collection('conversations').doc(groupChatId), {
+                'participants': FieldValue.arrayUnion([studentId]),
+                'updatedAt': Timestamp.now(),
+              });
+
+              final DocumentReference<Map<String, dynamic>> welcomeMsgRef = _firestore
+                  .collection('conversations')
+                  .doc(groupChatId)
+                  .collection('messages')
+                  .doc();
+              transaction.set(welcomeMsgRef, {
+                'id': welcomeMsgRef.id,
+                'conversationId': groupChatId,
+                'senderId': 'system',
+                'text': '${request.studentName} has joined the group.',
+                'type': 'text',
+                'created_at': Timestamp.now(),
+                'readBy': [currentTutor.uid],
+              });
+            }
           }
 
           transaction.update(serviceRef, {
@@ -359,7 +476,6 @@ class TeacherPortalService {
         except: location.reference,
       );
     } else {
-      // Custom quote (no service attached).
       await location.reference.update({
         'status': status.name,
         'response_price': response?.priceLabel ?? '',
@@ -374,7 +490,6 @@ class TeacherPortalService {
       );
     }
 
-    // Send notification and chat message for all traditional quotes.
     try {
       await _notificationService.sendNotification(
         NotificationModel(
@@ -382,8 +497,8 @@ class TeacherPortalService {
               ? 'Request Accepted'
               : 'Request Declined',
           content: status == QuoteStatus.accepted
-              ? 'Your service request for ${request.subject} has been accepted by the teacher. Check the teacher response in the DM.'
-              : 'Your service request for ${request.subject} was declined by the teacher.',
+              ? 'Your service request for ${request.subject} has been accepted.'
+              : 'Your service request for ${request.subject} was declined.',
           dateTime: DateTime.now(),
           isRead: false,
           notificationId: '',
@@ -802,8 +917,6 @@ class TeacherPortalService {
     return fullName.isEmpty ? 'Student' : fullName;
   }
 
-  /// Uploads [pdfBytes] to Firebase Storage and sends the file as a chat
-  /// message in the direct conversation between [tutorId] and [studentId].
   Future<void> sendEstimatePdfToChat({
     required String tutorId,
     required String studentId,
@@ -907,7 +1020,6 @@ class TeacherPortalService {
   }) async {
     if (tutorId.isEmpty || studentId.isEmpty) return;
 
-    // Find existing direct conversation between tutor and student
     final QuerySnapshot<Map<String, dynamic>> snapshot = await _firestore
         .collection('conversations')
         .where('participants', arrayContains: tutorId)
@@ -927,7 +1039,6 @@ class TeacherPortalService {
       }
     }
 
-    // Create conversation if none exists
     if (conversationId == null) {
       final DocumentReference<Map<String, dynamic>> convRef = _firestore
           .collection('conversations')

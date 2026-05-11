@@ -17,6 +17,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fahamni/widgets/customnavbar.dart';
 import 'package:intl/intl.dart';
+import '../utils/image_utils.dart';
+import 'favorite_teachers_page.dart';
 
 class Studentpage extends StatelessWidget {
   const Studentpage({super.key});
@@ -37,23 +39,7 @@ class _StudenthomepageState extends State<Studenthomepage> {
     'assets/images/slide0.png',
     'assets/images/slide1.png',
   ];
-  final List<Map<String, dynamic>> teachers = [
-    {
-      'name': 'Sami',
-      'image': 'https://randomuser.me/api/portraits/women/44.jpg',
-    },
-    {'name': 'Sami', 'image': 'https://randomuser.me/api/portraits/men/32.jpg'},
-    {
-      'name': 'Sami',
-      'image': 'https://randomuser.me/api/portraits/women/68.jpg',
-    },
-    {'name': 'Sami', 'image': 'https://randomuser.me/api/portraits/men/75.jpg'},
-    {
-      'name': 'Sami',
-      'image': 'https://randomuser.me/api/portraits/women/17.jpg',
-    },
-    {'name': 'Sami', 'image': 'https://randomuser.me/api/portraits/men/52.jpg'},
-  ];
+  
   int currentindex = 0;
   int counter = 0;
   int minutes = 0;
@@ -66,7 +52,6 @@ class _StudenthomepageState extends State<Studenthomepage> {
   SessionModel? _nextCourse;
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     loadStudent();
   }
@@ -109,7 +94,6 @@ class _StudenthomepageState extends State<Studenthomepage> {
       if (!mounted) return;
       setState(() {
         student = StudentModel(
-          // set a fallback so spinner stops
           uid: '',
           firstName: 'Error',
           lastName: '',
@@ -187,12 +171,12 @@ class _StudenthomepageState extends State<Studenthomepage> {
   }
 
   ImageProvider _resolveStudentAvatar(StudentModel s) {
-    final pic = s.picture;
-    if (pic.startsWith('http')) return NetworkImage(pic);
-    if (pic.startsWith('assets/')) return AssetImage(pic);
-    return s.gender == Gender.female
-        ? const AssetImage('assets/images/studentfemale.png')
-        : const AssetImage('assets/images/studentmale.png');
+    return safeImage(
+      s.picture,
+      defaultAsset: s.gender == Gender.female
+          ? 'assets/images/studentfemale.png'
+          : 'assets/images/studentmale.png',
+    );
   }
 
   DateTime _sessionDateTime(SessionModel session) {
@@ -216,11 +200,10 @@ class _StudenthomepageState extends State<Studenthomepage> {
         body: SafeArea(
           child: SingleChildScrollView(
             child: Container(
-              margin: EdgeInsets.fromLTRB(16, 5, 16, 16),
+              margin: const EdgeInsets.fromLTRB(16, 5, 16, 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // First row with avatar and icons
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -228,32 +211,29 @@ class _StudenthomepageState extends State<Studenthomepage> {
                         radius: 25,
                         backgroundImage: _resolveStudentAvatar(student!),
                       ),
-                      SizedBox(width: 5),
+                      const SizedBox(width: 8),
                       Expanded(
-                        // Wrap with Expanded to take available space
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            ConstrainedBox(
-                              constraints: BoxConstraints(maxWidth: 300),
-                              child: Text(
-                                '${student?.firstName} ${student?.lastName} ',
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: const Color(0xFF1F2937),
-                                  fontFamily: 'Inter',
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 16,
-                                ),
+                            Text(
+                              '${student?.firstName} ${student?.lastName}',
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Color(0xFF1F2937),
+                                fontFamily: 'Inter',
+                                fontWeight: FontWeight.w700,
+                                fontSize: 18,
                               ),
                             ),
                             Text(
-                              '${student?.role.name}',
-                              style: TextStyle(
-                                color: const Color(0xFF000080),
+                              '${student?.role.name.toUpperCase()}',
+                              style: const TextStyle(
+                                color: Color(0xFF000080),
                                 fontFamily: 'Inter',
-                                fontWeight: FontWeight.w500,
-                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                                letterSpacing: 0.5,
                               ),
                             ),
                           ],
@@ -262,336 +242,251 @@ class _StudenthomepageState extends State<Studenthomepage> {
                       _notificationButton(student?.uid),
                     ],
                   ),
-                  SizedBox(height: 5),
+                  const SizedBox(height: 15),
 
-                  // Search row
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Expanded(
-                        // Expanded makes TextField take full width
                         child: Container(
                           height: 50,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(80),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Color(
-                                  0xFF000080,
-                                ).withValues(alpha: 0.61),
-                                spreadRadius: 0,
-                                blurRadius: 5,
-                                offset: const Offset(0, 0),
-                                blurStyle: BlurStyle.normal,
-                              ),
-                            ],
+                            borderRadius: BorderRadius.circular(15),
+                            color: const Color(0xFFF1F5F9),
                           ),
                           child: TextField(
                             textAlignVertical: TextAlignVertical.center,
                             decoration: InputDecoration(
                               hintText: 'Search for Teacher/module...',
-                              hintStyle: TextStyle(
+                              hintStyle: const TextStyle(
                                 fontFamily: "Nunito",
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
+                                color: Color(0xFF94A3B8),
                               ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(80),
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 0,
-                              ),
-                              filled: true,
-                              fillColor: Colors.white,
+                              prefixIcon: const Icon(Icons.search, color: Color(0xFF64748B)),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 20),
                             ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      SizedBox(
-                        height: 50,
-                        width: 50,
-                        child: Center(
-                          child: IconButton(
-                            padding: EdgeInsets.zero,
-                            onPressed: () {},
-                            icon: const ImageIcon(
-                              AssetImage('assets/images/search.png'),
-                              color: Colors.black,
-                            ),
-                            iconSize: 32,
                           ),
                         ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 20),
 
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Transform.translate(
-                        offset: Offset(-0, 0),
-                        child: SizedBox(
-                          width: MediaQuery.of(context).size.width,
-
-                          child: CarouselSlider(
-                            items: images
-                                .map(
-                                  (item) => Stack(
-                                    children: [
-                                      Container(
-                                        margin: const EdgeInsets.all(5),
-                                        width: double.infinity,
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                          image: DecorationImage(
-                                            image: AssetImage(item),
-                                            fit: BoxFit.cover,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Color(
-                                                0xFF000080,
-                                              ).withValues(alpha: 0.3),
-                                              spreadRadius: 1,
-                                              blurRadius: 10,
-                                              offset: Offset(0, 0),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Positioned(
-                                        bottom: 18,
-                                        left: 23,
-                                        child: Container(
-                                          constraints: const BoxConstraints(
-                                            minHeight: 35,
-                                            minWidth: 100,
-                                          ),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 14,
-                                            vertical: 8,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              'En Profiter',
-                                              style: TextStyle(
-                                                color: Color(0xFF000080),
-                                                fontFamily: "Nunito",
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                                .toList(),
-                            options: CarouselOptions(
-                              height: 200,
-                              autoPlay: true,
-                              autoPlayInterval: Duration(seconds: 3),
-                              autoPlayAnimationDuration: Duration(
-                                milliseconds: 800,
-                              ),
-                              enlargeCenterPage: true,
-                              aspectRatio: 16 / 9,
-                              viewportFraction: 0.95,
-                              enlargeFactor: 0.2,
-                              enableInfiniteScroll: true,
-                              clipBehavior: Clip.none,
-                              padEnds: true,
-                              onPageChanged: (index, reason) {
-                                setState(() {
-                                  currentindex = index;
-                                });
-                              },
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 5),
-                      //dots slider
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: images
-                            .asMap()
-                            .entries
-                            .map(
-                              (item) => Container(
-                                height: 12,
-                                width: 12,
-                                margin: EdgeInsets.all(4),
+                  CarouselSlider(
+                    items: images
+                        .map(
+                          (item) => Stack(
+                            children: [
+                              Container(
+                                margin: const EdgeInsets.symmetric(horizontal: 5),
+                                width: double.infinity,
                                 decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: currentindex == item.key
-                                      ? Color(0xFF000080)
-                                      : Colors.grey,
+                                  borderRadius: BorderRadius.circular(20),
+                                  image: DecorationImage(
+                                    image: AssetImage(item),
+                                    fit: BoxFit.cover,
+                                  ),
                                 ),
                               ),
-                            )
-                            .toList(),
-                      ),
-                    ],
+                              Positioned(
+                                bottom: 15,
+                                left: 20,
+                                child: ElevatedButton(
+                                  onPressed: () {},
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.white,
+                                    foregroundColor: const Color(0xFF000080),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  ),
+                                  child: const Text(
+                                    'En Profiter',
+                                    style: TextStyle(
+                                      fontFamily: "Nunito",
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                        .toList(),
+                    options: CarouselOptions(
+                      height: 180,
+                      autoPlay: true,
+                      enlargeCenterPage: true,
+                      viewportFraction: 0.9,
+                      onPageChanged: (index, reason) {
+                        setState(() {
+                          currentindex = index;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: images.asMap().entries.map((entry) {
+                      return Container(
+                        width: currentindex == entry.key ? 20 : 8,
+                        height: 8,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(4),
+                          color: currentindex == entry.key
+                              ? const Color(0xFF000080)
+                              : const Color(0xFFCBD5E1),
+                        ),
+                      );
+                    }).toList(),
                   ),
 
-                  // Online teachers
+                  const SizedBox(height: 25),
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(
-                        child: Text(
-                          'Favorite Teachers',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontFamily: "Inter",
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      const Text(
+                        'Favorite Teachers',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontFamily: "Inter",
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                      GestureDetector(
-                        onTap: () {
+                      TextButton(
+                        onPressed: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const CoursesPage(),
+                              builder: (context) => FavoriteTeachersPage(
+                                favoriteTutors: favoriteTutors ?? [],
+                              ),
                             ),
-                          );
+                          ).then((_) => loadStudent());
                         },
-                        child: Text(
+                        child: const Text(
                           'See All',
                           style: TextStyle(
                             fontFamily: "Nunito",
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
                             color: Color(0xFF000080),
                           ),
                         ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 10),
                   SizedBox(
-                    height: 100,
+                    height: 120,
                     child: (favoriteTutors?.isEmpty ?? true)
                         ? const Center(
                             child: Text(
-                              'NO Favorite Teachers :(',
-                              textAlign: TextAlign.center,
+                              'No favorite teachers yet',
                               style: TextStyle(
                                 fontFamily: 'Nunito',
-                                fontWeight: FontWeight.w700,
-                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
                                 color: Colors.grey,
                               ),
                             ),
                           )
                         : ListView.builder(
                             scrollDirection: Axis.horizontal,
-                            shrinkWrap: true,
                             itemCount: favoriteTutors?.length,
                             itemBuilder: (context, index) {
-                              return Column(
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        final TutorModel? tutor =
-                                            favoriteTutors?[index];
-                                        if (tutor == null) {
-                                          return;
-                                        }
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => TutorProfilePage(
-                                              tutorId: tutor.uid,
-                                            ),
-                                          ),
-                                        ).then((_) => loadStudent());
-                                      },
-                                      child: Stack(
+                              final tutor = favoriteTutors![index];
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 15),
+                                child: GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => TutorProfilePage(
+                                          tutorId: tutor.uid,
+                                        ),
+                                      ),
+                                    ).then((_) => loadStudent());
+                                  },
+                                  child: Column(
+                                    children: [
+                                      Stack(
                                         children: [
-                                          Container(
-                                            height: 60,
-                                            width: 60,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              image: DecorationImage(
-                                                image: NetworkImage(
-                                                  (favoriteTutors?[index]
-                                                          .picture)
-                                                      .toString(),
-                                                ),
-                                                fit: BoxFit.cover,
-                                              ),
+                                          CircleAvatar(
+                                            radius: 35,
+                                            backgroundImage: safeImage(
+                                              tutor.picture,
+                                              defaultAsset: tutor.gender == Gender.female
+                                                ? 'assets/images/tutorfemale.png'
+                                                : 'assets/images/tutormale.png',
                                             ),
                                           ),
                                           Positioned(
-                                            left: 40,
-                                            top: 45,
+                                            right: 0,
+                                            bottom: 0,
                                             child: Container(
-                                              height: 14,
-                                              width: 14,
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: const BoxDecoration(
                                                 color: Colors.white,
+                                                shape: BoxShape.circle,
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black12,
+                                                    blurRadius: 4,
+                                                  )
+                                                ],
                                               ),
-                                              child: Center(
-                                                child: SvgPicture.asset(
-                                                  "assets/images/heart.svg",
-                                                ),
+                                              child: const Icon(
+                                                Icons.favorite,
+                                                color: Colors.red,
+                                                size: 14,
                                               ),
                                             ),
                                           ),
                                         ],
                                       ),
-                                    ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        tutor.firstName,
+                                        style: const TextStyle(
+                                          color: Color(0xFF1F2937),
+                                          fontFamily: "Nunito",
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  Text(
-                                    (favoriteTutors?[index].firstName)
-                                        .toString(),
-                                    style: TextStyle(
-                                      color: Colors.black,
-                                      fontFamily: "Nunito",
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                ],
+                                ),
                               );
                             },
                           ),
                   ),
-                  SizedBox(height: 10),
+
+                  const SizedBox(height: 20),
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(
-                        child: Text(
-                          'Course Schedule',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontFamily: "Inter",
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      const Text(
+                        'Course Schedule',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontFamily: "Inter",
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                      GestureDetector(
-                        onTap: () {
+                      TextButton(
+                        onPressed: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -599,12 +494,12 @@ class _StudenthomepageState extends State<Studenthomepage> {
                             ),
                           );
                         },
-                        child: Text(
+                        child: const Text(
                           'See All',
                           style: TextStyle(
                             fontFamily: "Nunito",
-                            fontWeight: FontWeight.w600,
-                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
                             color: Color(0xFF000080),
                           ),
                         ),
@@ -612,66 +507,49 @@ class _StudenthomepageState extends State<Studenthomepage> {
                     ],
                   ),
                   if (courses?.isEmpty ?? true)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 24),
-                      child: Center(
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.menu_book_rounded,
-                              size: 52,
-                              color: Color(0xFF000080).withValues(alpha: 0.25),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 30),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.calendar_today_outlined,
+                            size: 48,
+                            color: const Color(0xFF000080).withOpacity(0.2),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            "No courses scheduled",
+                            style: TextStyle(
+                              fontFamily: 'Nunito',
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                              color: Color(0xFF64748B),
                             ),
-                            SizedBox(height: 12),
-                            Text(
-                              "Start your Journey",
-                              style: TextStyle(
-                                fontFamily: 'Nunito',
-                                fontWeight: FontWeight.w700,
-                                fontSize: 18,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              "Book a session to see it here",
-                              style: TextStyle(
-                                fontFamily: 'Nunito',
-                                fontWeight: FontWeight.w500,
-                                fontSize: 14,
-                                color: Colors.grey.withValues(alpha: 0.8),
-                              ),
-                            ),
-                            SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        Explorepage(student: student!),
-                                  ),
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF000080),
-                                foregroundColor: Colors.white,
-                                minimumSize: Size(160, 46),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(24),
+                          ),
+                          const SizedBox(height: 15),
+                          ElevatedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => Explorepage(student: student!),
                                 ),
-                              ),
-                              child: Text(
-                                'Explore Tutors',
-                                style: TextStyle(
-                                  fontFamily: 'Lexend',
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 15,
-                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF000080),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                          ],
-                        ),
+                            child: const Text("Explore Tutors", style: TextStyle(color: Colors.white)),
+                          ),
+                        ],
                       ),
                     )
                   else if (sessiontutor != null && _nextCourse != null)
@@ -687,34 +565,21 @@ class _StudenthomepageState extends State<Studenthomepage> {
                           ),
                         );
                       },
-                    )
-                  else if (courses?.isNotEmpty == true)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 20),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: Color(0xFF000080),
-                          strokeWidth: 2,
-                        ),
-                      ),
                     ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
-          ), // SingleChildScrollView
+          ),
         ),
         bottomNavigationBar: CustomBottomNavbar(
           selectedIndex: _selectedIndex,
           onTap: (index) {
-            if (index == _selectedIndex) {
-              return;
-            }
+            if (index == _selectedIndex) return;
             if (index == 1) {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => Explorepage(student: student!),
-                ),
+                MaterialPageRoute(builder: (context) => Explorepage(student: student!)),
               );
             } else if (index == 2) {
               Navigator.pushReplacement(
@@ -743,10 +608,6 @@ class _StudenthomepageState extends State<Studenthomepage> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Next Course Card — polished, responsive schedule card
-// ---------------------------------------------------------------------------
-
 class _NextCourseCard extends StatelessWidget {
   const _NextCourseCard({
     required this.session,
@@ -755,214 +616,135 @@ class _NextCourseCard extends StatelessWidget {
     required this.onJoin,
   });
 
-  final dynamic session; // SessionModel
-  final dynamic tutor; // TutorModel
+  final dynamic session;
+  final dynamic tutor;
   final int minutes;
   final VoidCallback onJoin;
 
   @override
   Widget build(BuildContext context) {
     final bool isOnline = session.type == 'online';
-    final Color typeColor = isOnline
-        ? const Color(0xFF16A34A)
-        : const Color(0xFF475569);
-    final Color typeBg = isOnline
-        ? const Color(0xFFDCFCE7)
-        : const Color(0xFFF1F5F9);
-
+    
     return Container(
-      margin: const EdgeInsets.fromLTRB(0, 10, 0, 10),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: const Border(
-          left: BorderSide(color: Color(0xFF000080), width: 5),
-        ),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF000080).withValues(alpha: 0.15),
-            spreadRadius: 0,
-            blurRadius: 12,
-            offset: const Offset(2, 4),
+            color: const Color(0xFF000080).withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Header row: label + type badge ──────────────────────────
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF6324EB).withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text(
-                    'NEXT COURSE',
-                    style: TextStyle(
-                      fontFamily: 'Nunito',
-                      fontWeight: FontWeight.w800,
-                      fontSize: 11,
-                      color: Color(0xFF000080),
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: typeBg,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    session.type,
-                    style: TextStyle(
-                      fontFamily: 'Nunito',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: typeColor,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            // ── Subject title ─────────────────────────────────────────
-            Text(
-              tutor.expertiseDomain,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Color(0xFF1F2937),
-                fontFamily: 'Inter',
-                fontSize: 19,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            // ── Date row ─────────────────────────────────────────────
-            Row(
-              children: [
-                SvgPicture.asset(
-                  'assets/images/time.svg',
-                  height: 17,
-                  width: 17,
-                  colorFilter: const ColorFilter.mode(
-                    Color(0xFF475569),
-                    BlendMode.srcIn,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  DateFormat('EEE, dd MMM yyyy').format(session.date),
-                  style: const TextStyle(
-                    color: Color(0xFF475569),
-                    fontFamily: 'Lexend',
-                    fontWeight: FontWeight.w400,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 8),
-
-            // ── Time row ─────────────────────────────────────────────
-            Row(
-              children: [
-                SvgPicture.asset(
-                  'assets/images/time.svg',
-                  height: 17,
-                  width: 17,
-                  colorFilter: const ColorFilter.mode(
-                    Color(0xFF000080),
-                    BlendMode.srcIn,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '${DateFormat('HH:mm').format(session.startTime)} – '
-                  '${DateFormat('HH:mm').format(session.endTime)}  ($minutes min)',
-                  style: const TextStyle(
-                    color: Color(0xFF1F2937),
-                    fontFamily: 'Lexend',
-                    fontWeight: FontWeight.w500,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 8),
-
-            // ── Tutor row ─────────────────────────────────────────────
-            Row(
-              children: [
-                SvgPicture.asset(
-                  'assets/images/person.svg',
-                  height: 17,
-                  width: 17,
-                  colorFilter: const ColorFilter.mode(
-                    Color(0xFF475569),
-                    BlendMode.srcIn,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '${tutor.firstName} ${tutor.lastName}'.trim(),
-                  style: const TextStyle(
-                    color: Color(0xFF475569),
-                    fontFamily: 'Lexend',
-                    fontWeight: FontWeight.w400,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            // ── Join button ───────────────────────────────────────────
-            SizedBox(
-              width: double.infinity,
-              height: 46,
-              child: ElevatedButton(
-                onPressed: onJoin,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF000080),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF000080).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: const Text(
-                  'View My Sessions',
+                  'NEXT SESSION',
                   style: TextStyle(
-                    fontFamily: 'Lexend',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w800,
+                    fontSize: 10,
+                    color: Color(0xFF000080),
+                    letterSpacing: 1,
                   ),
                 ),
               ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isOnline ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  session.type.toUpperCase(),
+                  style: TextStyle(
+                    fontFamily: 'Nunito',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: isOnline ? const Color(0xFF16A34A) : const Color(0xFF475569),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 15),
+          Text(
+            tutor.expertiseDomain,
+            style: const TextStyle(
+              color: Color(0xFF1F2937),
+              fontFamily: 'Inter',
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 15),
+          Row(
+            children: [
+              const Icon(Icons.calendar_today_outlined, size: 16, color: Color(0xFF64748B)),
+              const SizedBox(width: 8),
+              Text(
+                DateFormat('EEE, dd MMM yyyy').format(session.date),
+                style: const TextStyle(
+                  color: Color(0xFF64748B),
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(Icons.access_time_outlined, size: 16, color: Color(0xFF000080)),
+              const SizedBox(width: 8),
+              Text(
+                '${DateFormat('HH:mm').format(session.startTime)} - ${DateFormat('HH:mm').format(session.endTime)} ($minutes min)',
+                style: const TextStyle(
+                  color: Color(0xFF1F2937),
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: onJoin,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF000080),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
+              child: const Text(
+                'View Sessions',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

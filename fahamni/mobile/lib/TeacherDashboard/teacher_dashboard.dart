@@ -1,4 +1,4 @@
-import 'package:fahamni/Notification_page/notification_page.dart';
+﻿import 'package:fahamni/Notification_page/notification_page.dart';
 import 'package:fahamni/Account_Settings_Teacher/account_screen.dart'
     as teacher_account;
 import 'package:fahamni/Services/notification_service.dart';
@@ -7,12 +7,16 @@ import 'package:fahamni/Services/suspended_account_gate.dart';
 import 'package:fahamni/TeacherDashboard/models/teacher_portal_models.dart';
 import 'package:fahamni/TeacherDashboard/teacher_dashboard_service.dart';
 import 'package:fahamni/TeacherDashboard/teacher_quote_request_detail_page.dart';
+import 'package:fahamni/TeacherDashboard/teacher_quotes_page.dart';
 import 'package:fahamni/TeacherDashboard/teacher_schedule_page.dart';
 import 'package:fahamni/TeacherDashboard/teacher_services_dashboard.dart';
 import 'package:fahamni/TeacherDashboard/widgets/teacher_navbar.dart';
+import 'package:fahamni/Teacher_Service_Details/service_details_page.dart';
 import 'package:fahamni/messaging/chat_page.dart';
 import 'package:fahamni/models/notification_model.dart';
+import 'package:fahamni/models/service_model.dart';
 import 'package:fahamni/models/teacher_dashboard_model.dart';
+import 'package:fahamni/models/tutor_model.dart';
 import 'package:fahamni/navigation/app_navigation.dart';
 import 'package:fahamni/otp_verification_Screen/primarybutton.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -244,6 +248,9 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                                         ),
                                         child: _ServiceCard(
                                           service: dashboard.services[index],
+                                          serviceRecord:
+                                              dashboard.serviceRecords[index],
+                                          tutor: dashboard.tutorProfile,
                                         ),
                                       );
                                     },
@@ -253,14 +260,14 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                           _SectionHeader(
                             title: dashboard.quoteRequestsTitle,
                             actionLabel: dashboard.seeAllLabel,
-                            onActionTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      const TeacherServicesDashboardScreen(),
-                                ),
-                              );
-                            },
+                            onActionTap:  () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const TeacherQuotesPage(),
+                          ),
+                        );
+                      },
                           ),
                           const SizedBox(height: 14),
                           if (dashboard.quoteRequests.isEmpty)
@@ -456,6 +463,7 @@ class _PerformanceCard extends StatelessWidget {
                                     stat.value,
                                     style: const TextStyle(
                                       fontSize: 16,
+                                      fontFamily: 'Nunito',
                                       fontWeight: FontWeight.w800,
                                       color: Color(0xFF1A237E),
                                     ),
@@ -472,6 +480,7 @@ class _PerformanceCard extends StatelessWidget {
                                 stat.value,
                                 style: const TextStyle(
                                   fontSize: 16,
+                                  fontFamily: 'Nunito',
                                   fontWeight: FontWeight.w800,
                                   color: Color(0xFF1A237E),
                                 ),
@@ -510,6 +519,7 @@ class _SectionHeader extends StatelessWidget {
             title,
             style: const TextStyle(
               fontSize: 18,
+              fontFamily: 'Inter',
               fontWeight: FontWeight.w700,
               color: Color(0xFF1F2937),
             ),
@@ -521,6 +531,7 @@ class _SectionHeader extends StatelessWidget {
             actionLabel,
             style: const TextStyle(
               fontSize: 12,
+              fontFamily: 'Nunito',
               fontWeight: FontWeight.w700,
               color: Color(0xFF1A237E),
             ),
@@ -589,6 +600,7 @@ class _SessionCard extends StatelessWidget {
                     session.title,
                     style: const TextStyle(
                       fontSize: 18,
+                      fontFamily: 'Inter',
                       fontWeight: FontWeight.w700,
                       color: Color(0xFF1F2937),
                     ),
@@ -607,7 +619,8 @@ class _SessionCard extends StatelessWidget {
                           session.subject,
                           style: const TextStyle(
                             fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Lexend',
+                            fontWeight: FontWeight.w400,
                             color: Color(0xFF64748B),
                           ),
                         ),
@@ -628,7 +641,8 @@ class _SessionCard extends StatelessWidget {
                           session.timeRange,
                           style: const TextStyle(
                             fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Lexend',
+                            fontWeight: FontWeight.w400,
                             color: Color(0xFF64748B),
                           ),
                         ),
@@ -646,106 +660,125 @@ class _SessionCard extends StatelessWidget {
 }
 
 class _ServiceCard extends StatelessWidget {
-  const _ServiceCard({required this.service});
+  const _ServiceCard({
+    required this.service,
+    required this.serviceRecord,
+    required this.tutor,
+  });
 
   final TeacherDashboardServiceCard service;
+  final ServiceModel serviceRecord;
+  final TutorModel tutor;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 220,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) =>
+                CourseDetailsPage(service: serviceRecord, tutor: tutor),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            child: SizedBox(
-              height: 132,
-              width: double.infinity,
-              child: _DashboardImage(imagePath: service.imagePath),
+        );
+      },
+      child: Container(
+        width: 220,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _TagChip(
-                        label: service.category,
-                        backgroundColor: const Color(0xFFE8EAF6),
-                        textColor: const Color(0xFF1A237E),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    _TagChip(
-                      label: service.statusLabel,
-                      backgroundColor: const Color(0xFFE8F7EC),
-                      textColor: const Color(0xFF16A34A),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  service.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF1F2937),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.schedule_rounded,
-                      color: Color(0xFF94A3B8),
-                      size: 16,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        service.sessionsLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF64748B),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              child: SizedBox(
+                height: 132,
+                width: double.infinity,
+                child: _DashboardImage(imagePath: service.imagePath),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _TagChip(
+                          label: service.category,
+                          backgroundColor: const Color(0xFFE8EAF6),
+                          textColor: const Color(0xFF1A237E),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  service.priceLabel,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF0D138B),
+                      const SizedBox(width: 10),
+                      _TagChip(
+                        label: service.statusLabel,
+                        backgroundColor: const Color(0xFFE8F7EC),
+                        textColor: const Color(0xFF16A34A),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 14),
+                  Text(
+                    service.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF1F2937),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.schedule_rounded,
+                        color: Color(0xFF94A3B8),
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          service.sessionsLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'Nunito',
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    service.priceLabel,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontFamily: 'Nunito',
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0D138B),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -924,6 +957,7 @@ class _TagChip extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
           fontSize: 10,
+          fontFamily: 'Nunito',          
           fontWeight: FontWeight.w700,
           color: textColor,
         ),

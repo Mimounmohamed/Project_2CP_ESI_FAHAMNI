@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../models/student_model.dart';
 
 class MemberItem extends StatelessWidget {
@@ -65,7 +66,8 @@ class MemberItem extends StatelessWidget {
                 Text(
                   'Student',
                   style: TextStyle(
-                    fontFamily: 'Nunito',
+                    fontFamily: 'Lexend',
+                    fontWeight: FontWeight.w500,
                     fontSize: 12,
                     color: const Color(0xFF000080).withValues(alpha: 0.7),
                   ),
@@ -75,10 +77,14 @@ class MemberItem extends StatelessWidget {
           ),
           IconButton(
             onPressed: onChat,
-            icon: const Icon(
-              Icons.chat_bubble_outline_rounded,
-              color: Color(0xFF000080),
-              size: 20,
+            icon: SvgPicture.asset(
+              'assets/images/chat.svg',
+              width: 20,
+              height: 20,
+              colorFilter: const ColorFilter.mode(
+                Color(0xFF000080),
+                BlendMode.srcIn,
+              ),
             ),
           ),
           PopupMenuButton<_MemberAction>(
