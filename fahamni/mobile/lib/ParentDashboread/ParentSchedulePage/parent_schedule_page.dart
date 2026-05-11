@@ -74,13 +74,17 @@ class _ParentSchedulePageState extends State<ParentSchedulePage> {
 
     final List<_ScheduledSession> items = <_ScheduledSession>[];
     for (final SessionModel session in sessions) {
-      final TutorModel tutor = await _service.getTutorData(session.tutorId);
-      final ServiceModel? service = await _service.getServiceData(
-        session.serviceId,
-      );
-      items.add(
-        _ScheduledSession(session: session, tutor: tutor, service: service),
-      );
+      try {
+        final TutorModel tutor = await _service.getTutorData(session.tutorId);
+        final ServiceModel? service = await _service.getServiceData(
+          session.serviceId,
+        );
+        items.add(
+          _ScheduledSession(session: session, tutor: tutor, service: service),
+        );
+      } catch (_) {
+        continue;
+      }
     }
 
     if (items.isNotEmpty) {

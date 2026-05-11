@@ -1,4 +1,4 @@
-﻿import 'package:fahamni/Notification_page/notification_page.dart';
+import 'package:fahamni/Notification_page/notification_page.dart';
 import 'package:fahamni/Account_Settings_Teacher/account_screen.dart'
     as teacher_account;
 import 'package:fahamni/Services/notification_service.dart';
@@ -260,14 +260,14 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                           _SectionHeader(
                             title: dashboard.quoteRequestsTitle,
                             actionLabel: dashboard.seeAllLabel,
-                            onActionTap:  () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const TeacherQuotesPage(),
-                          ),
-                        );
-                      },
+                            onActionTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const TeacherQuotesPage(),
+                                ),
+                              );
+                            },
                           ),
                           const SizedBox(height: 14),
                           if (dashboard.quoteRequests.isEmpty)
@@ -283,9 +283,10 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
                                     request.quote.serviceName.isNotEmpty
                                     ? request.quote.serviceName
                                     : request.subtitle,
-                                description: request.objective.isNotEmpty
-                                    ? request.objective
-                                    : request.quote.description,
+                                description:
+                                    request.quote.description.isNotEmpty
+                                    ? request.quote.description
+                                    : request.objective,
                                 subject: request.subject.isNotEmpty
                                     ? request.subject
                                     : request.quote.subject,
@@ -699,7 +700,9 @@ class _ServiceCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
               child: SizedBox(
                 height: 132,
                 width: double.infinity,
@@ -957,7 +960,7 @@ class _TagChip extends StatelessWidget {
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
           fontSize: 10,
-          fontFamily: 'Nunito',          
+          fontFamily: 'Nunito',
           fontWeight: FontWeight.w700,
           color: textColor,
         ),

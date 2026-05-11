@@ -41,9 +41,9 @@ class _TeacherQuotesPageState extends State<TeacherQuotesPage>
             serviceTitle: request.quote.serviceName.isNotEmpty
                 ? request.quote.serviceName
                 : request.subtitle,
-            description: request.objective.isNotEmpty
-                ? request.objective
-                : request.quote.description,
+            description: request.quote.description.isNotEmpty
+                ? request.quote.description
+                : request.objective,
             subject: request.subject.isNotEmpty
                 ? request.subject
                 : request.quote.subject,
@@ -121,7 +121,9 @@ class _TeacherQuotesPageState extends State<TeacherQuotesPage>
           const SizedBox(height: 20),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF000080)))
+                ? const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF000080)),
+                  )
                 : TabBarView(
                     controller: _tabController,
                     children: [
@@ -133,13 +135,17 @@ class _TeacherQuotesPageState extends State<TeacherQuotesPage>
                       ),
                       _QuotesList(
                         requests: _allRequests
-                            .where((r) => r.quote.status == QuoteStatus.accepted)
+                            .where(
+                              (r) => r.quote.status == QuoteStatus.accepted,
+                            )
                             .toList(),
                         onRefresh: _loadQuotes,
                       ),
                       _QuotesList(
                         requests: _allRequests
-                            .where((r) => r.quote.status == QuoteStatus.rejected)
+                            .where(
+                              (r) => r.quote.status == QuoteStatus.rejected,
+                            )
                             .toList(),
                         onRefresh: _loadQuotes,
                       ),
@@ -165,7 +171,11 @@ class _QuotesList extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.description_outlined, size: 64, color: Colors.grey.shade300),
+            Icon(
+              Icons.description_outlined,
+              size: 64,
+              color: Colors.grey.shade300,
+            ),
             const SizedBox(height: 16),
             Text(
               "No requests found",
@@ -246,7 +256,10 @@ class _QuotesList extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF000080),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   minimumSize: const Size(80, 36),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),

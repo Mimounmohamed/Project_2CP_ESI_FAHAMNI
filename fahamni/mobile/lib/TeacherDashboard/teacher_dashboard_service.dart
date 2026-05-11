@@ -56,7 +56,10 @@ class TeacherDashboardService {
 
     final Future<List<ServiceModel>> servicesFuture = _loadServices(tutor.uid);
     final Future<List<SessionModel>> sessionsFuture = _loadSessions(tutor.uid);
-    final Future<List<QuoteModel>> quotesFuture = _loadQuotes(tutor.uid, onlyPending: true);
+    final Future<List<QuoteModel>> quotesFuture = _loadQuotes(
+      tutor.uid,
+      onlyPending: true,
+    );
 
     final List<dynamic> payload = await Future.wait<dynamic>([
       servicesFuture,
@@ -190,8 +193,10 @@ class TeacherDashboardService {
       'updated_at': Timestamp.now(),
     };
     if (price != null) payload['teacher_price'] = price;
-    if (sessionsNumber != null) payload['teacher_sessions_num'] = sessionsNumber;
-    if (sessionDurationMinutes != null) payload['teacher_session_duration'] = sessionDurationMinutes;
+    if (sessionsNumber != null)
+      payload['teacher_sessions_num'] = sessionsNumber;
+    if (sessionDurationMinutes != null)
+      payload['teacher_session_duration'] = sessionDurationMinutes;
 
     bool updated = false;
     Map<String, dynamic>? quoteData;
@@ -279,7 +284,10 @@ class TeacherDashboardService {
     required String modality,
     String onlineLink = '',
   }) async {
-    final sessionDoc = await _firestore.collection('sessions').doc(sessionId).get();
+    final sessionDoc = await _firestore
+        .collection('sessions')
+        .doc(sessionId)
+        .get();
     final DateTime start = DateTime(
       date.year,
       date.month,
@@ -463,7 +471,10 @@ class TeacherDashboardService {
     return sessions;
   }
 
-  Future<List<QuoteModel>> _loadQuotes(String tutorId, {bool onlyPending = false}) async {
+  Future<List<QuoteModel>> _loadQuotes(
+    String tutorId, {
+    bool onlyPending = false,
+  }) async {
     Future<List<QuoteModel>> fetchFrom(String collectionName) async {
       final QuerySnapshot<Map<String, dynamic>> snapshot = await _firestore
           .collection(collectionName)
@@ -716,7 +727,9 @@ class TeacherDashboardService {
       studentLevel: level,
       subtitle: quote.subject,
       subject: quote.subject,
-      objective: quote.objective,
+      objective: quote.description.isNotEmpty
+          ? quote.description
+          : quote.objective,
       frequency: quote.frequency,
       duration: quote.duration,
       budget: quote.budget,
@@ -844,12 +857,22 @@ class TeacherDashboardService {
 
     final List<QuoteModel> all = byKey.values.toList()
       ..sort((a, b) {
-        final aDate = a.createdAt ?? a.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        final bDate = b.createdAt ?? b.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final aDate =
+            a.createdAt ??
+            a.updatedAt ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        final bDate =
+            b.createdAt ??
+            b.updatedAt ??
+            DateTime.fromMillisecondsSinceEpoch(0);
         return bDate.compareTo(aDate);
       });
 
-    final Map<String, StudentModel> students = await _loadStudentsForQuotes(all);
-    return all.map((q) => _toQuoteRequestCard(q, students[q.studentId])).toList();
+    final Map<String, StudentModel> students = await _loadStudentsForQuotes(
+      all,
+    );
+    return all
+        .map((q) => _toQuoteRequestCard(q, students[q.studentId]))
+        .toList();
   }
 }

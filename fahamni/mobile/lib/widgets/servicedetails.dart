@@ -100,26 +100,27 @@ class _ServicedetailsState extends State<Servicedetails> {
     try {
       StudentModel? selectedStudent;
       final UserModel? currentUser = await _authService.getCurrentUserProfile();
-      if (currentUser?.role == UserRole.parent &&
-          widget.selectedChild == null) {
+      if (currentUser?.role == UserRole.parent) {
         selectedStudent = await _pickChildForParent();
         if (selectedStudent == null) {
           return;
         }
       }
+      final bool isParent = currentUser?.role == UserRole.parent;
 
       await _studentTutorActionService.createBookingRequest(
         tutor: widget.tutor,
         service: widget.service,
-        studentId: widget.selectedChild?.id ?? selectedStudent?.uid,
+        studentId: isParent ? selectedStudent?.uid : widget.selectedChild?.id,
         studentName:
-            widget.selectedChild?.name ??
+            (isParent ? null : widget.selectedChild?.name) ??
             (selectedStudent == null
                 ? null
                 : '${selectedStudent.firstName} ${selectedStudent.lastName}'
                       .trim()),
-        studentLevel:
-            widget.selectedChild?.level ?? selectedStudent?.schoolLevel,
+        studentLevel: isParent
+            ? selectedStudent?.schoolLevel
+            : widget.selectedChild?.level,
       );
       if (!mounted) {
         return;
@@ -128,7 +129,8 @@ class _ServicedetailsState extends State<Servicedetails> {
       // Update local UI state for immediate feedback
       setState(() {
         final String? requestStudentId =
-            widget.selectedChild?.id ?? selectedStudent?.uid ?? _currentUserId;
+            (isParent ? selectedStudent?.uid : widget.selectedChild?.id) ??
+            _currentUserId;
         if (requestStudentId != null &&
             !widget.service.pendingIds.contains(requestStudentId)) {
           widget.service.pendingIds.add(requestStudentId);

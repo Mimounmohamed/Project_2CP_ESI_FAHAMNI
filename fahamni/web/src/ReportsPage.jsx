@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Search, Eye, X } from "lucide-react";
-import { collection, query, where, getDocs, doc, updateDoc, getDoc, deleteDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, updateDoc, getDoc, deleteDoc, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "./firebase";
 import { useTranslation } from "react-i18next";
 import { syncSuspensionState } from "./suspensionNotifications";
@@ -213,6 +213,18 @@ export default function ReportsPage() {
     if (!selected) return;
     setActionLoading("avert");
     try {
+      await addDoc(collection(db, "notifications"), {
+        title: "Account Warning",
+        content: "An admin reviewed a report about your account and issued a warning.",
+        date_time: serverTimestamp(),
+        receiver_id: selected.reported_id,
+        reciever_id: selected.reported_id,
+        sender_id: "admin",
+        type: "account_warning",
+        report_id: selected.id,
+        metadata: { report_id: selected.id },
+        is_read: false,
+      });
       await markReviewed(selected.id);
       setActionDone("averted");
     } catch (e) { console.error(e); }

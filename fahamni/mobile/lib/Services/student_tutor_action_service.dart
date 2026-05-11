@@ -151,7 +151,6 @@ class StudentTutorActionService {
           .collection('services')
           .doc(service.serviceId);
 
-      bool alreadyRequested = false;
       await _firestore.runTransaction((transaction) async {
         final DocumentSnapshot<Map<String, dynamic>> serviceSnap =
             await transaction.get(serviceRef);
@@ -164,10 +163,13 @@ class StudentTutorActionService {
           serviceSnap.data()?['student_ids'] ?? [],
         );
 
-        if (pendingIds.contains(requestStudentId) ||
-            studentIds.contains(requestStudentId)) {
-          alreadyRequested = true;
-          return;
+        if (studentIds.contains(requestStudentId)) {
+          throw Exception('This student is already enrolled in this service.');
+        }
+        if (pendingIds.contains(requestStudentId)) {
+          throw Exception(
+            'A join request is already pending for this student.',
+          );
         }
 
         pendingIds.add(requestStudentId);
@@ -177,24 +179,21 @@ class StudentTutorActionService {
         });
       });
 
-      // Only send the notification the first time, not on repeated taps
-      if (!alreadyRequested) {
-        await _notificationService.sendNotification(
-          NotificationModel(
-            title: 'New join request',
-            content:
-                '$requestStudentName sent a join request for ${service.name}.',
-            dateTime: DateTime.now(),
-            isRead: false,
-            notificationId: '',
-            receiverId: tutor.uid,
-            type: 'join_request',
-            senderId: requestStudentId,
-            tutorId: tutor.uid,
-            serviceId: service.serviceId,
-          ),
-        );
-      }
+      await _notificationService.sendNotification(
+        NotificationModel(
+          title: 'New join request',
+          content:
+              '$requestStudentName sent a join request for ${service.name}.',
+          dateTime: DateTime.now(),
+          isRead: false,
+          notificationId: '',
+          receiverId: tutor.uid,
+          type: 'join_request',
+          senderId: requestStudentId,
+          tutorId: tutor.uid,
+          serviceId: service.serviceId,
+        ),
+      );
 
       return;
     }
@@ -370,7 +369,8 @@ class StudentTutorActionService {
     await _notificationService.sendNotification(
       NotificationModel(
         title: 'New quote request',
-        content: '$studentDisplayName sent you a quote request for $subject.',
+        content:
+            '$studentDisplayName sent you a quote request for $subject.\n$description',
         dateTime: DateTime.now(),
         isRead: false,
         notificationId: '',

@@ -548,215 +548,221 @@ class _TutorProfilePageState extends State<TutorProfilePage>
                   20,
                   20 + MediaQuery.of(context).viewInsets.bottom,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _ProfileTopBar(
-                      tutorName: 'Teacher',
-                      isFavorite: _isFavorite,
-                      isFavoriteLoading: _isFavoriteLoading,
-                      onFavoriteTap: _toggleFavorite,
-                      onReportTap: () => _showReportTutorDialog(tutor),
-                    ),
-                    const SizedBox(height: 18),
-                    _TutorHero(
-                      tutor: tutor,
-                      averageRating: bundle.averageRating,
-                      reviewService: _reviewService,
-                    ),
-                    FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                      future: FirebaseFirestore.instance
-                          .collection('tutors')
-                          .doc(tutor.uid)
-                          .get(),
-                      builder: (context, snapshot) {
-                        final String homeTutoring =
-                            (snapshot.data?.data()?['home_tutoring'] ?? '')
-                                .toString()
-                                .toLowerCase();
-                        if (homeTutoring.isEmpty ||
-                            (homeTutoring != 'yes' && homeTutoring != 'true')) {
-                          return const SizedBox.shrink();
-                        }
+                child: SingleChildScrollView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _ProfileTopBar(
+                        tutorName: 'Teacher',
+                        isFavorite: _isFavorite,
+                        isFavoriteLoading: _isFavoriteLoading,
+                        onFavoriteTap: _toggleFavorite,
+                        onReportTap: () => _showReportTutorDialog(tutor),
+                      ),
+                      const SizedBox(height: 18),
+                      _TutorHero(
+                        tutor: tutor,
+                        averageRating: bundle.averageRating,
+                        reviewService: _reviewService,
+                      ),
+                      FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                        future: FirebaseFirestore.instance
+                            .collection('tutors')
+                            .doc(tutor.uid)
+                            .get(),
+                        builder: (context, snapshot) {
+                          final String homeTutoring =
+                              (snapshot.data?.data()?['home_tutoring'] ?? '')
+                                  .toString()
+                                  .toLowerCase();
+                          if (homeTutoring.isEmpty ||
+                              (homeTutoring != 'yes' &&
+                                  homeTutoring != 'true')) {
+                            return const SizedBox.shrink();
+                          }
 
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 18),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(
-                                color: const Color(0xFFE2E8F0),
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 18),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
                               ),
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(
-                                  Icons.home_work_outlined,
-                                  color: Color(0xFF000080),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: const Color(0xFFE2E8F0),
                                 ),
-                                SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'This teacher provides home tutoring',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFF1F2937),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(
+                                    Icons.home_work_outlined,
+                                    color: Color(0xFF000080),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'This teacher provides home tutoring',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF1F2937),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 18),
-                    TabBar(
-                      controller: _tabController,
-                      labelColor: const Color(0xFF000080),
-                      unselectedLabelColor: const Color(0xFF64748B),
-                      indicatorColor: const Color(0xFF000080),
-                      labelStyle: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      tabs: const [
-                        Tab(text: 'About'),
-                        Tab(text: 'Services'),
-                        Tab(text: 'Reviews'),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Expanded(
-                      child: RefreshIndicator(
-                        onRefresh: _refresh,
-                        child: TabBarView(
-                          controller: _tabController,
-                          children: [
-                            _AboutTutorTab(tutor: tutor),
-                            _TutorServicesTab(
-                              tutor: tutor,
-                              services: bundle.services,
-                              reviewService: _reviewService,
-                              onBookNow: (service) => _bookSpecificService(
-                                tutor: tutor,
-                                service: service,
+                                ],
                               ),
                             ),
-                            ListView(
-                              keyboardDismissBehavior:
-                                  ScrollViewKeyboardDismissBehavior.onDrag,
-                              padding: const EdgeInsets.only(bottom: 16),
-                              children: [
-                                _RatingsSummaryCard(
-                                  tutor: tutor,
-                                  reviews: previewReviews,
-                                  reviewers: bundle.reviewers,
-                                  averageRating: bundle.averageRating,
-                                  reviewService: _reviewService,
-                                  totalReviewsCount: bundle.reviews.length,
-                                  onViewAll: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => FeedbacksPage(
-                                          tutorId: widget.tutorId,
-                                          tutorName:
-                                              '${tutor.firstName} ${tutor.lastName}'
-                                                  .trim(),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                                _FeedbackComposerCard(
-                                  controller: _feedbackController,
-                                  selectedRating: _selectedRating,
-                                  onRatingChanged: (value) {
-                                    setState(() {
-                                      _selectedRating = value;
-                                    });
-                                  },
-                                  onSubmit: _submitFeedback,
-                                  isSubmitting: _isSubmitting,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                          );
+                        },
                       ),
-                    ),
-                    if (!keyboardVisible) ...[
                       const SizedBox(height: 18),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: _isActionLoading
-                                  ? null
-                                  : () => _openConversation(tutor),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFD9D9D9),
-                                foregroundColor: const Color(0xFF1F2937),
-                                minimumSize: const Size(0, 56),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(28),
+                      TabBar(
+                        controller: _tabController,
+                        labelColor: const Color(0xFF000080),
+                        unselectedLabelColor: const Color(0xFF64748B),
+                        indicatorColor: const Color(0xFF000080),
+                        labelStyle: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        tabs: const [
+                          Tab(text: 'About'),
+                          Tab(text: 'Services'),
+                          Tab(text: 'Reviews'),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.62,
+                        child: RefreshIndicator(
+                          onRefresh: _refresh,
+                          child: TabBarView(
+                            controller: _tabController,
+                            children: [
+                              _AboutTutorTab(tutor: tutor),
+                              _TutorServicesTab(
+                                tutor: tutor,
+                                services: bundle.services,
+                                reviewService: _reviewService,
+                                onBookNow: (service) => _bookSpecificService(
+                                  tutor: tutor,
+                                  service: service,
                                 ),
                               ),
-                              icon: const Icon(Icons.message_outlined),
-                              label: const Text(
-                                'Message',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: _isActionLoading
-                                  ? null
-                                  : () {
+                              ListView(
+                                keyboardDismissBehavior:
+                                    ScrollViewKeyboardDismissBehavior.onDrag,
+                                padding: const EdgeInsets.only(bottom: 16),
+                                children: [
+                                  _RatingsSummaryCard(
+                                    tutor: tutor,
+                                    reviews: previewReviews,
+                                    reviewers: bundle.reviewers,
+                                    averageRating: bundle.averageRating,
+                                    reviewService: _reviewService,
+                                    totalReviewsCount: bundle.reviews.length,
+                                    onViewAll: () {
                                       Navigator.of(context).push(
                                         MaterialPageRoute(
-                                          builder: (_) => QuoteRequestPage(
-                                            tutor: tutor,
-                                            services: bundle.services,
+                                          builder: (_) => FeedbacksPage(
+                                            tutorId: widget.tutorId,
+                                            tutorName:
+                                                '${tutor.firstName} ${tutor.lastName}'
+                                                    .trim(),
                                           ),
                                         ),
                                       );
                                     },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF000080),
-                                foregroundColor: Colors.white,
-                                minimumSize: const Size(0, 56),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(28),
-                                ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _FeedbackComposerCard(
+                                    controller: _feedbackController,
+                                    selectedRating: _selectedRating,
+                                    onRatingChanged: (value) {
+                                      setState(() {
+                                        _selectedRating = value;
+                                      });
+                                    },
+                                    onSubmit: _submitFeedback,
+                                    isSubmitting: _isSubmitting,
+                                  ),
+                                ],
                               ),
-                              icon: const Icon(Icons.calendar_today_outlined),
-                              label: const Text(
-                                'Quote request',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 16,
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (!keyboardVisible) ...[
+                        const SizedBox(height: 18),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: _isActionLoading
+                                    ? null
+                                    : () => _openConversation(tutor),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFD9D9D9),
+                                  foregroundColor: const Color(0xFF1F2937),
+                                  minimumSize: const Size(0, 56),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(28),
+                                  ),
+                                ),
+                                icon: const Icon(Icons.message_outlined),
+                                label: const Text(
+                                  'Message',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: _isActionLoading
+                                    ? null
+                                    : () {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (_) => QuoteRequestPage(
+                                              tutor: tutor,
+                                              services: bundle.services,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF000080),
+                                  foregroundColor: Colors.white,
+                                  minimumSize: const Size(0, 56),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(28),
+                                  ),
+                                ),
+                                icon: const Icon(Icons.calendar_today_outlined),
+                                label: const Text(
+                                  'Quote request',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               );
             },
