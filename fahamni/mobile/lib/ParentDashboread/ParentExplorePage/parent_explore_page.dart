@@ -795,7 +795,7 @@ class _ParentExplorePageState extends State<ParentExplorePage> {
                 ],
               ),
               SizedBox(
-                height: 350,
+                height: 320,
                 width: double.infinity,
                 child: services!.isEmpty
                     ? const Center(
@@ -820,7 +820,7 @@ class _ParentExplorePageState extends State<ParentExplorePage> {
                             350,
                           );
                           return SizedBox(
-                            height: 430,
+                            height: 360,
                             width: cardWidth,
                             child: GestureDetector(
                               onTap: () {

@@ -572,7 +572,7 @@ class _ExplorepageState extends State<Explorepage> {
                 )
               else
                 SizedBox(
-                  height: 330,
+                  height: 300,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
                     itemCount: (tutors!.length / 3).ceil(),
@@ -638,7 +638,7 @@ class _ExplorepageState extends State<Explorepage> {
                 ],
               ),
               SizedBox(
-                height: 350,
+                height: 300,
                 width: double.infinity,
                 child: services!.isEmpty
                     ? const Center(
@@ -663,7 +663,7 @@ class _ExplorepageState extends State<Explorepage> {
                             350,
                           );
                           return SizedBox(
-                            height: 430,
+                            height: 320,
                             width: cardWidth,
                             child: GestureDetector(
                               onTap: () {
